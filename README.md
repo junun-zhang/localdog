@@ -1,78 +1,80 @@
 # 基金量化系统
 
-这是一个基金量化分析系统的原型，包含以下核心功能：
+这是一个轻量级的基金量化分析系统，直接调用天天基金API获取实时数据。
 
 ## 功能特性
 
-1. **实时估值查询** - 根据基金编号获取实时估值
-2. **交易建议** - 基于简单技术指标提供买入/卖出/持有建议
-3. **模块化设计** - 易于扩展和集成真实数据源
+1. **实时估值查询** - 根据基金编号获取实时估值和涨跌幅
+2. **交易建议** - 基于简单策略提供买入/卖出/持有建议  
+3. **多基金监控** - 支持同时分析多个基金
+4. **轻量级设计** - 仅依赖Python标准库，无需额外安装包
 
 ## 系统架构
 
 ```
-fund_quant_system.py
+fund_quant_system_simple.py
 ├── FundQuantSystem 类
-│   ├── get_fund_info() - 获取基金基本信息
-│   ├── get_stock_prices() - 获取持仓股票价格
-│   ├── calculate_valuation() - 计算基金估值
-│   ├── get_trading_advice() - 生成交易建议
-│   └── analyze_fund() - 完整分析流程
-└── main() - 命令行测试入口
+│   ├── get_fund_realtime_data() - 获取基金实时数据（天天基金API）
+│   ├── calculate_trading_advice() - 生成交易建议
+│   ├── analyze_single_fund() - 分析单只基金
+│   └── analyze_multiple_funds() - 批量分析多只基金
+└── main() - 测试入口
 ```
 
 ## 使用说明
 
-### 1. 安装依赖
+### 1. 直接运行测试
 ```bash
-pip install -r requirements.txt
+python fund_quant_system_simple.py
 ```
 
-### 2. 运行测试
-```bash
-python fund_quant_system.py
+### 2. 集成到您的项目
+```python
+from fund_quant_system_simple import FundQuantSystem
+
+system = FundQuantSystem()
+result = system.analyze_single_fund("000001")
+print(f"建议: {result['advice']}")
+print(f"理由: {result['reason']}")
 ```
 
-### 3. 集成真实数据源（需要修改）
+### 3. 自定义基金列表
+修改 `main()` 函数中的 `fund_list` 变量：
+```python
+fund_list = ["000001", "110022", "519697"]  # 替换为您关注的基金代码
+```
 
-当前系统使用模拟数据，要连接真实数据需要：
+## 数据源
 
-- **基金数据API**: 替换 `get_fund_info()` 中的模拟逻辑
-- **股票行情API**: 替换 `get_stock_prices()` 中的模拟逻辑  
-- **基金持仓数据**: 在 `calculate_valuation()` 中实现真实持仓权重
+- **天天基金API**: `https://fundgz.1234567.com.cn/js/{基金代码}.js`
+- **数据字段**: 基金代码、基金名称、单位净值、估算净值、估算增长率、更新时间
 
-推荐的数据源：
-- 东方财富API
-- 新浪财经API
-- 聚宽/米筐等量化平台
-- 天行数据等第三方API
+## 交易策略
 
-### 4. 策略优化
-
-当前使用简单的移动平均策略，可扩展：
-- RSI、MACD等技术指标
-- 基本面分析
-- 机器学习模型
-- 风险控制模块
+当前使用简单的波动率策略：
+- **买入条件**: 估算增长率 > 1.5%
+- **卖出条件**: 估算增长率 < -1.5%  
+- **持有条件**: 波动在 -1.5% 到 +1.5% 之间
 
 ## 注意事项
 
 ⚠️ **重要提醒**：
-- 此为原型代码，**不可直接用于实盘交易**
-- 实际使用前必须连接真实可靠的数据源
-- 交易策略需要充分回测验证
+- 此系统使用非官方API，稳定性无法保证
+- 估算数据仅供参考，不构成投资建议
+- 实际交易前请核实最新净值和市场情况
 - 投资有风险，决策需谨慎
 
 ## 扩展方向
 
-1. **Web界面** - 使用Flask/FastAPI提供Web服务
-2. **定时任务** - 集成cron实现自动监控
-3. **多基金对比** - 支持组合分析
-4. **风险评估** - 添加波动率、最大回撤等指标
-5. **通知系统** - 集成邮件/微信/QQ通知
+1. **添加更多策略**: RSI、MACD等技术指标
+2. **历史数据分析**: 获取历史净值进行回测
+3. **通知系统**: 集成QQ/邮件提醒
+4. **Web界面**: 提供可视化界面
+5. **定时任务**: 自动监控和提醒
 
 ## 文件结构
 
-- `fund_quant_system.py` - 核心逻辑
-- `requirements.txt` - 依赖包
+- `fund_quant_system_simple.py` - 核心逻辑（仅依赖标准库）
+- `requirements.txt` - 无依赖（空文件）
 - `README.md` - 说明文档
+- `config.py` - 配置文件（可选）
