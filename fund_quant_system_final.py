@@ -403,7 +403,7 @@ def main():
     system = FundQuantSystem(tushare_token=tushare_token)
     
     # 测试示例
-    test_funds = ["000001", "110022", "519697"]
+    test_funds = ["018147", "519771", "018957", "400015", "017811", "007280", "018543", "015790", "015916", "024203", "025942", "002207", "017436","018463"]
     
     print("=== 基金量化分析系统（天天基金 + tushare双数据源）===")
     print(f"Tushare可用性: {TUSHARE_AVAILABLE}")
