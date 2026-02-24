@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-基金量化系统 - 最终版本（支持天天基金 + tushare双数据源）
+基金量化系统 - 最终版本（增强版）
 
 功能：
-1. 使用天天基金真实API获取数据（主数据源）
-2. 使用tushare作为备用数据源
-3. 提供买入/卖出建议
-4. 支持多基金监控
+1. 使用天天基金真实API获取数据
+2. 提供买入/卖出建议
+3. 支持多基金监控
+4. 增强QDII基金支持（通过历史净值页面）
+5. tushare备用数据源
 
-注意：此系统使用天天基金公开接口和tushare API，请合理使用
+注意：此系统使用天天基金公开接口，非官方API，请合理使用
 """
 
 import json
@@ -20,41 +21,38 @@ import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 import logging
-
-# 尝试导入tushare
-try:
-    import tushare as ts
-    TUSHARE_AVAILABLE = True
-except ImportError:
-    TUSHARE_AVAILABLE = False
-    ts = None
+import os
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class FundQuantSystem:
-    def __init__(self, tushare_token: str = None):
+    def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         })
         self.fund_cache = {}
         self.last_update = {}
+        self.tushare_available = False
+        self._check_tushare()
         
-        # 初始化tushare
-        self.tushare_initialized = False
-        if TUSHARE_AVAILABLE and tushare_token:
-            try:
-                ts.set_token(tushare_token)
-                self.pro = ts.pro_api()
-                self.tushare_initialized = True
-                logger.info("Tushare初始化成功")
-            except Exception as e:
-                logger.warning(f"Tushare初始化失败: {e}")
-                self.tushare_initialized = False
-        elif TUSHARE_AVAILABLE and not tushare_token:
-            logger.warning("Tushare已安装但未提供token，部分功能可能受限")
+    def _check_tushare(self):
+        """检查tushare是否可用"""
+        try:
+            import tushare as ts
+            token = os.environ.get('TUSHARE_TOKEN')
+            if token:
+                ts.set_token(token)
+                self.tushare_available = True
+                logger.info("Tushare已配置，可使用tushare数据源")
+            else:
+                logger.warning("Tushare已安装但未提供token，部分功能可能受限")
+        except ImportError:
+            logger.info("Tushare未安装，跳过tushare数据源")
+        except Exception as e:
+            logger.warning(f"Tushare初始化失败: {e}")
     
     def _parse_jsonp(self, text: str) -> Dict:
         """解析JSONP格式的数据"""
@@ -68,61 +66,8 @@ class FundQuantSystem:
             logger.error(f"JSONP解析失败: {e}")
             return {}
     
-    def get_fund_realtime_info_tushare(self, fund_code: str) -> Dict:
-        """使用tushare获取基金实时信息（备用方案）"""
-        if not self.tushare_initialized:
-            return {}
-        
-        try:
-            # 获取开放型基金净值数据
-            df = ts.fund.nav.get_nav_open(fund_type='all')
-            if df is not None and not df.empty:
-                # 查找指定基金
-                fund_data = df[df['symbol'] == fund_code]
-                if not fund_data.empty:
-                    row = fund_data.iloc[0]
-                    return {
-                        'fund_code': row['symbol'],
-                        'name': row['sname'],
-                        'nav_date': row['nav_date'],
-                        'nav': float(row['per_nav']) if pd.notna(row['per_nav']) else 0,
-                        'estimate_value': float(row['per_nav']) if pd.notna(row['per_nav']) else 0,
-                        'estimate_growth': float(row['nav_rate']) if pd.notna(row['nav_rate']) else 0,
-                        'estimate_time': row['nav_date'],
-                        'last_update': datetime.now().isoformat()
-                    }
-        except Exception as e:
-            logger.error(f"使用tushare获取基金{fund_code}实时数据失败: {e}")
-        
-        return {}
-    
-    def get_fund_history_nav_tushare(self, fund_code: str, days: int = 365) -> List[Dict]:
-        """使用tushare获取基金历史净值数据（备用方案）"""
-        if not self.tushare_initialized:
-            return []
-        
-        try:
-            end_date = datetime.now().strftime('%Y-%m-%d')
-            start_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
-            
-            df = ts.fund.nav.get_nav_history(code=fund_code, start=start_date, end=end_date)
-            if df is not None and not df.empty:
-                history_data = []
-                for idx, row in df.iterrows():
-                    date_str = idx.strftime('%Y-%m-%d') if hasattr(idx, 'strftime') else str(idx)
-                    nav_value = float(row['value']) if pd.notna(row['value']) else 0
-                    history_data.append({
-                        'date': date_str,
-                        'nav': nav_value
-                    })
-                return history_data
-        except Exception as e:
-            logger.error(f"使用tushare获取基金{fund_code}历史数据失败: {e}")
-        
-        return []
-    
-    def get_fund_realtime_info(self, fund_code: str) -> Dict:
-        """获取基金实时估值信息（来自天天基金，失败时使用tushare备用）"""
+    def _get_from_fundgz(self, fund_code: str) -> Dict:
+        """从天天基金实时估值API获取数据"""
         try:
             url = f"https://fundgz.1234567.com.cn/js/{fund_code}.js"
             response = self.session.get(url, timeout=10)
@@ -138,7 +83,8 @@ class FundQuantSystem:
                         'estimate_value': float(data.get('gsz', 0)),  # 估算净值
                         'estimate_growth': float(data.get('gszzl', 0)),  # 估算增长率
                         'estimate_time': data.get('gztime', ''),  # 估算时间
-                        'last_update': datetime.now().isoformat()
+                        'last_update': datetime.now().isoformat(),
+                        'data_source': 'fundgz'
                     }
             else:
                 logger.warning(f"基金{fund_code}实时数据获取失败，状态码: {response.status_code}")
@@ -146,12 +92,120 @@ class FundQuantSystem:
         except Exception as e:
             logger.error(f"获取基金{fund_code}实时数据失败: {e}")
         
-        # 天天基金失败，尝试使用tushare
-        logger.info(f"天天基金数据获取失败，尝试使用tushare获取基金{fund_code}数据")
-        tushare_data = self.get_fund_realtime_info_tushare(fund_code)
-        if tushare_data:
-            return tushare_data
+        return None
+    
+    def _get_from_eastmoney_history(self, fund_code: str) -> Dict:
+        """从天天基金历史净值页面获取最新数据"""
+        try:
+            url = f"http://fundf10.eastmoney.com/jjjz_{fund_code}.html"
+            response = self.session.get(url, timeout=10)
+            
+            if response.status_code == 200:
+                # 解析HTML获取最新净值信息
+                # 查找 "单位净值（日期）： <b>数值 ( 涨幅% )</b>"
+                nav_pattern = r'单位净值（(\d{2}-\d{2})）：\s*<b[^>]*>\s*([\d.]+)\s*\(\s*([+-]?[\d.]+)%\s*\)'
+                match = re.search(nav_pattern, response.text)
+                
+                if match:
+                    date_str = match.group(1)
+                    nav_value = float(match.group(2))
+                    growth_rate = float(match.group(3))
+                    
+                    # 转换日期格式 (假设是今年)
+                    current_year = datetime.now().year
+                    full_date = f"{current_year}-{date_str}"
+                    
+                    return {
+                        'fund_code': fund_code,
+                        'name': '',  # 名称需要额外获取
+                        'nav_date': full_date,
+                        'nav': nav_value,
+                        'estimate_value': nav_value,  # 使用最新净值作为估算值
+                        'estimate_growth': growth_rate,
+                        'estimate_time': '',
+                        'last_update': datetime.now().isoformat(),
+                        'data_source': 'eastmoney_history'
+                    }
+                else:
+                    # 尝试其他模式
+                    nav_simple = r'单位净值[^\\n]*?\\n\\n\s*([\d.]+)'
+                    match2 = re.search(nav_simple, response.text)
+                    if match2:
+                        nav_value = float(match2.group(1))
+                        return {
+                            'fund_code': fund_code,
+                            'name': '',
+                            'nav_date': datetime.now().strftime('%Y-%m-%d'),
+                            'nav': nav_value,
+                            'estimate_value': nav_value,
+                            'estimate_growth': 0.0,
+                            'estimate_time': '',
+                            'last_update': datetime.now().isoformat(),
+                            'data_source': 'eastmoney_history_simple'
+                        }
+                    
+        except Exception as e:
+            logger.error(f"从历史净值获取{fund_code}失败: {e}")
         
+        return None
+    
+    def _get_from_tushare(self, fund_code: str) -> Dict:
+        """使用tushare获取基金数据"""
+        if not self.tushare_available:
+            return None
+            
+        try:
+            import tushare as ts
+            # 获取基金基本信息
+            info_df = ts.fund.get_fund_info(fund_code)
+            if info_df is not None and not info_df.empty:
+                name = info_df['jjqc'].iloc[0] if 'jjqc' in info_df.columns else ''
+                
+                # 获取最近的净值数据
+                end_date = datetime.now().strftime('%Y-%m-%d')
+                start_date = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+                nav_df = ts.fund.get_nav_history(fund_code, start=start_date, end=end_date)
+                
+                if nav_df is not None and not nav_df.empty:
+                    latest = nav_df.iloc[0]
+                    return {
+                        'fund_code': fund_code,
+                        'name': name,
+                        'nav_date': latest['date'],
+                        'nav': float(latest['value']),
+                        'estimate_value': float(latest['value']),
+                        'estimate_growth': 0.0,  # tushare不提供当日涨幅
+                        'estimate_time': '',
+                        'last_update': datetime.now().isoformat(),
+                        'data_source': 'tushare'
+                    }
+        except Exception as e:
+            logger.error(f"tushare获取{fund_code}失败: {e}")
+        
+        return None
+    
+    def get_fund_realtime_info(self, fund_code: str) -> Dict:
+        """获取基金实时估值信息，多数据源智能切换"""
+        logger.info(f"尝试获取基金{fund_code}数据...")
+        
+        # 数据源优先级：天天基金实时估值 -> 天天基金历史净值 -> tushare
+        data_sources = [
+            (self._get_from_fundgz, "天天基金实时API"),
+            (self._get_from_eastmoney_history, "天天基金历史净值"),
+            (self._get_from_tushare, "tushare")
+        ]
+        
+        for source_func, source_name in data_sources:
+            try:
+                data = source_func(fund_code)
+                if data and data.get('nav', 0) > 0:
+                    logger.info(f"基金{fund_code}数据获取成功，来源: {source_name}")
+                    return data
+            except Exception as e:
+                logger.warning(f"{source_name}获取{fund_code}失败: {e}")
+                continue
+        
+        logger.error(f"所有数据源都无法获取基金{fund_code}数据")
         return {
             'fund_code': fund_code,
             'name': '',
@@ -160,11 +214,12 @@ class FundQuantSystem:
             'estimate_value': 0,
             'estimate_growth': 0,
             'estimate_time': '',
-            'last_update': datetime.now().isoformat()
+            'last_update': datetime.now().isoformat(),
+            'data_source': 'none'
         }
     
     def get_fund_history_nav(self, fund_code: str, days: int = 365) -> List[Dict]:
-        """获取基金历史净值数据（天天基金为主，tushare为备用）"""
+        """获取基金历史净值数据"""
         try:
             url = f"https://fund.eastmoney.com/pingzhongdata/{fund_code}.js"
             response = self.session.get(url, timeout=10)
@@ -215,12 +270,6 @@ class FundQuantSystem:
                 
         except Exception as e:
             logger.error(f"获取基金{fund_code}历史数据失败: {e}")
-        
-        # 天天基金失败，尝试使用tushare
-        logger.info(f"天天基金历史数据获取失败，尝试使用tushare获取基金{fund_code}历史数据")
-        tushare_data = self.get_fund_history_nav_tushare(fund_code, days)
-        if tushare_data:
-            return tushare_data
         
         return []
     
@@ -347,7 +396,7 @@ class FundQuantSystem:
             
             # 1. 获取实时信息
             realtime_info = self.get_fund_realtime_info(fund_code)
-            if not realtime_info['name']:
+            if not realtime_info['name'] and realtime_info['nav'] == 0:
                 return {
                     'status': 'error',
                     'error': f'基金代码 {fund_code} 不存在或无法获取数据',
@@ -396,23 +445,18 @@ class FundQuantSystem:
 
 def main():
     """命令行测试入口"""
-    # 如果你有tushare token，可以在这里设置
-    # tushare_token = "your_tushare_token_here"
-    tushare_token = None
+    system = FundQuantSystem()
     
-    system = FundQuantSystem(tushare_token=tushare_token)
+    # 测试示例（包含QDII基金）
+    test_funds = ["007280", "018543", "000001", "110022"]
     
-    # 测试示例
-    test_funds = ["018147", "519771", "018957", "400015", "017811", "007280", "018543", "015790", "015916", "024203", "025942", "002207", "017436","018463"]
+    print("=== 基金量化分析系统（增强版 - 支持QDII基金）===")
     
-    print("=== 基金量化分析系统（天天基金 + tushare双数据源）===")
-    print(f"Tushare可用性: {TUSHARE_AVAILABLE}")
-    if TUSHARE_AVAILABLE and tushare_token:
-        print("Tushare已配置")
-    elif TUSHARE_AVAILABLE:
-        print("Tushare已安装但未配置token")
+    if system.tushare_available:
+        print("Tushare可用性: ✅ 已配置")
     else:
-        print("Tushare未安装")
+        print("Tushare可用性: ❌ 未配置")
+        print("如需启用tushare，请设置环境变量: export TUSHARE_TOKEN=your_token")
     print()
     
     for fund in test_funds:
@@ -423,9 +467,10 @@ def main():
             fund_info = result['fund_info']
             advice = result['trading_advice']
             
-            print(f"基金名称: {fund_info['name']}")
+            print(f"基金名称: {fund_info['name'] or '未知'}")
             print(f"当前净值: {fund_info['nav']:.4f}")
             print(f"估算净值: {fund_info['estimate_value']:.4f} ({fund_info['estimate_growth']:+.2f}%)")
+            print(f"数据来源: {fund_info['data_source']}")
             print(f"交易建议: {advice['advice'].upper()}")
             print(f"建议理由: {advice['reason']}")
             print(f"置信度: {advice['confidence']:.2%}")
