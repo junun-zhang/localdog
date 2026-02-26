@@ -27,7 +27,7 @@ import logging
 import os
 
 # 导入份额管理器
-from fund_share_manager import FundShareManager
+from fund_valuation import FundShareManager
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
