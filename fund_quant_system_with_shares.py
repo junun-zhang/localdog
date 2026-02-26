@@ -11,6 +11,7 @@
 5. tushare备用数据源
 6. 智能份额管理（基于市值和日期自动计算份额）
 7. 实时收益预估
+8. 修复基金名称获取问题
 
 注意：此系统使用天天基金公开接口，非官方API，请合理使用
 """
@@ -72,6 +73,65 @@ class FundQuantSystem:
             logger.error(f"JSONP解析失败: {e}")
             return {}
     
+    def _get_fund_name_from_eastmoney(self, fund_code: str) -> str:
+        """从天天基金详情页面获取基金名称"""
+        try:
+            # 尝试从基金档案页面获取名称
+            url = f"http://fundf10.eastmoney.com/jbgk_{fund_code}.html"
+            response = self.session.get(url, timeout=10)
+            
+            if response.status_code == 200:
+                # 查找基金名称的HTML模式
+                # 通常在 <h4 class="title">基金名称</h4> 或类似结构中
+                name_patterns = [
+                    r'<h4[^>]*class="title"[^>]*>([^<]+)</h4>',
+                    r'<div[^>]*class="fundDetail-tit"[^>]*>\s*<div[^>]*>\s*([^<]+)',
+                    r'<span[^>]*class="name"[^>]*>([^<]+)</span>',
+                    r'基金简称：</td>\s*<td[^>]*>([^<]+)</td>'
+                ]
+                
+                for pattern in name_patterns:
+                    match = re.search(pattern, response.text)
+                    if match:
+                        name = match.group(1).strip()
+                        if name and "暂无数据" not in name:
+                            return name
+                
+                # 尝试从页面标题提取
+                title_match = re.search(r'<title>([^_]+)_', response.text)
+                if title_match:
+                    name = title_match.group(1).strip()
+                    if name and len(name) > 2:
+                        return name
+                        
+        except Exception as e:
+            logger.warning(f"从天天基金详情页获取{fund_code}名称失败: {e}")
+        
+        # 备用方案：尝试从概要页面获取
+        try:
+            url = f"http://fund.eastmoney.com/{fund_code}.html"
+            response = self.session.get(url, timeout=10)
+            
+            if response.status_code == 200:
+                # 查找页面中的基金名称
+                name_match = re.search(r'<div[^>]*class="fundName"[^>]*>.*?<a[^>]*>([^<]+)</a>', response.text)
+                if name_match:
+                    name = name_match.group(1).strip()
+                    if name and "暂无数据" not in name:
+                        return name
+                        
+                # 尝试其他模式
+                name_match2 = re.search(r'var fS_name\s*=\s*"([^"]+)"', response.text)
+                if name_match2:
+                    name = name_match2.group(1).strip()
+                    if name and len(name) > 2:
+                        return name
+                        
+        except Exception as e:
+            logger.warning(f"从天天基金概要页获取{fund_code}名称失败: {e}")
+        
+        return ""
+    
     def _get_from_fundgz(self, fund_code: str) -> Dict:
         """从天天基金实时估值API获取数据"""
         try:
@@ -107,6 +167,19 @@ class FundQuantSystem:
             response = self.session.get(url, timeout=10)
             
             if response.status_code == 200:
+                # 先尝试获取基金名称
+                name = ""
+                try:
+                    # 从页面中提取基金名称
+                    name_match = re.search(r'<div[^>]*class="fundDetail-tit"[^>]*>.*?<div[^>]*>([^<]+)', response.text)
+                    if name_match:
+                        name = name_match.group(1).strip()
+                except:
+                    pass
+                
+                if not name:
+                    name = self._get_fund_name_from_eastmoney(fund_code)
+                
                 # 解析HTML获取最新净值信息
                 # 查找 "单位净值（日期）： <b>数值 ( 涨幅% )</b>"
                 nav_pattern = r'单位净值（(\d{2}-\d{2})）：\s*<b[^>]*>\s*([\d.]+)\s*\(\s*([+-]?[\d.]+)%\s*\)'
@@ -123,7 +196,7 @@ class FundQuantSystem:
                     
                     return {
                         'fund_code': fund_code,
-                        'name': '',  # 名称需要额外获取
+                        'name': name,
                         'nav_date': full_date,
                         'nav': nav_value,
                         'estimate_value': nav_value,  # 使用最新净值作为估算值
@@ -140,7 +213,7 @@ class FundQuantSystem:
                         nav_value = float(match2.group(1))
                         return {
                             'fund_code': fund_code,
-                            'name': '',
+                            'name': name,
                             'nav_date': datetime.now().strftime('%Y-%m-%d'),
                             'nav': nav_value,
                             'estimate_value': nav_value,
@@ -201,28 +274,45 @@ class FundQuantSystem:
             (self._get_from_tushare, "tushare")
         ]
         
+        final_data = None
         for source_func, source_name in data_sources:
             try:
                 data = source_func(fund_code)
                 if data and data.get('nav', 0) > 0:
                     logger.info(f"基金{fund_code}数据获取成功，来源: {source_name}")
-                    return data
+                    final_data = data
+                    break
             except Exception as e:
                 logger.warning(f"{source_name}获取{fund_code}失败: {e}")
                 continue
         
-        logger.error(f"所有数据源都无法获取基金{fund_code}数据")
-        return {
-            'fund_code': fund_code,
-            'name': '',
-            'nav_date': '',
-            'nav': 0,
-            'estimate_value': 0,
-            'estimate_growth': 0,
-            'estimate_time': '',
-            'last_update': datetime.now().isoformat(),
-            'data_source': 'none'
-        }
+        if final_data is None:
+            logger.error(f"所有数据源都无法获取基金{fund_code}数据")
+            final_data = {
+                'fund_code': fund_code,
+                'name': '',
+                'nav_date': '',
+                'nav': 0,
+                'estimate_value': 0,
+                'estimate_growth': 0,
+                'estimate_time': '',
+                'last_update': datetime.now().isoformat(),
+                'data_source': 'none'
+            }
+        
+        # 如果没有获取到名称，尝试专门获取名称
+        if not final_data.get('name', '').strip():
+            name = self._get_fund_name_from_eastmoney(fund_code)
+            if name:
+                final_data['name'] = name
+                logger.info(f"基金{fund_code}名称补充成功: {name}")
+        
+        # 如果还是没有名称，使用基金代码作为默认名称
+        if not final_data.get('name', '').strip():
+            final_data['name'] = f"基金{fund_code}"
+            logger.info(f"基金{fund_code}使用默认名称")
+        
+        return final_data
     
     def get_fund_history_nav(self, fund_code: str, days: int = 365) -> List[Dict]:
         """获取基金历史净值数据"""
@@ -402,7 +492,7 @@ class FundQuantSystem:
             
             # 1. 获取实时信息
             realtime_info = self.get_fund_realtime_info(fund_code)
-            if not realtime_info['name'] and realtime_info['nav'] == 0:
+            if realtime_info['nav'] == 0:
                 return {
                     'status': 'error',
                     'error': f'基金代码 {fund_code} 不存在或无法获取数据',
@@ -504,7 +594,7 @@ def main():
             fund_info = result['fund_info']
             advice = result['trading_advice']
             
-            print(f"基金名称: {fund_info['name'] or '未知'}")
+            print(f"基金名称: {fund_info['name']}")
             print(f"当前净值: {fund_info['nav']:.4f}")
             print(f"估算净值: {fund_info['estimate_value']:.4f} ({fund_info['estimate_growth']:+.2f}%)")
             print(f"数据来源: {fund_info['data_source']}")
