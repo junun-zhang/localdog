@@ -321,15 +321,27 @@ def test_multiple_holdings():
     
     # Set multiple holdings at once
     holdings = [
-        {"fund_code": "000001", "current_value": 10000, "value_date": "2026-02-24"},
-        {"fund_code": "110022", "current_value": 5000, "value_date": "2026-02-24"},
-        {"fund_code": "400015", "current_value": 8000, "value_date": "2026-02-24"}
+        {"fund_code": "519771", "current_value": 13975.6, "value_date": "2026-02-24"},
+        {"fund_code": "018147", "current_value": 18205.19, "value_date": "2026-02-24"},
+        {"fund_code": "018957", "current_value": 25513.23, "value_date": "2026-02-24"},
+        {"fund_code": "400015", "current_value": 37906.47, "value_date": "2026-02-24"},
+        {"fund_code": "017811", "current_value": 40209.09, "value_date": "2026-02-24"},
+        {"fund_code": "018543", "current_value": 2204.16, "value_date": "2026-02-24"},
+        {"fund_code": "025209", "current_value": 153.13, "value_date": "2026-02-24"},
+        {"fund_code": "025209", "current_value": 153.13, "value_date": "2026-02-24"},
+        {"fund_code": "002207", "current_value": 1778.45, "value_date": "2026-02-24"},
+        {"fund_code": "015790", "current_value": 1868.97, "value_date": "2026-02-24"},
+        {"fund_code": "025942", "current_value": 8725.75, "value_date": "2026-02-24"},
+        {"fund_code": "017436", "current_value": 6249.78, "value_date": "2026-02-24"},
+        {"fund_code": "015916", "current_value": 24596.29, "value_date": "2026-02-24"},
+        {"fund_code": "024203", "current_value": 27460.63, "value_date": "2026-02-24"},
+        {"fund_code": "018463", "current_value": 23039.83, "value_date": "2026-02-24"},
     ]
     
     manager.set_multiple_holdings(holdings)
     
     # Get profits for multiple funds
-    fund_codes = ["000001", "110022", "400015"]
+    fund_codes = ["519771", "018147", "018957", "400015", "017811", "018543", "025209", "002207", "015790", "025942", "017436", "015916", "024203", "018463"]
     results = manager.get_multiple_profits(fund_codes)
     
     print("\n=== Multiple Holdings Test ===")
@@ -349,5 +361,5 @@ def test_multiple_holdings():
 
 
 if __name__ == "__main__":
-    test_share_manager()
+    # test_share_manager()
     test_multiple_holdings()
