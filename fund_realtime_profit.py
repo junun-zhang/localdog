@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-基金实时收益预估器
+Fund Real-time Profit Estimator
 
-功能：
-1. 根据用户持有的基金金额，预估当前实时收益
-2. 基于昨日净值 vs 今日实时估算净值进行计算
-3. 提供简单的配置接口
+Features:
+1. Estimates real-time profit based on user's fund holdings
+2. Calculates profit using yesterday's NAV vs today's real-time estimated NAV
+3. Provides simple configuration interface
 
-使用方法：
+Usage:
 from fund_realtime_profit import FundRealTimeProfit
 
-# 方式1: 单个基金查询
+# Method 1: Single fund query
 profit_calculator = FundRealTimeProfit()
 result = profit_calculator.calculate_profit("000001", 10000)
 print(result)
 
-# 方式2: 批量基金查询
+# Method 2: Batch fund query
 holdings = [
     {"fund_code": "000001", "amount": 10000},
     {"fund_code": "110022", "amount": 5000}
@@ -30,7 +30,7 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Union
 
-# 配置日志
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -42,9 +42,9 @@ class FundRealTimeProfit:
         })
     
     def _parse_jsonp(self, text: str) -> Dict:
-        """解析JSONP格式的数据"""
+        """Parse JSONP formatted data"""
         try:
-            # 提取JSON部分
+            # Extract JSON part
             start = text.find('{')
             end = text.rfind('}') + 1
             if start != -1 and end != -1:
@@ -52,13 +52,13 @@ class FundRealTimeProfit:
                 return json.loads(json_str)
             return {}
         except Exception as e:
-            logger.error(f"JSONP解析失败: {e}")
+            logger.error(f"JSONP parsing failed: {e}")
             return {}
     
     def get_fund_realtime_info(self, fund_code: str) -> Dict:
-        """获取基金实时估值信息"""
+        """Get fund real-time valuation information"""
         try:
-            # 获取实时估值数据
+            # Get real-time valuation data
             url = f"https://fundgz.1234567.com.cn/js/{fund_code}.js"
             response = self.session.get(url, timeout=10)
             
@@ -68,51 +68,51 @@ class FundRealTimeProfit:
                     return {
                         'fund_code': data.get('fundcode', fund_code),
                         'name': data.get('name', ''),
-                        'nav_date': data.get('jzrq', ''),  # 净值日期（昨日）
-                        'nav': float(data.get('dwjz', 0)),  # 昨日单位净值
-                        'estimate_value': float(data.get('gsz', 0)),  # 今日估算净值
-                        'estimate_growth': float(data.get('gszzl', 0)),  # 今日估算增长率
-                        'estimate_time': data.get('gztime', ''),  # 估算时间
+                        'nav_date': data.get('jzrq', ''),  # NAV date (yesterday)
+                        'nav': float(data.get('dwjz', 0)),  # Yesterday's unit NAV
+                        'estimate_value': float(data.get('gsz', 0)),  # Today's estimated NAV
+                        'estimate_growth': float(data.get('gszzl', 0)),  # Today's estimated growth rate
+                        'estimate_time': data.get('gztime', ''),  # Estimate time
                         'last_update': datetime.now().isoformat(),
                         'data_source': 'fundgz'
                     }
             else:
-                logger.warning(f"基金{fund_code}实时数据获取失败，状态码: {response.status_code}")
+                logger.warning(f"Failed to get real-time data for fund {fund_code}, status code: {response.status_code}")
                 
         except Exception as e:
-            logger.error(f"获取基金{fund_code}实时数据失败: {e}")
+            logger.error(f"Failed to get real-time data for fund {fund_code}: {e}")
         
         return None
     
     def calculate_profit(self, fund_code: str, holding_amount: float) -> Dict:
         """
-        计算单个基金的实时收益
+        Calculate real-time profit for a single fund
         
         Args:
-            fund_code: 基金代码
-            holding_amount: 持有金额（元）
+            fund_code: Fund code
+            holding_amount: Holding amount (in CNY)
             
         Returns:
-            包含收益信息的字典
+            Dictionary containing profit information
         """
         try:
-            # 获取基金实时信息
+            # Get fund real-time information
             fund_info = self.get_fund_realtime_info(fund_code)
             if not fund_info or fund_info['nav'] <= 0:
                 return {
                     'success': False,
-                    'error': f'无法获取基金{fund_code}数据',
+                    'error': f'Unable to retrieve data for fund {fund_code}',
                     'fund_code': fund_code,
                     'holding_amount': holding_amount
                 }
             
-            # 计算份额
+            # Calculate shares
             shares = holding_amount / fund_info['nav']
             
-            # 计算当前市值
+            # Calculate current market value
             current_value = shares * fund_info['estimate_value']
             
-            # 计算收益
+            # Calculate profit
             profit_amount = current_value - holding_amount
             profit_rate = fund_info['estimate_growth'] / 100.0
             
@@ -134,7 +134,7 @@ class FundRealTimeProfit:
             }
             
         except Exception as e:
-            logger.error(f"计算基金{fund_code}收益失败: {e}")
+            logger.error(f"Failed to calculate profit for fund {fund_code}: {e}")
             return {
                 'success': False,
                 'error': str(e),
@@ -144,13 +144,13 @@ class FundRealTimeProfit:
     
     def calculate_profits(self, holdings: List[Dict[str, Union[str, float]]]) -> List[Dict]:
         """
-        批量计算多个基金的实时收益
+        Batch calculate real-time profits for multiple funds
         
         Args:
-            holdings: 持仓列表，格式 [{"fund_code": "000001", "amount": 10000}, ...]
+            holdings: List of holdings, format [{"fund_code": "000001", "amount": 10000}, ...]
             
         Returns:
-            收益结果列表
+            List of profit results
         """
         results = []
         for holding in holdings:
@@ -162,24 +162,24 @@ class FundRealTimeProfit:
 
 
 def test_single_fund():
-    """测试单个基金收益计算"""
+    """Test single fund profit calculation"""
     calculator = FundRealTimeProfit()
     result = calculator.calculate_profit("000001", 10000)
     
-    print("=== 单个基金实时收益测试 ===")
+    print("=== Single Fund Real-time Profit Test ===")
     if result['success']:
-        print(f"基金: {result['fund_name']} ({result['fund_code']})")
-        print(f"持有金额: ¥{result['holding_amount']:,.2f}")
-        print(f"昨日净值: {result['yesterday_nav']:.4f}")
-        print(f"今日估算: {result['today_estimate_nav']:.4f} ({result['estimate_growth_pct']:+.2f}%)")
-        print(f"实时收益: ¥{result['profit_amount']:+.2f} ({result['profit_rate']:+.2%})")
-        print(f"当前市值: ¥{result['current_value']:,.2f}")
+        print(f"Fund: {result['fund_name']} ({result['fund_code']})")
+        print(f"Holding Amount: ¥{result['holding_amount']:,.2f}")
+        print(f"Yesterday's NAV: {result['yesterday_nav']:.4f}")
+        print(f"Today's Estimate: {result['today_estimate_nav']:.4f} ({result['estimate_growth_pct']:+.2f}%)")
+        print(f"Real-time Profit: ¥{result['profit_amount']:+.2f} ({result['profit_rate']:+.2%})")
+        print(f"Current Market Value: ¥{result['current_value']:,.2f}")
     else:
-        print(f"计算失败: {result['error']}")
+        print(f"Calculation Failed: {result['error']}")
 
 
 def test_multiple_funds():
-    """测试多个基金收益计算"""
+    """Test multiple funds profit calculation"""
     calculator = FundRealTimeProfit()
     holdings = [
         {"fund_code": "000001", "amount": 10000},
@@ -189,7 +189,7 @@ def test_multiple_funds():
     
     results = calculator.calculate_profits(holdings)
     
-    print("\n=== 多个基金实时收益测试 ===")
+    print("\n=== Multiple Funds Real-time Profit Test ===")
     total_profit = 0
     total_value = 0
     
@@ -199,10 +199,10 @@ def test_multiple_funds():
             total_profit += result['profit_amount']
             total_value += result['current_value']
         else:
-            print(f"{result['fund_code']}: 计算失败 - {result['error']}")
+            print(f"{result['fund_code']}: Calculation Failed - {result['error']}")
     
-    print(f"\n总收益: ¥{total_profit:+.2f}")
-    print(f"总市值: ¥{total_value:,.2f}")
+    print(f"\nTotal Profit: ¥{total_profit:+.2f}")
+    print(f"Total Market Value: ¥{total_value:,.2f}")
 
 
 if __name__ == "__main__":
