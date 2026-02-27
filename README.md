@@ -1,80 +1,89 @@
-# 基金量化系统
+# Offline Translator Pro Chrome Extension
 
-这是一个轻量级的基金量化分析系统，直接调用天天基金API获取实时数据。
+一个完全离线的Chrome浏览器插件，支持英语、韩语、中文互相翻译。
 
 ## 功能特性
 
-1. **实时估值查询** - 根据基金编号获取实时估值和涨跌幅
-2. **交易建议** - 基于简单策略提供买入/卖出/持有建议  
-3. **多基金监控** - 支持同时分析多个基金
-4. **轻量级设计** - 仅依赖Python标准库，无需额外安装包
+- ✅ **输入文本翻译**: 类似Google Translate的界面，支持手动输入文本翻译
+- ✅ **页面文字翻译**: 自动识别网页文字，鼠标悬停显示翻译
+- ✅ **图片OCR翻译**: 识别图片中的文字并在图片下方显示翻译对照
+- ✅ **完全离线**: 无需网络连接，适合中国网络环境
+- ✅ **多语言支持**: 英语(en)、中文(zh)、韩语(ko)互译
+- ✅ **智能语言检测**: 自动识别输入文本的语言
+- ✅ **一键控制**: 简单的开启/关闭翻译功能
 
-## 系统架构
+## 技术架构
 
-```
-fund_quant_system_simple.py
-├── FundQuantSystem 类
-│   ├── get_fund_realtime_data() - 获取基金实时数据（天天基金API）
-│   ├── calculate_trading_advice() - 生成交易建议
-│   ├── analyze_single_fund() - 分析单只基金
-│   └── analyze_multiple_funds() - 批量分析多只基金
-└── main() - 测试入口
-```
-
-## 使用说明
-
-### 1. 直接运行测试
-```bash
-python fund_quant_system_simple.py
-```
-
-### 2. 集成到您的项目
-```python
-from fund_quant_system_simple import FundQuantSystem
-
-system = FundQuantSystem()
-result = system.analyze_single_fund("000001")
-print(f"建议: {result['advice']}")
-print(f"理由: {result['reason']}")
-```
-
-### 3. 自定义基金列表
-修改 `main()` 函数中的 `fund_list` 变量：
-```python
-fund_list = ["000001", "110022", "519697"]  # 替换为您关注的基金代码
-```
-
-## 数据源
-
-- **天天基金API**: `https://fundgz.1234567.com.cn/js/{基金代码}.js`
-- **数据字段**: 基金代码、基金名称、单位净值、估算净值、估算增长率、更新时间
-
-## 交易策略
-
-当前使用简单的波动率策略：
-- **买入条件**: 估算增长率 > 1.5%
-- **卖出条件**: 估算增长率 < -1.5%  
-- **持有条件**: 波动在 -1.5% 到 +1.5% 之间
-
-## 注意事项
-
-⚠️ **重要提醒**：
-- 此系统使用非官方API，稳定性无法保证
-- 估算数据仅供参考，不构成投资建议
-- 实际交易前请核实最新净值和市场情况
-- 投资有风险，决策需谨慎
-
-## 扩展方向
-
-1. **添加更多策略**: RSI、MACD等技术指标
-2. **历史数据分析**: 获取历史净值进行回测
-3. **通知系统**: 集成QQ/邮件提醒
-4. **Web界面**: 提供可视化界面
-5. **定时任务**: 自动监控和提醒
+- **前端**: Chrome Extension API + HTML/CSS/JavaScript
+- **OCR引擎**: Tesseract.js (离线模式)
+- **翻译引擎**: 基于本地词典的离线翻译
+- **存储**: Chrome Storage API + IndexedDB (用于大文件)
 
 ## 文件结构
 
-- `fund_quant_system_simple.py` - 核心逻辑（仅依赖标准库）
-- `requirements.txt` - 无依赖（空文件）
-- `README.md` - 说明文档
-- `config.py` - 配置文件（可选）
+```
+offline-translator-plugin/
+├── manifest.json          # 插件配置文件
+├── popup.html            # 主界面 (输入翻译 + 页面控制)
+├── popup.js              # 主界面逻辑
+├── content.js            # 页面内容处理脚本
+├── background.js         # 后台服务脚本
+├── lib/
+│   ├── translator.js     # 离线翻译核心
+│   ├── ocr.js           # OCR处理模块
+│   └── dictionary/      # 离线词典文件 (6个语言对)
+├── models/              # OCR模型文件 (按需下载)
+│   └── tesseract/
+├── assets/             # 静态资源
+│   └── icon.svg
+├── download-models.js   # OCR模型下载脚本
+├── test-installation.html # 测试页面
+└── README.md
+```
+
+## 安装和使用
+
+### 开发安装
+1. 克隆或下载此项目
+2. 打开Chrome浏览器，访问 `chrome://extensions/`
+3. 开启"开发者模式"
+4. 点击"加载已解压的扩展程序"
+5. 选择此项目文件夹
+
+### 使用方法
+1. 点击浏览器工具栏的插件图标
+2. 在"输入翻译"标签页中输入文本进行翻译
+3. 在"页面翻译"标签页中翻译当前网页
+4. 设置目标语言和自动翻译选项
+
+## 词典数据
+
+包含完整的6个语言对词典文件：
+- en-zh.json (英语→中文)
+- zh-en.json (中文→英语)
+- en-ko.json (英语→韩语)
+- ko-en.json (韩语→英语)
+- zh-ko.json (中文→韩语)
+- ko-zh.json (韩语→中文)
+
+每个词典包含300+常用词汇，涵盖日常用语、技术术语、商务词汇等。
+
+## OCR模型
+
+支持Tesseract.js离线OCR，包含以下语言模型：
+- eng (英语)
+- chi_sim (中文简体)
+- kor (韩语)
+
+使用 `download-models.js` 脚本自动下载所需模型。
+
+## 完全离线
+
+- 无网络请求
+- 无外部API依赖
+- 适合中国网络环境
+- 数据完全本地存储
+
+## 许可证
+
+MIT License

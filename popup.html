@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 400px;
+      padding: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .tab-container {
+      display: flex;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    
+    .tab.active {
+      border-bottom-color: #1a73e8;
+      color: #1a73e8;
+      font-weight: bold;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .translate-input {
+      width: 100%;
+      height: 100px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      resize: vertical;
+      font-size: 14px;
+    }
+    
+    .language-selector {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 10px 0;
+    }
+    
+    .swap-languages {
+      background: #f1f3f4;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .translate-output {
+      width: 100%;
+      min-height: 80px;
+      padding: 10px;
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    button {
+      flex: 1;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      background: #1a73e8;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    button.secondary {
+      background: #f1f3f4;
+      color: #5f6368;
+    }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <!-- 标签页切换 -->
+  <div class="tab-container">
+    <div class="tab active" data-tab="input">输入翻译</div>
+    <div class="tab" data-tab="page">页面翻译</div>
+  </div>
+
+  <!-- 输入翻译面板 -->
+  <div class="tab-content active" id="input-tab">
+    <div class="language-selector">
+      <select id="sourceLanguage">
+        <option value="auto">自动检测</option>
+        <option value="en">English</option>
+        <option value="zh">中文</option>
+        <option value="ko">한국어</option>
+      </select>
+      
+      <button class="swap-languages" id="swapLanguages">
+        ⇄
+      </button>
+      
+      <select id="targetLanguage">
+        <option value="en">English</option>
+        <option value="zh" selected>中文</option>
+        <option value="ko">한국어</option>
+      </select>
+    </div>
+    
+    <textarea class="translate-input" id="textInput" placeholder="输入要翻译的文本..."></textarea>
+    
+    <div class="translate-output" id="translationOutput">
+      翻译结果将显示在这里...
+    </div>
+    
+    <div class="action-buttons">
+      <button id="translateTextBtn">翻译</button>
+      <button class="secondary" id="clearTextBtn">清除</button>
+    </div>
+  </div>
+
+  <!-- 页面翻译面板 -->
+  <div class="tab-content" id="page-tab">
+    <h3>页面翻译控制</h3>
+    <p>在当前网页上启用/禁用自动翻译功能</p>
+    
+    <div class="action-buttons">
+      <button id="translatePageBtn">翻译当前页面</button>
+      <button class="secondary" id="clearPageBtn">清除页面翻译</button>
+    </div>
+    
+    <div style="margin-top: 15px;">
+      <label>
+        <input type="checkbox" id="autoTranslate" checked>
+        自动翻译新页面
+      </label>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

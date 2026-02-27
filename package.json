@@ -1,0 +1,20 @@
+{
+  "name": "offline-translator-pro",
+  "version": "1.0.0",
+  "description": "离线英韩中互译Chrome插件",
+  "main": "background.js",
+  "scripts": {
+    "build": "echo 'Build script for Chrome extension'",
+    "test": "echo 'Test script for Chrome extension'"
+  },
+  "dependencies": {
+    "tesseract.js": "^4.0.0"
+  },
+  "devDependencies": {
+    "webpack": "^5.0.0",
+    "webpack-cli": "^4.0.0"
+  },
+  "keywords": ["chrome-extension", "offline-translation", "ocr", "translator"],
+  "author": "Your Name",
+  "license": "MIT"
+}
