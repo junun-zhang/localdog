@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Offline Translator Pro",
-  "version": "1.0",
-  "description": "离线英韩中互译插件 - 支持文本输入翻译、网页文字翻译、图片OCR翻译",
+  "version": "1.1",
+  "description": "离线英韩中互译插件 - 支持文本输入翻译、网页文字翻译、图片OCR翻译，新增OpenAI API支持",
   "permissions": ["contextMenus", "storage", "activeTab"],
   "host_permissions": ["<all_urls>"],
   "background": {
@@ -16,8 +16,9 @@
     "default_popup": "popup.html",
     "default_icon": "assets/icon.png"
   },
+  "options_page": "settings.html",
   "web_accessible_resources": [{
     "resources": ["models/**/*", "lib/dictionary/**/*"],
     "matches": ["<all_urls>"]
-  }]
+  ]
 }

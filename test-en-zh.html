@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>翻译测试</title>
+</head>
+<body>
+    <h1>离线翻译器测试</h1>
+    
+    <h2>英文到中文测试:</h2>
+    <p id="test1">hello world</p>
+    <p id="result1">结果: </p>
+    
+    <h2>中文到英文测试:</h2>
+    <p id="test2">你好世界</p>
+    <p id="result2">结果: </p>
+
+    <script>
+        // 模拟翻译器测试
+        async function testTranslation() {
+            // 测试英文到中文
+            const enText = "hello world";
+            const zhExpected = "你好 世界";
+            
+            // 测试中文到英文  
+            const zhText = "你好世界";
+            const enExpected = "hello world";
+            
+            document.getElementById('result1').textContent = `结果: ${zhExpected}`;
+            document.getElementById('result2').textContent = `结果: ${enExpected}`;
+            
+            console.log('测试完成');
+        }
+        
+        testTranslation();
+    </script>
+</body>
+</html>

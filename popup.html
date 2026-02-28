@@ -101,6 +101,41 @@
       opacity: 0.6;
       cursor: not-allowed;
     }
+    
+    .translation-mode {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 10px 0;
+      padding: 8px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+    
+    .mode-label {
+      font-weight: bold;
+      color: #5f6368;
+    }
+    
+    .mode-selector {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .mode-btn {
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .mode-btn.active {
+      background: #1a73e8;
+      color: white;
+      border-color: #1a73e8;
+    }
   </style>
 </head>
 <body>
@@ -131,6 +166,14 @@
       </select>
     </div>
     
+    <div class="translation-mode">
+      <span class="mode-label">翻译模式:</span>
+      <div class="mode-selector">
+        <button class="mode-btn active" data-mode="online">网络</button>
+        <button class="mode-btn" data-mode="offline">离线</button>
+      </div>
+    </div>
+    
     <textarea class="translate-input" id="textInput" placeholder="输入要翻译的文本..."></textarea>
     
     <div class="translate-output" id="translationOutput">
@@ -147,6 +190,14 @@
   <div class="tab-content" id="page-tab">
     <h3>页面翻译控制</h3>
     <p>在当前网页上启用/禁用自动翻译功能</p>
+    
+    <div class="translation-mode">
+      <span class="mode-label">翻译模式:</span>
+      <div class="mode-selector">
+        <button class="mode-btn active" data-mode="online">网络</button>
+        <button class="mode-btn" data-mode="offline">离线</button>
+      </div>
+    </div>
     
     <div class="action-buttons">
       <button id="translatePageBtn">翻译当前页面</button>

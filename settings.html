@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>翻译插件设置</title>
+  <style>
+    body {
+      width: 400px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+    }
+    
+    .setting-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    
+    input[type="text"], select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    input[type="password"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      background: #1a73e8;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    button.secondary {
+      background: #f1f3f4;
+      color: #5f6368;
+    }
+    
+    .status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .status.success {
+      background: #e6f4ea;
+      color: #137333;
+    }
+    
+    .status.error {
+      background: #fce8e6;
+      color: #c5221f;
+    }
+    
+    .model-info {
+      font-size: 12px;
+      color: #5f6368;
+      margin-top: 5px;
+    }
+    
+    .local-deployment {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      border-left: 4px solid #1a73e8;
+    }
+  </style>
+</head>
+<body>
+  <h2>OpenAI 翻译设置</h2>
+  
+  <div class="setting-group">
+    <label for="apiKey">OpenAI API Key:</label>
+    <input type="password" id="apiKey" placeholder="输入您的 OpenAI API Key">
+    <div class="model-info">
+      您可以在 <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI 平台</a> 获取 API Key
+    </div>
+  </div>
+  
+  <div class="setting-group">
+    <label for="baseUrl">OpenAI API 基础URL:</label>
+    <input type="text" id="baseUrl" placeholder="例如: https://api.openai.com/v1">
+    <div class="model-info">
+      本地部署示例: http://localhost:8080/v1 或 https://your-domain.com/v1
+    </div>
+  </div>
+  
+  <div class="setting-group">
+    <label for="modelId">模型 ID:</label>
+    <input type="text" id="modelId" placeholder="例如: gpt-3.5-turbo 或 gpt-4">
+    <div class="model-info">
+      推荐使用: gpt-3.5-turbo (经济) 或 gpt-4 (高质量)
+    </div>
+  </div>
+  
+  <div class="local-deployment">
+    <strong>本地部署支持</strong><br>
+    如果您使用本地部署的OpenAI兼容API（如Ollama、LM Studio、vLLM等），
+    请将基础URL设置为您的本地服务地址，并确保模型ID与本地模型名称匹配。
+  </div>
+  
+  <div class="setting-group">
+    <label for="translationMode">翻译模式:</label>
+    <select id="translationMode">
+      <option value="openai">OpenAI 翻译 (需要配置API)</option>
+      <option value="online">网络翻译 (免费)</option>
+      <option value="offline">离线翻译 (本地词典)</option>
+      <option value="auto">自动选择 (优先OpenAI)</option>
+    </select>
+  </div>
+  
+  <div class="buttons">
+    <button id="saveBtn">保存设置</button>
+    <button class="secondary" id="testBtn">测试连接</button>
+    <button class="secondary" id="clearBtn">清除设置</button>
+  </div>
+  
+  <div id="status" class="status" style="display: none;"></div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
