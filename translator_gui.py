@@ -15,6 +15,43 @@ from PyQt5.QtWidgets import (
     QPushButton, QTextEdit, QLabel, QComboBox
 )
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QImage, QMimeData, QPainter
+from PyQt5.QtWidgets import QApplication
+
+
+class ImageTextEdit(QTextEdit):
+    """
+    支持图片粘贴的文本编辑框
+    
+    当用户粘贴图片时，会调用父窗口的 on_image_pasted 方法
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+    def pasteEvent(self, event):
+        """
+        重写粘贴事件，捕获图片
+        
+        参数:
+            event: QMimeData 事件
+        """
+        mime_data = event.mimeData()
+        
+        # 检查是否包含图片
+        if mime_data.hasImage():
+            # 获取图片
+            image = mime_data.imageData()
+            if isinstance(image, QImage):
+                # 保存当前粘贴的图片
+                if self.parent() and hasattr(self.parent(), 'on_image_pasted'):
+                    self.parent().on_image_pasted(image)
+                # 允许正常粘贴（图片会显示在文本框中）
+                super().pasteEvent(event)
+            else:
+                super().pasteEvent(event)
+        else:
+            # 不是图片，正常处理
+            super().pasteEvent(event)
 
 
 class TranslatorGUI(QMainWindow):
@@ -32,6 +69,9 @@ class TranslatorGUI(QMainWindow):
         
         # 当前选择的目标语言
         self.target_language = "en"  # 默认英语
+        
+        # 当前粘贴的图片
+        self.pasted_image = None
         
         self.init_ui()
         
@@ -73,8 +113,8 @@ class TranslatorGUI(QMainWindow):
         input_layout = QVBoxLayout()
         input_label = QLabel("输入要翻译的文本:")
         input_label.setStyleSheet("font-size: 12px; margin-top: 10px;")
-        self.input_text = QTextEdit()
-        self.input_text.setPlaceholderText("请输入需要翻译的文本...")
+        self.input_text = ImageTextEdit(self)
+        self.input_text.setPlaceholderText("请输入需要翻译的文本... 或直接粘贴图片")
         self.input_text.setMinimumHeight(100)
         
         input_layout.addWidget(input_label)
@@ -166,6 +206,59 @@ class TranslatorGUI(QMainWindow):
             str: 当前输入框中的文本
         """
         return self.input_text.toPlainText()
+    
+    def on_image_pasted(self, image):
+        """
+        图片粘贴回调接口 - 你需要实现这个方法
+        
+        当用户粘贴图片时自动调用
+        
+        参数:
+            image (QImage): 粘贴的图片对象
+            
+        TODO: 在这里实现你的图片翻译逻辑
+        1. 保存或使用图片进行 OCR 识别
+        2. 获取识别后的文字
+        3. 调用翻译接口
+        4. 显示翻译结果
+        """
+        self.pasted_image = image
+        print(f"[图片粘贴事件] 检测到图片：{image.width()}x{image.height()}")
+        # TODO: 在这里调用你的图片翻译功能
+        # 示例：self.translate_image(image)
+        
+    def get_pasted_image(self):
+        """
+        获取当前粘贴的图片
+        
+        返回:
+            QImage: 当前粘贴的图片，如果没有则返回 None
+        """
+        return self.pasted_image
+    
+    def clear_pasted_image(self):
+        """
+        清除当前粘贴的图片
+        """
+        self.pasted_image = None
+        
+    def translate_image(self, image):
+        """
+        图片翻译接口 - 你需要实现这个方法
+        
+        参数:
+            image (QImage): 需要翻译的图片
+            
+        返回:
+            str: 翻译后的文本
+            
+        TODO: 实现图片翻译流程
+        1. OCR 识别图片文字
+        2. 调用翻译接口
+        3. 返回翻译结果
+        """
+        # 占位实现 - 你需要替换为实际逻辑
+        return "[图片翻译功能待实现]"
 
 
 def main():
