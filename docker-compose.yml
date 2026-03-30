@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    # 使用国内镜像源（如果需要）
+    # image: registry.cn-hangzhou.aliyuncs.com/library/mongo:6.0
+    container_name: ireader-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: ireader
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - ireader-network
+
+  ireader-server:
+    build: ./server
+    container_name: ireader-server
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=mongodb://root:password123@mongodb:27017/ireader
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./server/uploads:/app/uploads
+      - ./server/public:/app/public
+    networks:
+      - ireader-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  ireader-network:
+    driver: bridge
