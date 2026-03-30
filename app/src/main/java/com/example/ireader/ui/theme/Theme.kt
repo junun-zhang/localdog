@@ -17,27 +17,27 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = IReaderColors.Primary,
-    secondary = IReaderColors.Secondary,
-    tertiary = IReaderColors.Tertiary,
-    background = Color(0xFFF8F9FA),
-    surface = Color(0xFFFFFFFF),
-    onPrimary = Color(0xFFFFFFFF),
-    onSecondary = Color(0xFFFFFFFF),
-    onTertiary = Color(0xFFFFFFFF),
-    onBackground = Color(0xFF1A1C1E),
-    onSurface = Color(0xFF1A1C1E),
+    primary = AccentColor,
+    secondary = PurpleGrey80,
+    tertiary = Pink80,
+    background = BookShelfBackground,
+    surface = BookItemBackground,
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onTertiary = Color.White,
+    onBackground = PrimaryText,
+    onSurface = PrimaryText,
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = IReaderColors.Primary,
-    secondary = IReaderColors.Secondary,
-    tertiary = IReaderColors.Tertiary,
+    primary = AccentColor,
+    secondary = PurpleGrey40,
+    tertiary = Pink40,
     background = Color(0xFF121212),
     surface = Color(0xFF1E1E1E),
-    onPrimary = Color(0xFFFFFFFF),
-    onSecondary = Color(0xFFFFFFFF),
-    onTertiary = Color(0xFFFFFFFF),
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onTertiary = Color.White,
     onBackground = Color(0xFFE1E3E6),
     onSurface = Color(0xFFE1E3E6),
 )

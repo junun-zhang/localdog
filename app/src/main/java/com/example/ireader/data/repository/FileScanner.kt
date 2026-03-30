@@ -32,10 +32,13 @@ object FileScanner {
             // 提取标题（移除扩展名）
             val title = fileName.substringBeforeLast(".")
             
+            // 简单的作者信息提取 - 从文件名中尝试提取
+            val author = extractAuthorFromFileName(fileName)
+            
             Book(
                 id = UUID.randomUUID().toString(),
                 title = title,
-                author = "", // TODO: 从文件元数据中提取作者信息
+                author = author,
                 coverUri = null,
                 filePath = uri.toString(),
                 fileSize = fileSize,

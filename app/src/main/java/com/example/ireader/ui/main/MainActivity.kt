@@ -37,8 +37,9 @@ class MainActivity : ComponentActivity() {
     
     private val filePicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let { 
-            // TODO: 处理导入的文件
-            // 这里应该调用 Repository 来添加新书籍
+            // 处理导入的文件
+            val booksViewModel: BooksViewModel = viewModel()
+            booksViewModel.addBookFromUri(this, uri)
         }
     }
     
