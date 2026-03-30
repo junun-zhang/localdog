@@ -2,129 +2,77 @@ package com.example.ireader.data.repository
 
 import android.content.Context
 import android.net.Uri
-import android.provider.MediaStore
-import android.util.Log
+import android.provider.OpenableColumns
 import androidx.documentfile.provider.DocumentFile
 import com.example.ireader.data.model.Book
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.text.DecimalFormat
+import java.util.UUID
 
 /**
- * 文件扫描器，用于扫描设备上的电子书文件
+ * 文件扫描器 - 支持 Storage Access Framework (SAF)
  */
-class FileScanner(private val context: Context) {
-    
-    companion object {
-        private const val TAG = "FileScanner"
-        private val SUPPORTED_FORMATS = setOf("epub", "pdf", "txt")
-    }
+object FileScanner {
     
     /**
-     * 扫描设备上的电子书文件
-     * @return 扫描到的书籍列表
+     * 从 SAF URI 创建 Book 对象
      */
-    suspend fun scanBooks(): List<Book> = withContext(Dispatchers.IO) {
-        val books = mutableListOf<Book>()
-        
+    suspend fun createBookFromUri(context: Context, uri: Uri): Book? = withContext(Dispatchers.IO) {
         try {
-            // 扫描外部存储中的书籍文件
-            scanExternalStorage(books)
+            val documentFile = DocumentFile.fromSingleUri(context, uri) ?: return@withContext null
             
-            Log.d(TAG, "Found ${books.size} books")
+            val fileName = documentFile.name ?: "Unknown Book"
+            val fileSize = documentFile.length()
+            val lastModified = documentFile.lastModified()
+            
+            // 提取文件扩展名
+            val format = getFileFormat(fileName)
+            if (format.isEmpty()) return@withContext null
+            
+            // 提取标题（移除扩展名）
+            val title = fileName.substringBeforeLast(".")
+            
+            Book(
+                id = UUID.randomUUID().toString(),
+                title = title,
+                author = "", // TODO: 从文件元数据中提取作者信息
+                coverUri = null,
+                filePath = uri.toString(),
+                fileSize = fileSize,
+                pageCount = 0,
+                lastReadPage = 0,
+                lastReadTime = lastModified,
+                progress = 0,
+                format = format,
+                addedTime = System.currentTimeMillis()
+            )
         } catch (e: Exception) {
-            Log.e(TAG, "Error scanning books", e)
-        }
-        
-        books
-    }
-    
-    /**
-     * 扫描外部存储中的书籍文件
-     */
-    private fun scanExternalStorage(books: MutableList<Book>) {
-        val projection = arrayOf(
-            MediaStore.Files.FileColumns._ID,
-            MediaStore.Files.FileColumns.DISPLAY_NAME,
-            MediaStore.Files.FileColumns.SIZE,
-            MediaStore.Files.FileColumns.DATA,
-            MediaStore.Files.FileColumns.DATE_MODIFIED
-        )
-        
-        val selection = "${MediaStore.Files.FileColumns.MIME_TYPE} IN (?, ?, ?)"
-        val selectionArgs = arrayOf("application/epub+zip", "application/pdf", "text/plain")
-        
-        context.contentResolver.query(
-            MediaStore.Files.getContentUri("external"),
-            projection,
-            selection,
-            selectionArgs,
+            e.printStackTrace()
             null
-        )?.use { cursor ->
-            val idColumn = cursor.getColumnIndex(MediaStore.Files.FileColumns._ID)
-            val nameColumn = cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
-            val sizeColumn = cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)
-            val dataColumn = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
-            val dateModifiedColumn = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATE_MODIFIED)
-            
-            while (cursor.moveToNext()) {
-                val id = cursor.getLong(idColumn).toString()
-                val name = cursor.getString(nameColumn)
-                val size = cursor.getLong(sizeColumn)
-                val path = cursor.getString(dataColumn)
-                val lastModified = cursor.getLong(dateModifiedColumn) * 1000L // Convert to milliseconds
-                
-                // 提取文件扩展名
-                val extension = getFileExtension(name)
-                if (extension !in SUPPORTED_FORMATS) continue
-                
-                // 创建书籍对象
-                val book = Book(
-                    id = id,
-                    title = getBookTitleFromFileName(name),
-                    author = "", // TODO: 从文件元数据中提取作者信息
-                    coverUri = null,
-                    filePath = path,
-                    fileSize = size,
-                    lastReadTime = lastModified,
-                    progress = 0,
-                    format = extension.uppercase(),
-                    addedTime = System.currentTimeMillis()
-                )
-                
-                books.add(book)
-            }
         }
     }
     
     /**
-     * 从文件名中提取书籍标题
+     * 从文件名提取格式
      */
-    private fun getBookTitleFromFileName(fileName: String): String {
-        // 移除文件扩展名
-        val title = fileName.substringBeforeLast('.')
-        // 移除可能的作者信息（简单的启发式方法）
-        return title.split(" - ").firstOrNull() ?: title
+    private fun getFileFormat(fileName: String): String {
+        return when (fileName.substringAfterLast(".", "").lowercase()) {
+            "epub" -> "epub"
+            "pdf" -> "pdf"
+            "txt" -> "txt"
+            else -> ""
+        }
     }
     
     /**
-     * 获取文件扩展名
+     * 获取文件大小字符串
      */
-    private fun getFileExtension(fileName: String): String {
-        return fileName.substringAfterLast('.', "").lowercase()
-    }
-    
-    /**
-     * 格式化文件大小为人类可读的字符串
-     */
-    fun formatFileSize(bytes: Long): String {
-        val df = DecimalFormat("#.##")
+    fun getFileSizeString(fileSize: Long): String {
         return when {
-            bytes >= 1073741824 -> df.format(bytes / 1073741824.0) + " GB"
-            bytes >= 1048576 -> df.format(bytes / 1048576.0) + " MB"
-            bytes >= 1024 -> df.format(bytes / 1024.0) + " KB"
-            else -> "$bytes B"
+            fileSize < 1024 -> "$fileSize B"
+            fileSize < 1024 * 1024 -> "${fileSize / 1024} KB"
+            fileSize < 1024 * 1024 * 1024 -> "${fileSize / (1024 * 1024)} MB"
+            else -> "${fileSize / (1024 * 1024 * 1024)} GB"
         }
     }
 }
