@@ -1,7 +1,6 @@
 package com.example.ireader.ui.reader
 
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -24,26 +24,16 @@ import com.example.ireader.ui.components.LoadingState
 
 @Composable
 fun ReaderScreen(
-    bookId: String,
+    book: Book,
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
     val viewModel: ReaderViewModel = hiltViewModel()
     val context = LocalContext.current
     
-    // 启动文件选择器（用于PDF/TXT）
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri ->
-            uri?.let { 
-                viewModel.loadBookFromUri(it, context)
-            }
-        }
-    )
-    
     // 加载书籍
     LifecycleEventEffect(Lifecycle.Event.ON_CREATE) {
-        viewModel.loadBook(bookId)
+        viewModel.loadBook(book)
     }
     
     val uiState by viewModel.uiState.collectAsState()
@@ -53,7 +43,7 @@ fun ReaderScreen(
             TopAppBar(
                 title = { 
                     Text(
-                        text = uiState.book?.title ?: stringResource(R.string.reader_title),
+                        text = book.title,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -81,6 +71,25 @@ fun ReaderScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            if (uiState.loadingState == LoadingState.Success) {
+                ExtendedFloatingActionButton(
+                    onClick = { 
+                        // 添加书签
+                        viewModel.addBookmark(book.id, getCurrentPosition(book))
+                    },
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_bookmark),
+                            contentDescription = "Add Bookmark"
+                        )
+                    },
+                    text = {
+                        Text("书签")
+                    }
+                )
+            }
         }
     ) { paddingValues ->
         when (uiState.loadingState) {
@@ -115,7 +124,7 @@ fun ReaderScreen(
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadBook(bookId) }) {
+                        Button(onClick = { viewModel.loadBook(book) }) {
                             Text("重试")
                         }
                     }
@@ -128,10 +137,10 @@ fun ReaderScreen(
                         .padding(paddingValues)
                 ) {
                     // 根据文件格式显示不同的阅读器
-                    when (uiState.book?.format?.lowercase()) {
+                    when (book.format.lowercase()) {
                         "epub" -> {
                             EPUBReader(
-                                filePath = uiState.book.filePath,
+                                filePath = book.filePath,
                                 onProgressUpdate = { progress ->
                                     viewModel.updateReadingProgress(progress)
                                 }
@@ -139,7 +148,7 @@ fun ReaderScreen(
                         }
                         "pdf" -> {
                             PDFReader(
-                                filePath = uiState.book.filePath,
+                                filePath = book.filePath,
                                 onPageChanged = { page ->
                                     viewModel.updateReadingPage(page)
                                 }
@@ -147,7 +156,7 @@ fun ReaderScreen(
                         }
                         "txt" -> {
                             TXTReader(
-                                filePath = uiState.book.filePath,
+                                filePath = book.filePath,
                                 onScroll = { position ->
                                     viewModel.updateReadingPosition(position)
                                 }
@@ -160,7 +169,7 @@ fun ReaderScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "不支持的文件格式: ${uiState.book?.format}",
+                                    text = "不支持的文件格式: ${book.format}",
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -180,5 +189,14 @@ fun ReaderScreen(
                 }
             }
         }
+    }
+}
+
+// 获取当前阅读位置的辅助函数
+private fun getCurrentPosition(book: Book): String {
+    return when (book.format.lowercase()) {
+        "pdf" -> "page_${book.lastReadPage}"
+        "txt" -> "line_${book.lastReadPage}"
+        else -> "chapter_1"
     }
 }

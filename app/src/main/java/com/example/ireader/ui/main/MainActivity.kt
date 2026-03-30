@@ -16,7 +16,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -24,9 +23,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.ireader.data.model.Book
+import com.example.ireader.ui.bookmarks.BookmarksScreen
 import com.example.ireader.ui.bookshelf.BookShelfScreen
-import com.example.ireader.ui.components.BottomNavigationItem
 import com.example.ireader.ui.components.IReaderBottomNavigation
+import com.example.ireader.ui.highlights.HighlightsScreen
+import com.example.ireader.ui.notes.NotesScreen
 import com.example.ireader.ui.reader.ReaderScreen
 import com.example.ireader.ui.settings.SettingsScreen
 import com.example.ireader.ui.theme.IReaderTheme
@@ -85,18 +86,20 @@ fun IReaderScaffold(
     
     Scaffold(
         bottomBar = {
-            if (currentRoute in listOf("bookshelf", "reader", "settings")) {
-                IReaderBottomNavigation(
-                    currentRoute = currentRoute,
-                    onNavigate = { route ->
-                        when (route) {
-                            BottomNavigationItem.Bookshelf.route -> navController.navigate("bookshelf") { popUpTo(navController.graph.startDestinationId) { saveState = true } }
-                            BottomNavigationItem.Reader.route -> if (books.isNotEmpty()) navController.navigate("reader/${books[0].id}")
-                            BottomNavigationItem.Settings.route -> navController.navigate("settings")
+            IReaderBottomNavigation(
+                currentRoute = currentRoute,
+                onNavigate = { route ->
+                    when (route) {
+                        "bookshelf" -> navController.navigate("bookshelf") { 
+                            popUpTo(navController.graph.startDestinationId) { saveState = true } 
                         }
+                        "reader" -> if (books.isNotEmpty()) navController.navigate("reader/${books[0].id}")
+                        "bookmarks" -> navController.navigate("bookmarks")
+                        "notes" -> navController.navigate("notes")
+                        "settings" -> navController.navigate("settings")
                     }
-                )
-            }
+                }
+            )
         }
     ) { innerPadding ->
         NavHost(
@@ -120,17 +123,18 @@ fun IReaderScaffold(
                     ReaderScreen(book = book, navController = navController)
                 }
             }
+            composable("bookmarks") {
+                BookmarksScreen(navController = navController)
+            }
+            composable("notes") {
+                NotesScreen(navController = navController)
+            }
+            composable("highlights") {
+                HighlightsScreen(navController = navController)
+            }
             composable("settings") {
                 SettingsScreen(navController = navController)
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    IReaderTheme {
-        // IReaderApp(filePicker = {})
     }
 }
