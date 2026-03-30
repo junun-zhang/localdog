@@ -109,7 +109,6 @@ fun BookStoreScreen(
                                 Tab(
                                     selected = pagerState.currentPage == index,
                                     onClick = { 
-                                        // 注意：这里简化处理，实际应该有更复杂的逻辑
                                         viewModel.loadBooksByCategory(category)
                                     },
                                     text = { Text(category) }
@@ -136,79 +135,6 @@ fun BookStoreScreen(
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun BookStoreItem(
-    book: BookStoreItem,
-    onItemClick: (BookStoreItem) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .width(120.dp)
-            .clickable { onItemClick(book) },
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(8.dp)
-        ) {
-            // 封面图片（使用占位符）
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                // 这里可以使用 Coil 或 Glide 加载网络图片
-                androidx.compose.material3.Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Default.Book,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // 书名
-            Text(
-                text = book.title,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = Alignment.Center
-            )
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            // 作者
-            Text(
-                text = book.author,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            // 价格或免费标识
-            if (book.isFree) {
-                Text(
-                    text = stringResource(R.string.free),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            } else {
-                Text(
-                    text = "${book.price}¥",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
             }
         }
     }

@@ -3,6 +3,7 @@ package com.example.ireader.data.repository
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.ireader.data.model.BookStoreItem
+import com.example.ireader.data.model.Resource
 import com.example.ireader.data.network.BookStoreApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -19,21 +20,14 @@ class BookStoreRepository @Inject constructor(
     private val bookStoreApi: BookStoreApi
 ) {
     
-    private val _books = MutableLiveData<List<BookStoreItem>>()
-    val books: LiveData<List<BookStoreItem>> = _books
-    
-    private val _loading = MutableLiveData<Boolean>()
-    val loading: LiveData<Boolean> = _loading
-    
-    private val _error = MutableLiveData<String?>()
-    val error: LiveData<String?> = _error
+    private val _books = MutableLiveData<Resource<List<BookStoreItem>>>()
+    val books: LiveData<Resource<List<BookStoreItem>>> = _books
     
     /**
      * 从服务端获取书籍列表
      */
     suspend fun fetchBooks(category: String? = null, query: String? = null) {
-        _loading.value = true
-        _error.value = null
+        _books.value = Resource.loading(null)
         
         try {
             val response = withContext(Dispatchers.IO) {
@@ -46,40 +40,41 @@ class BookStoreRepository @Inject constructor(
                 }
             }
             
-            _books.value = response
-            _loading.value = false
+            _books.value = Resource.success(response)
             
         } catch (e: HttpException) {
-            _error.value = "网络请求失败: ${e.message()}"
-            _loading.value = false
+            _books.value = Resource.error("网络请求失败: ${e.message()}", null)
         } catch (e: IOException) {
-            _error.value = "网络连接失败，请检查网络"
-            _loading.value = false
+            _books.value = Resource.error("网络连接失败，请检查网络", null)
         } catch (e: Exception) {
-            _error.value = "未知错误: ${e.message}"
-            _loading.value = false
+            _books.value = Resource.error("未知错误: ${e.message}", null)
         }
     }
     
     /**
      * 获取书籍详情
      */
-    suspend fun fetchBookDetails(bookId: String): BookStoreItem? {
+    suspend fun fetchBookDetails(bookId: String): Resource<BookStoreItem> {
         return try {
-            withContext(Dispatchers.IO) {
+            val book = withContext(Dispatchers.IO) {
                 bookStoreApi.getBookById(bookId)
             }
+            Resource.success(book)
+        } catch (e: HttpException) {
+            Resource.error("网络请求失败: ${e.message()}", null)
+        } catch (e: IOException) {
+            Resource.error("网络连接失败，请检查网络", null)
         } catch (e: Exception) {
-            null
+            Resource.error("未知错误: ${e.message}", null)
         }
     }
     
     /**
      * 下载书籍文件
      */
-    suspend fun downloadBook(bookId: String): String? {
+    suspend fun downloadBook(bookId: String): Resource<String> {
         // 这里应该实现实际的文件下载逻辑
         // 返回下载后的本地文件路径
-        return null
+        return Resource.success("")
     }
 }
