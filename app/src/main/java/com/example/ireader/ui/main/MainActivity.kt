@@ -25,6 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.ireader.data.model.Book
 import com.example.ireader.ui.bookmarks.BookmarksScreen
 import com.example.ireader.ui.bookshelf.BookShelfScreen
+import com.example.ireader.ui.bookstore.BookStoreScreen
 import com.example.ireader.ui.components.IReaderBottomNavigation
 import com.example.ireader.ui.highlights.HighlightsScreen
 import com.example.ireader.ui.notes.NotesScreen
@@ -94,6 +95,7 @@ fun IReaderScaffold(
                             popUpTo(navController.graph.startDestinationId) { saveState = true } 
                         }
                         "reader" -> if (books.isNotEmpty()) navController.navigate("reader/${books[0].id}")
+                        "bookstore" -> navController.navigate("bookstore")
                         "bookmarks" -> navController.navigate("bookmarks")
                         "notes" -> navController.navigate("notes")
                         "settings" -> navController.navigate("settings")
@@ -122,6 +124,9 @@ fun IReaderScaffold(
                 if (book != null) {
                     ReaderScreen(book = book, navController = navController)
                 }
+            }
+            composable("bookstore") {
+                BookStoreScreen(navController = navController)
             }
             composable("bookmarks") {
                 BookmarksScreen(navController = navController)

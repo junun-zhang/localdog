@@ -21,12 +21,26 @@ fun IReaderBottomNavigation(
             onClick = { onNavigate("bookshelf") },
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_bookshelf),
+                    painter = painterResource(id = R.drawable.ic_book_placeholder),
                     contentDescription = stringResource(R.string.bookshelf_title)
                 )
             },
             label = {
                 Text(text = stringResource(R.string.bookshelf_title))
+            }
+        )
+        
+        NavigationBarItem(
+            selected = currentRoute == "bookstore",
+            onClick = { onNavigate("bookstore") },
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_bookstore),
+                    contentDescription = stringResource(R.string.bookstore_title)
+                )
+            },
+            label = {
+                Text(text = stringResource(R.string.bookstore_title))
             }
         )
         
@@ -69,20 +83,6 @@ fun IReaderBottomNavigation(
             },
             label = {
                 Text(text = stringResource(R.string.notes))
-            }
-        )
-        
-        NavigationBarItem(
-            selected = currentRoute == "settings",
-            onClick = { onNavigate("settings") },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_settings),
-                    contentDescription = stringResource(R.string.settings_title)
-                )
-            },
-            label = {
-                Text(text = stringResource(R.string.settings_title))
             }
         )
     }
