@@ -4,14 +4,13 @@ import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
 
 /**
- * Main Application class for IReader
- * Hilt will generate the dependency injection code
+ * 应用程序入口点，使用 Hilt 进行依赖注入
  */
 @HiltAndroidApp
 class IReaderApplication : Application() {
     
     override fun onCreate() {
         super.onCreate()
-        // Initialize any application-wide components here
+        // 应用程序初始化逻辑
     }
 }

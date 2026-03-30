@@ -1,0 +1,124 @@
+package com.example.ireader.ui.bookshelf
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ireader.R
+import com.example.ireader.data.model.Book
+import com.example.ireader.ui.components.LoadingState
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BookShelfScreen(
+    onBookClick: (String) -> Unit,
+    onImportClick: () -> Unit,
+    viewModel: BookShelfViewModel = hiltViewModel()
+) {
+    val books by viewModel.books.collectAsStateWithLifecycle(emptyList())
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle(false)
+    
+    LaunchedEffect(Unit) {
+        viewModel.loadBooks()
+    }
+    
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        text = stringResource(R.string.bookshelf_title),
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                },
+                actions = {
+                    IconButton(onClick = { /* 搜索功能 */ }) {
+                        Icon(
+                            painter = painterResource(id = android.R.drawable.ic_menu_search),
+                            contentDescription = stringResource(R.string.search_books)
+                        )
+                    }
+                    IconButton(onClick = onImportClick) {
+                        Icon(
+                            painter = painterResource(id = android.R.drawable.ic_menu_add),
+                            contentDescription = stringResource(R.string.import_books)
+                        )
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        if (isLoading) {
+            LoadingState(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            )
+        } else if (books.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_book_placeholder),
+                        contentDescription = null,
+                        modifier = Modifier.size(80.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.no_books_found),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = onImportClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text(text = "导入书籍")
+                    }
+                }
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 150.dp),
+                contentPadding = paddingValues,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(books) { book ->
+                    BookItem(
+                        book = book,
+                        onItemClick = { onBookClick(book.id) }
+                    )
+                }
+            }
+        }
+    }
+}
