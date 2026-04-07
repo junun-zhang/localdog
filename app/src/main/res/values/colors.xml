@@ -12,6 +12,9 @@
     
     <!-- Background colors -->
     <color name="background">#FFFFFF</color>
+    <color name="background_primary">#FFFFFF</color>
+    <color name="background_primary_dark">#000000</color>
+    <color name="splash_background">#FFFFFF</color>
     <color name="surface">#FFFFFF</color>
     <color name="surface_variant">#F0F0F0</color>
     

@@ -10,7 +10,7 @@ import androidx.room.PrimaryKey
  * @property content 笔记内容
  * @property position 位置信息（页码或章节）
  * @property chapterName 章节名称（EPUB）
- * @property createdAt 创建时间
+ * @property createdTime 创建时间  // ← 改为 createdTime
  * @property updatedAt 更新时间
  */
 @Entity(tableName = "notes")
@@ -20,11 +20,11 @@ data class Note(
     val content: String,
     val position: Int = 0, // 页码（PDF/TXT）或章节索引（EPUB）
     val chapterName: String = "", // EPUB章节名称
-    val createdAt: Long = System.currentTimeMillis(),
+    val createdTime: Long = System.currentTimeMillis(),  // ← 改为 createdTime
     val updatedAt: Long = System.currentTimeMillis()
 ) {
     fun getCreatedAtString(): String {
-        val diff = System.currentTimeMillis() - createdAt
+        val diff = System.currentTimeMillis() - createdTime  // ← 改为 createdTime
         return when {
             diff < 60_000 -> "刚刚"
             diff < 3_600_000 -> "${diff / 60_000}分钟前"
