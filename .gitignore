@@ -1,0 +1,16 @@
+# Gradle                                                                                                                         
+.gradle/                                                                                                                         
+build/                                                                                                                           
+*/build/                                                                                                                         
+gradle/caches/                                                                                                                   
+gradle-wrapper.jar                                                                                                               
+                                                                                                                                    
+# IDE                                                                                                                            
+.idea/                                                                                                                           
+*.iml                                                                                                                            
+.vscode/                                                                                                                         
+                                                                                                                                    
+# 编译输出                                                                                                                       
+*.class                                                                                                                          
+*.jar                                                                                                                            
+!gradle/wrapper/gradle-wrapper.jar       

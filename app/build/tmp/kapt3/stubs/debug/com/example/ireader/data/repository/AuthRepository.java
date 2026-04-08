@@ -78,7 +78,8 @@ public final class AuthRepository {
     }
     
     /**
-     * 获取认证头
+     * 获取认证头 - 由于 User 没有 token，这里返回 null
+     * 实际项目中可能需要单独存储 token
      */
     @org.jetbrains.annotations.Nullable()
     public final java.lang.String getAuthHeader() {
