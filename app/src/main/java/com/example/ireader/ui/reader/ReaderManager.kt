@@ -1,13 +1,15 @@
 package com.example.ireader.ui.reader
 
 import android.content.Context
-import android.content.Intent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
-import com.folioreader.FolioReader
 import com.github.barteksc.pdfviewer.PDFView
-import com.github.barteksc.pdfviewer.listener.OnLoadCompleteListener
-import com.github.barteksc.pdfviewer.listener.OnPageChangeListener
 import java.io.File
 
 /**
@@ -15,14 +17,25 @@ import java.io.File
  */
 object ReaderManager {
     
-    fun openEpubReader(context: Context, epubPath: String) {
-        val config = FolioReader.Config()
-            .setAllowedDirection(FolioReader.Direction.VERTICAL)
-            .setUseNightMode(false)
-            .setShowTts(false)
-            
-        FolioReader.getInstance().setConfig(config, true)
-        FolioReader.getInstance().openBook(context, epubPath)
+    /**
+     * EPUB 阅读器（临时存根）
+     * TODO: 使用 Readium 替代
+     */
+    @Composable
+    fun EpubReaderView(
+        epubPath: String,
+        onPageChanged: (Int) -> Unit = {}
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "EPUB 阅读功能暂不可用",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
     
     @Composable
@@ -54,7 +67,7 @@ object ReaderManager {
     @Composable
     fun TxtReaderView(
         txtContent: String,
-        modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier
+        modifier: Modifier = Modifier
     ) {
         androidx.compose.foundation.lazy.LazyColumn(
             modifier = modifier
@@ -62,8 +75,7 @@ object ReaderManager {
             items(txtContent.lines().size) { index ->
                 androidx.compose.material3.Text(
                     text = txtContent.lines()[index],
-                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                    modifier = androidx.compose.ui.Modifier.padding(16.dp)
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
         }

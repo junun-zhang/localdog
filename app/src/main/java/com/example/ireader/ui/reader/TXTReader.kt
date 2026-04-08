@@ -24,12 +24,19 @@ import java.io.File
 @Composable
 fun TXTReader(
     filePath: String,
+    onScroll: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var content by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    val scrollState = rememberScrollState()
+
+    // 监听滚动位置变化
+    LaunchedEffect(scrollState.value) {
+        onScroll(scrollState.value)
+    }
 
     LaunchedEffect(filePath) {
         isLoading = true
@@ -61,7 +68,7 @@ fun TXTReader(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(16.dp)
         ) {
             Text(

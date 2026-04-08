@@ -1,46 +1,35 @@
 package com.example.ireader.ui.reader
 
 import android.content.Context
-import android.net.Uri
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.viewinterop.AndroidView
-import com.folioreader.FolioReader
-import com.folioreader.model.HighLight
-import com.folioreader.model.ReadPosition
-import com.folioreader.util.ReadLocatorListener
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 
 /**
  * EPUB 阅读器 Compose 封装
+ * 
+ * TODO: FolioReader 库已不可用，后续替换为 Readium
+ * 临时存根实现
  */
 @Composable
 fun EPUBReader(
-    context: Context,
-    epubPath: String,
-    onReadPositionChanged: (ReadPosition) -> Unit = {},
-    onHighlightCreated: (HighLight) -> Unit = {},
-    modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier
+    filePath: String,
+    onProgressUpdate: (Float) -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
-    val folioReader = remember {
-        FolioReader.getFolioReader()
+    // 临时存根 - FolioReader 已不可用
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "EPUB 阅读功能暂不可用\n正在寻找替代方案...",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
-    
-    AndroidView(
-        factory = { viewContext ->
-            // 配置 FolioReader
-            folioReader.setReadLocatorListener(object : ReadLocatorListener {
-                override fun saveReadLocator(readPosition: ReadPosition?) {
-                    readPosition?.let { onReadPositionChanged(it) }
-                }
-            })
-            
-            // 打开 EPUB 文件
-            val epubUri = Uri.parse(epubPath)
-            folioReader.openBook(viewContext, epubUri)
-            
-            // 返回 FolioReader 的主视图
-            folioReader.container
-        },
-        modifier = modifier
-    )
 }
