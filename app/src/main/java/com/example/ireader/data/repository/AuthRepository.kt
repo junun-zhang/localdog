@@ -7,9 +7,12 @@ import androidx.lifecycle.MutableLiveData
 import com.example.ireader.data.model.Resource
 import com.example.ireader.data.model.User
 import com.example.ireader.data.network.AuthApi
+import com.example.ireader.data.network.LoginRequest
+import com.example.ireader.data.network.RegisterRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
+import retrofit2.Response
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -43,11 +46,10 @@ class AuthRepository @Inject constructor(
     suspend fun login(email: String, password: String): Resource<User> {
         return try {
             val response = withContext(Dispatchers.IO) {
-                authApi.login(email, password)
+                authApi.login(LoginRequest(email, password))
             }
             
-            saveUser(response)
-            Resource.success(response)
+            handleAuthResponse(response)
             
         } catch (e: HttpException) {
             Resource.error("登录失败: ${e.message()}", null)
@@ -64,11 +66,10 @@ class AuthRepository @Inject constructor(
     suspend fun register(email: String, password: String, name: String): Resource<User> {
         return try {
             val response = withContext(Dispatchers.IO) {
-                authApi.register(email, password, name)
+                authApi.register(RegisterRequest(email, password, name))
             }
             
-            saveUser(response)
-            Resource.success(response)
+            handleAuthResponse(response)
             
         } catch (e: HttpException) {
             Resource.error("注册失败: ${e.message()}", null)
@@ -76,6 +77,20 @@ class AuthRepository @Inject constructor(
             Resource.error("网络连接失败", null)
         } catch (e: Exception) {
             Resource.error("未知错误: ${e.message}", null)
+        }
+    }
+    
+    /**
+     * 处理认证响应
+     */
+    private fun handleAuthResponse(response: Response<User>): Resource<User> {
+        return if (response.isSuccessful && response.body() != null) {
+            val user = response.body()!!
+            saveUser(user)
+            Resource.success(user)
+        } else {
+            val errorMsg = response.errorBody()?.string() ?: "请求失败"
+            Resource.error(errorMsg, null)
         }
     }
     
