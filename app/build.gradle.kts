@@ -72,11 +72,11 @@ dependencies {
     kapt("com.google.dagger:hilt-compiler:2.48")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
     
-    // EPUB Reader
-    implementation("com.folioreader:folioreader:0.9.0")
+    // EPUB Reader (使用 JitPack 上的 FolioReader)
+    implementation("com.github.FolioReader:FolioReader:0.5.4")
     
-    // PDF Viewer
-    implementation("com.github.barteksc:android-pdf-viewer:3.2.0-beta.1")
+    // PDF Viewer (使用稳定版本)
+    implementation("com.github.barteksc:android-pdf-viewer:2.8.2")
     
     // File management
     implementation("androidx.documentfile:documentfile:1.0.1")
