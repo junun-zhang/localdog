@@ -57,14 +57,12 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
-    implementation("androidx.preference:preference-ktx:1.2.1")
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.10.0")
+    
     // Architecture Components
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.navigation:navigation-compose:2.7.6")
@@ -74,12 +72,12 @@ dependencies {
     kapt("com.google.dagger:hilt-compiler:2.48")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
     
-    // EPUB Reader
-    //implementation("com.folioreader:folioreader:0.9.0")
-    implementation("com.github.bumptech.glide:glide:4.16.0")
+    // EPUB Reader - FolioReader 已不可用（JitPack 构建失败）
+    // TODO: 后续替换为 Readium 或其他 EPUB 库
+    // implementation("com.github.FolioReader:FolioReader:0.5.4")
     
-    // PDF Viewer
-    implementation("com.github.barteksc:android-pdf-viewer:3.2.0-beta.1")
+    // PDF Viewer (使用新仓库地址)
+    implementation("com.github.DImuthuUpe:AndroidPdfViewer:2.8.1")
     
     // File management
     implementation("androidx.documentfile:documentfile:1.0.1")
@@ -99,9 +97,6 @@ dependencies {
     
     // Image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
-    //implementation("io.coil-kt:coil-network-okhttp:2.5.0")
-    implementation("io.coil-kt:coil:2.4.0")
-
     
     // Testing
     testImplementation("junit:junit:4.13.2")
