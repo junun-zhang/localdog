@@ -7,9 +7,9 @@ import androidx.lifecycle.MutableLiveData
 import com.example.ireader.data.model.AuthResponse
 import com.example.ireader.data.model.Resource
 import com.example.ireader.data.model.User
+import com.example.ireader.data.model.LoginRequest
+import com.example.ireader.data.model.RegisterRequest
 import com.example.ireader.data.network.AuthApi
-import com.example.ireader.data.network.LoginRequest
-import com.example.ireader.data.network.RegisterRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
