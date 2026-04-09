@@ -31,23 +31,25 @@ class BookStoreRepository @Inject constructor(
         
         try {
             val response = withContext(Dispatchers.IO) {
-                if (category != null) {
-                    bookStoreApi.getBooksByCategory(category)
-                } else if (query != null) {
+                if (query != null) {
                     bookStoreApi.searchBooks(query)
                 } else {
-                    bookStoreApi.getAllBooks()
+                    bookStoreApi.getBooks(category = category)
                 }
             }
             
-            _books.value = Resource.success(response)
+            if (response.isSuccessful && response.body() != null) {
+                _books.value = Resource.success(response.body()!!)
+            } else {
+                _books.value = Resource.error(response.message() ?: "请求失败")
+            }
             
         } catch (e: HttpException) {
-            _books.value = Resource.error("网络请求失败: ${e.message()}", null)
+            _books.value = Resource.error("网络请求失败: ${e.message()}")
         } catch (e: IOException) {
-            _books.value = Resource.error("网络连接失败，请检查网络", null)
+            _books.value = Resource.error("网络连接失败，请检查网络")
         } catch (e: Exception) {
-            _books.value = Resource.error("未知错误: ${e.message}", null)
+            _books.value = Resource.error("未知错误: ${e.message}")
         }
     }
     
@@ -56,16 +58,44 @@ class BookStoreRepository @Inject constructor(
      */
     suspend fun fetchBookDetails(bookId: String): Resource<BookStoreItem> {
         return try {
-            val book = withContext(Dispatchers.IO) {
-                bookStoreApi.getBookById(bookId)
+            val response = withContext(Dispatchers.IO) {
+                bookStoreApi.getBookDetail(bookId)
             }
-            Resource.success(book)
+            
+            if (response.isSuccessful && response.body() != null) {
+                Resource.success(response.body()!!)
+            } else {
+                Resource.error(response.message() ?: "请求失败")
+            }
         } catch (e: HttpException) {
-            Resource.error("网络请求失败: ${e.message()}", null)
+            Resource.error("网络请求失败: ${e.message()}")
         } catch (e: IOException) {
-            Resource.error("网络连接失败，请检查网络", null)
+            Resource.error("网络连接失败，请检查网络")
         } catch (e: Exception) {
-            Resource.error("未知错误: ${e.message}", null)
+            Resource.error("未知错误: ${e.message}")
+        }
+    }
+    
+    /**
+     * 获取书籍分类
+     */
+    suspend fun fetchCategories(): Resource<List<String>> {
+        return try {
+            val response = withContext(Dispatchers.IO) {
+                bookStoreApi.getCategories()
+            }
+            
+            if (response.isSuccessful && response.body() != null) {
+                Resource.success(response.body()!!)
+            } else {
+                Resource.error(response.message() ?: "请求失败")
+            }
+        } catch (e: HttpException) {
+            Resource.error("网络请求失败: ${e.message()}")
+        } catch (e: IOException) {
+            Resource.error("网络连接失败，请检查网络")
+        } catch (e: Exception) {
+            Resource.error("未知错误: ${e.message}")
         }
     }
     
