@@ -3,19 +3,25 @@ package com.example.ireader.data.repository
 import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope
 import com.example.ireader.data.database.BookDao
 import com.example.ireader.data.database.IReaderDatabase
 import com.example.ireader.data.model.Book
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.coroutines.CoroutineContext
 
 /**
  * 书籍仓库，负责管理书籍数据的获取、存储和更新
  */
-class BookRepository private constructor(context: Context) {
+class BookRepository private constructor(context: Context) : CoroutineScope {
+    
+    private val job = SupervisorJob()
+    override val coroutineContext: CoroutineContext = Dispatchers.Main + job
+    
     private val database: IReaderDatabase = IReaderDatabase.getDatabase(context)
     private val bookDao: BookDao = database.bookDao()
     
@@ -31,7 +37,7 @@ class BookRepository private constructor(context: Context) {
      * 扫描本地文件并添加到书架
      */
     fun scanLocalFiles() {
-        viewModelScope.launch {
+        launch {
             val scannedBooks = withContext(Dispatchers.IO) {
                 FileScanner.scanBooks(context)
             }
@@ -48,7 +54,7 @@ class BookRepository private constructor(context: Context) {
      * 从数据库加载书籍
      */
     private fun loadBooksFromDatabase() {
-        viewModelScope.launch {
+        launch {
             val booksFromDb = withContext(Dispatchers.IO) {
                 bookDao.getAllBooks()
             }
@@ -60,7 +66,7 @@ class BookRepository private constructor(context: Context) {
      * 保存书籍到数据库
      */
     private fun saveBooks(books: List<Book>) {
-        viewModelScope.launch {
+        launch {
             withContext(Dispatchers.IO) {
                 bookDao.insertBooks(books)
             }
@@ -71,7 +77,7 @@ class BookRepository private constructor(context: Context) {
      * 添加单本书籍
      */
     fun addBook(book: Book) {
-        viewModelScope.launch {
+        launch {
             withContext(Dispatchers.IO) {
                 bookDao.insertBook(book)
             }
@@ -83,7 +89,7 @@ class BookRepository private constructor(context: Context) {
      * 删除书籍
      */
     fun deleteBook(bookId: String) {
-        viewModelScope.launch {
+        launch {
             withContext(Dispatchers.IO) {
                 bookDao.deleteBook(bookId)
             }
@@ -95,12 +101,19 @@ class BookRepository private constructor(context: Context) {
      * 更新书籍阅读进度
      */
     fun updateBookProgress(bookId: String, progress: Int, lastReadPage: Int) {
-        viewModelScope.launch {
+        launch {
             withContext(Dispatchers.IO) {
                 bookDao.updateBookProgress(bookId, progress, lastReadPage, System.currentTimeMillis())
             }
             loadBooksFromDatabase()
         }
+    }
+    
+    /**
+     * 清理资源
+     */
+    fun clear() {
+        job.cancel()
     }
     
     companion object {
