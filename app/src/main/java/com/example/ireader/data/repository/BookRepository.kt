@@ -1,6 +1,7 @@
 package com.example.ireader.data.repository
 
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.ireader.data.database.BookDao
@@ -11,13 +12,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import kotlin.coroutines.CoroutineContext
 
 /**
  * 书籍仓库，负责管理书籍数据的获取、存储和更新
  */
-class BookRepository private constructor(context: Context) : CoroutineScope {
+class BookRepository private constructor(private val context: Context) : CoroutineScope {
     
     private val job = SupervisorJob()
     override val coroutineContext: CoroutineContext = Dispatchers.Main + job
@@ -35,19 +35,12 @@ class BookRepository private constructor(context: Context) : CoroutineScope {
     
     /**
      * 扫描本地文件并添加到书架
+     * 注意：需要通过 SAF 选择文件，调用 addBookFromUri 添加单本书籍
      */
     fun scanLocalFiles() {
-        launch {
-            val scannedBooks = withContext(Dispatchers.IO) {
-                FileScanner.scanBooks(context)
-            }
-            
-            // 保存到数据库
-            saveBooks(scannedBooks)
-            
-            // 更新UI
-            loadBooksFromDatabase()
-        }
+        // SAF 模式下，用户需要手动选择文件
+        // 此方法保留用于未来可能的自动扫描功能
+        loadBooksFromDatabase()
     }
     
     /**
@@ -83,6 +76,15 @@ class BookRepository private constructor(context: Context) : CoroutineScope {
             }
             loadBooksFromDatabase()
         }
+    }
+    
+    /**
+     * 从 URI 添加书籍（SAF 模式）
+     */
+    suspend fun addBookFromUri(uri: Uri): Book? {
+        val book = FileScanner.createBookFromUri(context, uri) ?: return null
+        addBook(book)
+        return book
     }
     
     /**
