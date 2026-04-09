@@ -21,18 +21,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ireader.R
 import com.example.ireader.data.model.Book
-import com.example.ireader.ui.components.LoadingState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookShelfScreen(
     onBookClick: (String) -> Unit,
     onImportClick: () -> Unit,
-    viewModel: BookShelfViewModel = hiltViewModel()
+    viewModel: BookShelfViewModel = viewModel()
 ) {
     val books by viewModel.books.collectAsStateWithLifecycle(emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle(false)
@@ -68,11 +67,14 @@ fun BookShelfScreen(
         }
     ) { paddingValues ->
         if (isLoading) {
-            LoadingState(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-            )
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
         } else if (books.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -115,7 +117,7 @@ fun BookShelfScreen(
                 items(books) { book ->
                     BookItem(
                         book = book,
-                        onItemClick = { onBookClick(book.id) }
+                        onClick = { onBookClick(book.id) }
                     )
                 }
             }
