@@ -74,7 +74,7 @@ fun BookmarksScreen(
                         bookmark = bookmark,
                         onClick = {
                             // 跳转到书签位置
-                            navController.navigate("reader/${bookmark.bookId}?page=${bookmark.pageNumber}")
+                            navController.navigate("reader/${bookmark.bookId}?page=${bookmark.page}")
                         },
                         onDelete = {
                             viewModel.deleteBookmark(bookmark.id)
@@ -122,7 +122,7 @@ fun BookmarkItem(
                 Spacer(modifier = Modifier.height(4.dp))
                 
                 Text(
-                    text = "第 ${bookmark.pageNumber} 页 • ${bookmark.createdTimeString}",
+                    text = "第 ${bookmark.page} 页 • ${bookmark.getCreatedAtString()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
