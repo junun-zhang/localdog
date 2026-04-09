@@ -52,7 +52,9 @@ fun BookmarksScreen(
             )
         }
     ) { paddingValues ->
-        if (bookmarks.value.isEmpty()) {
+        val bookmarkList = bookmarks.value.orEmpty()
+        
+        if (bookmarkList.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -72,7 +74,7 @@ fun BookmarksScreen(
                     .padding(paddingValues),
                 contentPadding = PaddingValues(16.dp)
             ) {
-                items(bookmarks.value) { bookmark ->
+                items(bookmarkList) { bookmark ->
                     BookmarkItem(
                         bookmark = bookmark,
                         onClick = {
