@@ -49,7 +49,7 @@ class BookRepository private constructor(private val context: Context) : Corouti
     private fun loadBooksFromDatabase() {
         launch {
             val booksFromDb = withContext(Dispatchers.IO) {
-                bookDao.getAllBooks()
+                bookDao.getAllBooksOnce()
             }
             _books.postValue(booksFromDb)
         }

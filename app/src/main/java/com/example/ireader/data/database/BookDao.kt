@@ -18,6 +18,13 @@ interface BookDao {
     fun getAllBooks(): Flow<List<Book>>
     
     /**
+     * Get all books from the database (one-shot query)
+     * @return List of books
+     */
+    @Query("SELECT * FROM books ORDER BY lastReadTime DESC")
+    suspend fun getAllBooksOnce(): List<Book>
+    
+    /**
      * Get a book by its ID
      * @param id Book ID
      * @return Book or null if not found
@@ -45,6 +52,16 @@ interface BookDao {
      */
     @Update
     suspend fun updateBook(book: Book)
+    
+    /**
+     * Update book reading progress
+     * @param id Book ID
+     * @param progress Reading progress (0-100)
+     * @param lastReadPage Last read page number
+     * @param lastReadTime Last read timestamp
+     */
+    @Query("UPDATE books SET progress = :progress, lastReadPage = :lastReadPage, lastReadTime = :lastReadTime WHERE id = :id")
+    suspend fun updateBookProgress(id: String, progress: Int, lastReadPage: Int, lastReadTime: Long)
     
     /**
      * Delete a book by ID
