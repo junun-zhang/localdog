@@ -68,6 +68,20 @@ object FileScanner {
     }
     
     /**
+     * 从文件名提取作者信息
+     * 支持格式: "书名-作者.epub" 或 "书名_作者.epub"
+     */
+    private fun extractAuthorFromFileName(fileName: String): String {
+        val nameWithoutExt = fileName.substringBeforeLast(".")
+        return when {
+            nameWithoutExt.contains("-") -> nameWithoutExt.substringAfterLast("-").trim()
+            nameWithoutExt.contains("_") -> nameWithoutExt.substringAfterLast("_").trim()
+            nameWithoutExt.contains("—") -> nameWithoutExt.substringAfterLast("—").trim()
+            else -> "未知作者"
+        }
+    }
+    
+    /**
      * 获取文件大小字符串
      */
     fun getFileSizeString(fileSize: Long): String {
