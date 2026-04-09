@@ -30,6 +30,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.ireader.R
 import com.example.ireader.data.model.Book
@@ -78,7 +79,7 @@ fun BookItem(
                 fontWeight = FontWeight.Medium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = Alignment.Center,
+                textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurface
             )
             
@@ -91,7 +92,7 @@ fun BookItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = Alignment.Center
+                textAlign = TextAlign.Center
             )
         }
     }
@@ -152,7 +153,7 @@ fun BookListItem(
             Spacer(modifier = Modifier.height(4.dp))
             
             Text(
-                text = book.format + " • " + book.fileSize,
+                text = book.format + " • " + book.getFileSizeString(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
