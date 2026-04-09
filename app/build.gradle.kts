@@ -82,6 +82,9 @@ dependencies {
     // File management
     implementation("androidx.documentfile:documentfile:1.0.1")
     
+    // Preferences
+    implementation("androidx.preference:preference-ktx:1.2.1")
+    
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     
