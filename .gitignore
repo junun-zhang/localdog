@@ -1,16 +1,41 @@
-# Gradle                                                                                                                         
+# Gradle 相关                                                                                                                    
+.gradle/
+gradle/caches/  
+gradle/wrapper/dists/                                                                                                                        
+build/  
+*/build/                                                                                              
+app/build/                                                                                                                         
+*.iml                                                                                                                            
+out/                                                                                                                             
+                                                                                                                                    
+# 本地配置                                                                                                                       
 .gradle/                                                                                                                         
-build/                                                                                                                           
-*/build/                                                                                                                         
-gradle/caches/                                                                                                                   
-gradle-wrapper.jar                                                                                                               
+local.properties   
+
+# 编译产物                                                                                            
+*.class                                                                                               
+*.jar                                                                                                 
+!gradle/wrapper/gradle-wrapper.jar                                                                                                                
                                                                                                                                     
 # IDE                                                                                                                            
 .idea/                                                                                                                           
 *.iml                                                                                                                            
-.vscode/                                                                                                                         
+.DS_Store 
+
+# Gradle 临时文件                                                                                     
+gradle/.tmp/                                                                                          
+gradle/daemon/**/*.lock                                                                               
+gradle/daemon/**/*.log                                                                                
+gradle/daemon/**/*.bin                                                                                                                        
                                                                                                                                     
-# 编译输出                                                                                                                       
+# 构建输出                                                                                                                       
+build/                                                                                                                           
 *.class                                                                                                                          
 *.jar                                                                                                                            
-!gradle/wrapper/gradle-wrapper.jar       
+*.war                                                                                                                            
+*.ear                                                                                                                            
+                                                                                                                                    
+# Android Studio                                                                                                                 
+.cxx/                                                                                                                            
+.externalNativeBuild/                                                                                                            
+captured/ 
