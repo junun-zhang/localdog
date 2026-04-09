@@ -24,13 +24,6 @@
             </intent-filter>
         </activity>
 
-        <!-- EPUB Reader Activity -->
-        <activity
-            android:name="com.folioreader.ui.activity.FolioActivity"
-            android:configChanges="orientation|screenSize"
-            android:screenOrientation="sensor"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
-
     </application>
 
 </manifest>
