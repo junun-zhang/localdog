@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.example.ireader.data.model.AuthResponse
 import com.example.ireader.data.model.Resource
 import com.example.ireader.data.model.User
 import com.example.ireader.data.network.AuthApi
@@ -83,9 +84,10 @@ class AuthRepository @Inject constructor(
     /**
      * 处理认证响应
      */
-    private fun handleAuthResponse(response: Response<User>): Resource<User> {
+    private fun handleAuthResponse(response: Response<AuthResponse>): Resource<User> {
         return if (response.isSuccessful && response.body() != null) {
-            val user = response.body()!!
+            val authResponse = response.body()!!
+            val user = authResponse.user.copy(token = authResponse.accessToken)
             saveUser(user)
             Resource.success(user)
         } else {

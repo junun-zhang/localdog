@@ -1,5 +1,9 @@
 package com.example.ireader.data.network
 
+import com.example.ireader.data.model.AuthResponse
+import com.example.ireader.data.model.LoginRequest
+import com.example.ireader.data.model.RegisterRequest
+import com.example.ireader.data.model.RefreshTokenRequest
 import com.example.ireader.data.model.User
 import retrofit2.Response
 import retrofit2.http.Body
@@ -16,7 +20,7 @@ interface AuthApi {
     @POST("auth/login")
     suspend fun login(
         @Body credentials: LoginRequest
-    ): Response<User>
+    ): Response<AuthResponse>
     
     /**
      * 用户注册
@@ -24,7 +28,7 @@ interface AuthApi {
     @POST("auth/register")
     suspend fun register(
         @Body user: RegisterRequest
-    ): Response<User>
+    ): Response<AuthResponse>
     
     /**
      * 刷新令牌
@@ -34,36 +38,3 @@ interface AuthApi {
         @Body refreshToken: RefreshTokenRequest
     ): Response<AuthResponse>
 }
-
-/**
- * 登录请求数据类
- */
-data class LoginRequest(
-    val email: String,
-    val password: String
-)
-
-/**
- * 注册请求数据类
- */
-data class RegisterRequest(
-    val email: String,
-    val password: String,
-    val name: String
-)
-
-/**
- * 刷新令牌请求数据类
- */
-data class RefreshTokenRequest(
-    val refreshToken: String
-)
-
-/**
- * 认证响应数据类
- */
-data class AuthResponse(
-    val accessToken: String,
-    val refreshToken: String,
-    val user: User
-)
