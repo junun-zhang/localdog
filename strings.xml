@@ -1,0 +1,40 @@
+<resources>
+    <string name="app_name">IReader</string>
+    <string name="bookshelf_title">书架</string>
+    <string name="reader_title">阅读器</string>
+    <string name="settings_title">设置</string>
+    <string name="import_books">导入书籍</string>
+    <string name="search_books">搜索书籍</string>
+    <string name="no_books_found">暂无书籍</string>
+    <string name="no_bookmarks_found">暂无书签</string>
+    <string name="reading_settings">阅读设置</string>
+    <string name="font_size">字体大小</string>
+    <string name="theme">主题</string>
+    <string name="day_theme">日间</string>
+    <string name="night_theme">夜间</string>
+    <string name="bookmarks">书签</string>
+    <string name="notes">笔记</string>
+    <string name="highlight">高亮</string>
+    <string name="delete_book">删除书籍</string>
+    <string name="confirm_delete">确定要删除这本书吗？</string>
+    
+    <!-- Bookstore -->
+    <string name="bookstore">书店</string>
+    <string name="bookstore_error">加载失败</string>
+    <string name="bookstore_empty">暂无书籍</string>
+    <string name="retry">重试</string>
+    <string name="refresh">刷新</string>
+    <string name="highlights">高亮</string>
+    <string name="no_highlights_found">暂无高亮</string>
+    <string name="no_notes_found">暂无笔记</string>
+    <string name="highlight_title">高亮</string>
+    <string name="highlight_selected_text">高亮选中文本</string>
+    <string name="choose_highlight_color">选择高亮颜色</string>
+    <string name="note_content">笔记内容</string>
+    <string name="enter_your_note_here">输入笔记...</string>
+    <string name="download">下载</string>
+    <string name="star">收藏</string>
+    <string name="review_count">评论数</string>
+    <string name="free">免费</string>
+    <string name="book">书籍</string>
+</resources>
