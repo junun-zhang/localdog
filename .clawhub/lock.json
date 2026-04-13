@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "self-improving": {
+      "version": "1.2.16",
+      "installedAt": 1774859762210
+    },
+    "nano-banana-pro": {
+      "version": "1.0.1",
+      "installedAt": 1774861981602
+    },
+    "word-docx": {
+      "version": "1.0.2",
+      "installedAt": 1774867741807
+    },
+    "excel-xlsx": {
+      "version": "1.0.2",
+      "installedAt": 1774867801635
+    },
+    "git-essentials": {
+      "version": "1.0.0",
+      "installedAt": 1775705102542
+    },
+    "note-taker": {
+      "version": "2.0.1",
+      "installedAt": 1775705462057
+    }
+  }
+}
