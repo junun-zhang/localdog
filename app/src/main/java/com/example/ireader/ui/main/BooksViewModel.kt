@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.ireader.data.model.Book
 import com.example.ireader.data.repository.BookRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import android.util.Log
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject

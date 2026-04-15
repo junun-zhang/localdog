@@ -1,38 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background">#FFFFFF</color>
-    <color name="background_primary">#FFFFFF</color>
-    <color name="background_primary_dark">#000000</color>
-    <color name="book_author">#757575</color>
-    <color name="book_info">#9E9E9E</color>
-    <color name="book_item_background">#FAFAFA</color>
-    <color name="book_item_border">#E0E0E0</color>
-    <color name="book_title">#212121</color>
-    <color name="error">#CF6679</color>
-    <color name="night_background">#121212</color>
-    <color name="night_book_author">#BDBDBD</color>
-    <color name="night_book_info">#9E9E9E</color>
-    <color name="night_book_item_background">#2A2A2A</color>
-    <color name="night_book_item_border">#424242</color>
-    <color name="night_book_title">#FFFFFF</color>
-    <color name="night_on_background">#FFFFFF</color>
-    <color name="night_on_surface">#FFFFFF</color>
-    <color name="night_surface">#1E1E1E</color>
-    <color name="night_surface_variant">#2D2D2D</color>
-    <color name="on_background">#000000</color>
-    <color name="on_error">#000000</color>
-    <color name="on_primary">#FFFFFF</color>
-    <color name="on_secondary">#000000</color>
-    <color name="on_surface">#000000</color>
-    <color name="primary">#6200EE</color>
-    <color name="primary_dark">#3700B3</color>
-    <color name="primary_light">#BB86FC</color>
-    <color name="secondary">#03DAC5</color>
-    <color name="secondary_dark">#018786</color>
-    <color name="secondary_light">#6EFFFF</color>
-    <color name="splash_background">#FFFFFF</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#F0F0F0</color>
+    <color name="black">#FF000000</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="splash_background">#FF6200EE</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="white">#FFFFFFFF</color>
     <dimen name="book_cover_corner_radius">8dp</dimen>
     <dimen name="book_item_height">180dp</dimen>
     <dimen name="book_item_width">120dp</dimen>
@@ -60,6 +35,8 @@
     <string name="bookmarks">书签</string>
     <string name="bookmarks_title">书签</string>
     <string name="bookshelf_title">书架</string>
+    <string name="bookstore_empty">暂无书籍</string>
+    <string name="bookstore_error">加载失败</string>
     <string name="bookstore_title">图书商城</string>
     <string name="cancel">取消</string>
     <string name="categories">分类</string>
@@ -70,6 +47,7 @@
     <string name="delete">删除</string>
     <string name="delete_book">删除书籍</string>
     <string name="description">简介</string>
+    <string name="download">下载</string>
     <string name="download_book">下载</string>
     <string name="download_failed">下载失败</string>
     <string name="download_success">下载成功</string>
@@ -79,6 +57,7 @@
     <string name="featured_books">精选推荐</string>
     <string name="file_size">文件大小</string>
     <string name="font_size">字体大小</string>
+    <string name="free">免费</string>
     <string name="free_books">免费书籍</string>
     <string name="green">绿色</string>
     <string name="highlight">高亮</string>
@@ -92,6 +71,7 @@
     <string name="new_releases">新书上架</string>
     <string name="night_theme">夜间</string>
     <string name="no_bookmarks">暂无书签</string>
+    <string name="no_bookmarks_found">暂无书签</string>
     <string name="no_books_found">暂无书籍</string>
     <string name="no_books_found_store">未找到相关书籍</string>
     <string name="no_highlights">暂无高亮</string>
@@ -108,6 +88,7 @@
     <string name="read_now">立即阅读</string>
     <string name="reader_title">阅读器</string>
     <string name="reading_settings">阅读设置</string>
+    <string name="retry">重试</string>
     <string name="save">保存</string>
     <string name="search_books">搜索书籍</string>
     <string name="search_books_hint">搜索书籍…</string>
@@ -115,15 +96,12 @@
     <string name="theme">主题</string>
     <string name="yellow">黄色</string>
     <style name="Theme.IReader" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">@color/background_primary</item>
-        <item name="android:navigationBarColor">@color/background_primary</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowBackground">@color/background_primary</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/white</item>
+        <item name="android:colorPrimary">@color/purple_500</item>
     </style>
-    <style name="Theme.IReader.Dark" parent="android:Theme.Material.NoActionBar">
-        <item name="android:statusBarColor">@color/background_primary_dark</item>
-        <item name="android:navigationBarColor">@color/background_primary_dark</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowBackground">@color/background_primary_dark</item>
+    <style name="Theme.IReader.Splash" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/purple_500</item>
     </style>
 </resources>

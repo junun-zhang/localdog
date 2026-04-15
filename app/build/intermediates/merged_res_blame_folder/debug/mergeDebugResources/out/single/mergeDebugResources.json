@@ -1,38 +1,54 @@
 [
     {
-        "merged": "com.example.ireader.app-debug-4:/mipmap-xxxhdpi_ic_launcher.xml.flat",
-        "source": "com.example.ireader.app-main-6:/mipmap-xxxhdpi/ic_launcher.xml"
+        "merged": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-debug-75:/drawable_ic_highlight.xml.flat",
+        "source": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-main-77:/drawable/ic_highlight.xml"
     },
     {
-        "merged": "com.example.ireader.app-debug-4:/xml_data_extraction_rules.xml.flat",
-        "source": "com.example.ireader.app-main-6:/xml/data_extraction_rules.xml"
+        "merged": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-debug-75:/xml_data_extraction_rules.xml.flat",
+        "source": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-main-77:/xml/data_extraction_rules.xml"
     },
     {
-        "merged": "com.example.ireader.app-debug-4:/xml_backup_rules.xml.flat",
-        "source": "com.example.ireader.app-main-6:/xml/backup_rules.xml"
+        "merged": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-debug-75:/mipmap-xxxhdpi_ic_launcher.xml.flat",
+        "source": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-main-77:/mipmap-xxxhdpi/ic_launcher.xml"
     },
     {
-        "merged": "com.example.ireader.app-debug-4:/drawable_ic_note.xml.flat",
-        "source": "com.example.ireader.app-main-6:/drawable/ic_note.xml"
+        "merged": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-debug-75:/drawable_ic_store.xml.flat",
+        "source": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-main-77:/drawable/ic_store.xml"
     },
     {
-        "merged": "com.example.ireader.app-debug-4:/drawable_splash_screen.xml.flat",
-        "source": "com.example.ireader.app-main-6:/drawable/splash_screen.xml"
+        "merged": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-debug-75:/drawable_splash_screen.xml.flat",
+        "source": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-main-77:/drawable/splash_screen.xml"
     },
     {
-        "merged": "com.example.ireader.app-debug-4:/drawable_ic_book_placeholder.xml.flat",
-        "source": "com.example.ireader.app-main-6:/drawable/ic_book_placeholder.xml"
+        "merged": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-debug-75:/drawable_ic_bookstore.xml.flat",
+        "source": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-main-77:/drawable/ic_bookstore.xml"
     },
     {
-        "merged": "com.example.ireader.app-debug-4:/drawable_ic_highlight.xml.flat",
-        "source": "com.example.ireader.app-main-6:/drawable/ic_highlight.xml"
+        "merged": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-debug-75:/drawable_ic_reader.xml.flat",
+        "source": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-main-77:/drawable/ic_reader.xml"
     },
     {
-        "merged": "com.example.ireader.app-debug-4:/drawable_ic_bookstore.xml.flat",
-        "source": "com.example.ireader.app-main-6:/drawable/ic_bookstore.xml"
+        "merged": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-debug-75:/xml_backup_rules.xml.flat",
+        "source": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-main-77:/xml/backup_rules.xml"
     },
     {
-        "merged": "com.example.ireader.app-debug-4:/drawable_ic_bookmark.xml.flat",
-        "source": "com.example.ireader.app-main-6:/drawable/ic_bookmark.xml"
+        "merged": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-debug-75:/drawable_ic_bookmark.xml.flat",
+        "source": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-main-77:/drawable/ic_bookmark.xml"
+    },
+    {
+        "merged": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-debug-75:/drawable_background_gradient.xml.flat",
+        "source": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-main-77:/drawable/background_gradient.xml"
+    },
+    {
+        "merged": "com.example.ireader.app-debug-75:/drawable_splash_screen.xml.flat",
+        "source": "com.example.ireader.app-main-77:/drawable/splash_screen.xml"
+    },
+    {
+        "merged": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-debug-75:/drawable_ic_note.xml.flat",
+        "source": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-main-77:/drawable/ic_note.xml"
+    },
+    {
+        "merged": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-debug-75:/drawable_ic_book_placeholder.xml.flat",
+        "source": "/home/as/.gradle/daemon/8.7/com.example.ireader.app-main-77:/drawable/ic_book_placeholder.xml"
     }
 ]

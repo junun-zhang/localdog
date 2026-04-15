@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +24,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.ireader.ui.bookmarks.BookmarksScreen
 import com.example.ireader.ui.bookshelf.BookShelfScreen
+import com.example.ireader.ui.reader.ReaderScreen
 import com.example.ireader.ui.components.IReaderBottomNavigation
 import com.example.ireader.ui.settings.SettingsScreen
 import com.example.ireader.ui.theme.IReaderTheme
@@ -89,6 +91,10 @@ fun IReaderScaffold(
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("bookshelf") {
+            composable("reader/{bookId}") { backStackEntry ->
+                val bookId = backStackEntry.arguments?.getString("bookId") ?: ""
+                ReaderScreen(bookId = bookId, navController = navController)
+            }
                 BookShelfScreen(
                     onBookClick = { },
                     onImportClick = onImportClick

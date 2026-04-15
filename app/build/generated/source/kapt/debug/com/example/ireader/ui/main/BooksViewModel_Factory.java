@@ -1,6 +1,5 @@
 package com.example.ireader.ui.main;
 
-import android.content.Context;
 import com.example.ireader.data.repository.BookRepository;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
@@ -10,7 +9,7 @@ import javax.annotation.processing.Generated;
 import javax.inject.Provider;
 
 @ScopeMetadata
-@QualifierMetadata("dagger.hilt.android.qualifiers.ApplicationContext")
+@QualifierMetadata
 @DaggerGenerated
 @Generated(
     value = "dagger.internal.codegen.ComponentProcessor",
@@ -25,25 +24,20 @@ import javax.inject.Provider;
 public final class BooksViewModel_Factory implements Factory<BooksViewModel> {
   private final Provider<BookRepository> bookRepositoryProvider;
 
-  private final Provider<Context> contextProvider;
-
-  public BooksViewModel_Factory(Provider<BookRepository> bookRepositoryProvider,
-      Provider<Context> contextProvider) {
+  public BooksViewModel_Factory(Provider<BookRepository> bookRepositoryProvider) {
     this.bookRepositoryProvider = bookRepositoryProvider;
-    this.contextProvider = contextProvider;
   }
 
   @Override
   public BooksViewModel get() {
-    return newInstance(bookRepositoryProvider.get(), contextProvider.get());
+    return newInstance(bookRepositoryProvider.get());
   }
 
-  public static BooksViewModel_Factory create(Provider<BookRepository> bookRepositoryProvider,
-      Provider<Context> contextProvider) {
-    return new BooksViewModel_Factory(bookRepositoryProvider, contextProvider);
+  public static BooksViewModel_Factory create(Provider<BookRepository> bookRepositoryProvider) {
+    return new BooksViewModel_Factory(bookRepositoryProvider);
   }
 
-  public static BooksViewModel newInstance(BookRepository bookRepository, Context context) {
-    return new BooksViewModel(bookRepository, context);
+  public static BooksViewModel newInstance(BookRepository bookRepository) {
+    return new BooksViewModel(bookRepository);
   }
 }

@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import com.example.ireader.data.database.BookDao
 import com.example.ireader.data.database.IReaderDatabase
 import com.example.ireader.data.model.Book
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

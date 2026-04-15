@@ -40,6 +40,8 @@ public final class BookDao_Impl implements BookDao {
 
   private final EntityDeletionOrUpdateAdapter<Book> __updateAdapterOfBook;
 
+  private final SharedSQLiteStatement __preparedStmtOfUpdateBookProgress;
+
   private final SharedSQLiteStatement __preparedStmtOfDeleteBook;
 
   private final SharedSQLiteStatement __preparedStmtOfDeleteAllBooks;
@@ -147,6 +149,14 @@ public final class BookDao_Impl implements BookDao {
         }
       }
     };
+    this.__preparedStmtOfUpdateBookProgress = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "UPDATE books SET progress = ?, lastReadPage = ?, lastReadTime = ? WHERE id = ?";
+        return _query;
+      }
+    };
     this.__preparedStmtOfDeleteBook = new SharedSQLiteStatement(__db) {
       @Override
       @NonNull
@@ -214,6 +224,42 @@ public final class BookDao_Impl implements BookDao {
           return Unit.INSTANCE;
         } finally {
           __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object updateBookProgress(final String id, final int progress, final int lastReadPage,
+      final long lastReadTime, final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfUpdateBookProgress.acquire();
+        int _argIndex = 1;
+        _stmt.bindLong(_argIndex, progress);
+        _argIndex = 2;
+        _stmt.bindLong(_argIndex, lastReadPage);
+        _argIndex = 3;
+        _stmt.bindLong(_argIndex, lastReadTime);
+        _argIndex = 4;
+        if (id == null) {
+          _stmt.bindNull(_argIndex);
+        } else {
+          _stmt.bindString(_argIndex, id);
+        }
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfUpdateBookProgress.release(_stmt);
         }
       }
     }, $completion);
@@ -358,6 +404,92 @@ public final class BookDao_Impl implements BookDao {
         _statement.release();
       }
     });
+  }
+
+  @Override
+  public Object getAllBooksOnce(final Continuation<? super List<Book>> $completion) {
+    final String _sql = "SELECT * FROM books ORDER BY lastReadTime DESC";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<Book>>() {
+      @Override
+      @NonNull
+      public List<Book> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfTitle = CursorUtil.getColumnIndexOrThrow(_cursor, "title");
+          final int _cursorIndexOfAuthor = CursorUtil.getColumnIndexOrThrow(_cursor, "author");
+          final int _cursorIndexOfCoverUri = CursorUtil.getColumnIndexOrThrow(_cursor, "coverUri");
+          final int _cursorIndexOfFilePath = CursorUtil.getColumnIndexOrThrow(_cursor, "filePath");
+          final int _cursorIndexOfFileSize = CursorUtil.getColumnIndexOrThrow(_cursor, "fileSize");
+          final int _cursorIndexOfPageCount = CursorUtil.getColumnIndexOrThrow(_cursor, "pageCount");
+          final int _cursorIndexOfLastReadPage = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadPage");
+          final int _cursorIndexOfLastReadTime = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadTime");
+          final int _cursorIndexOfProgress = CursorUtil.getColumnIndexOrThrow(_cursor, "progress");
+          final int _cursorIndexOfFormat = CursorUtil.getColumnIndexOrThrow(_cursor, "format");
+          final int _cursorIndexOfAddedTime = CursorUtil.getColumnIndexOrThrow(_cursor, "addedTime");
+          final List<Book> _result = new ArrayList<Book>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final Book _item;
+            final String _tmpId;
+            if (_cursor.isNull(_cursorIndexOfId)) {
+              _tmpId = null;
+            } else {
+              _tmpId = _cursor.getString(_cursorIndexOfId);
+            }
+            final String _tmpTitle;
+            if (_cursor.isNull(_cursorIndexOfTitle)) {
+              _tmpTitle = null;
+            } else {
+              _tmpTitle = _cursor.getString(_cursorIndexOfTitle);
+            }
+            final String _tmpAuthor;
+            if (_cursor.isNull(_cursorIndexOfAuthor)) {
+              _tmpAuthor = null;
+            } else {
+              _tmpAuthor = _cursor.getString(_cursorIndexOfAuthor);
+            }
+            final String _tmpCoverUri;
+            if (_cursor.isNull(_cursorIndexOfCoverUri)) {
+              _tmpCoverUri = null;
+            } else {
+              _tmpCoverUri = _cursor.getString(_cursorIndexOfCoverUri);
+            }
+            final String _tmpFilePath;
+            if (_cursor.isNull(_cursorIndexOfFilePath)) {
+              _tmpFilePath = null;
+            } else {
+              _tmpFilePath = _cursor.getString(_cursorIndexOfFilePath);
+            }
+            final long _tmpFileSize;
+            _tmpFileSize = _cursor.getLong(_cursorIndexOfFileSize);
+            final int _tmpPageCount;
+            _tmpPageCount = _cursor.getInt(_cursorIndexOfPageCount);
+            final int _tmpLastReadPage;
+            _tmpLastReadPage = _cursor.getInt(_cursorIndexOfLastReadPage);
+            final long _tmpLastReadTime;
+            _tmpLastReadTime = _cursor.getLong(_cursorIndexOfLastReadTime);
+            final int _tmpProgress;
+            _tmpProgress = _cursor.getInt(_cursorIndexOfProgress);
+            final String _tmpFormat;
+            if (_cursor.isNull(_cursorIndexOfFormat)) {
+              _tmpFormat = null;
+            } else {
+              _tmpFormat = _cursor.getString(_cursorIndexOfFormat);
+            }
+            final long _tmpAddedTime;
+            _tmpAddedTime = _cursor.getLong(_cursorIndexOfAddedTime);
+            _item = new Book(_tmpId,_tmpTitle,_tmpAuthor,_tmpCoverUri,_tmpFilePath,_tmpFileSize,_tmpPageCount,_tmpLastReadPage,_tmpLastReadTime,_tmpProgress,_tmpFormat,_tmpAddedTime);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
   }
 
   @Override

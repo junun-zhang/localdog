@@ -49,7 +49,7 @@ public final class HighlightDao_Impl implements HighlightDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `highlights` (`id`,`bookId`,`content`,`page`,`startPosition`,`endPosition`,`color`,`createdAt`,`updatedAt`) VALUES (?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `highlights` (`id`,`bookId`,`content`,`page`,`startPosition`,`endPosition`,`color`,`note`,`createdAt`,`updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -78,8 +78,13 @@ public final class HighlightDao_Impl implements HighlightDao {
         } else {
           statement.bindString(7, entity.getColor());
         }
-        statement.bindLong(8, entity.getCreatedAt());
-        statement.bindLong(9, entity.getUpdatedAt());
+        if (entity.getNote() == null) {
+          statement.bindNull(8);
+        } else {
+          statement.bindString(8, entity.getNote());
+        }
+        statement.bindLong(9, entity.getCreatedAt());
+        statement.bindLong(10, entity.getUpdatedAt());
       }
     };
     this.__deletionAdapterOfHighlight = new EntityDeletionOrUpdateAdapter<Highlight>(__db) {
@@ -103,7 +108,7 @@ public final class HighlightDao_Impl implements HighlightDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `highlights` SET `id` = ?,`bookId` = ?,`content` = ?,`page` = ?,`startPosition` = ?,`endPosition` = ?,`color` = ?,`createdAt` = ?,`updatedAt` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `highlights` SET `id` = ?,`bookId` = ?,`content` = ?,`page` = ?,`startPosition` = ?,`endPosition` = ?,`color` = ?,`note` = ?,`createdAt` = ?,`updatedAt` = ? WHERE `id` = ?";
       }
 
       @Override
@@ -132,12 +137,17 @@ public final class HighlightDao_Impl implements HighlightDao {
         } else {
           statement.bindString(7, entity.getColor());
         }
-        statement.bindLong(8, entity.getCreatedAt());
-        statement.bindLong(9, entity.getUpdatedAt());
-        if (entity.getId() == null) {
-          statement.bindNull(10);
+        if (entity.getNote() == null) {
+          statement.bindNull(8);
         } else {
-          statement.bindString(10, entity.getId());
+          statement.bindString(8, entity.getNote());
+        }
+        statement.bindLong(9, entity.getCreatedAt());
+        statement.bindLong(10, entity.getUpdatedAt());
+        if (entity.getId() == null) {
+          statement.bindNull(11);
+        } else {
+          statement.bindString(11, entity.getId());
         }
       }
     };
@@ -298,6 +308,7 @@ public final class HighlightDao_Impl implements HighlightDao {
           final int _cursorIndexOfStartPosition = CursorUtil.getColumnIndexOrThrow(_cursor, "startPosition");
           final int _cursorIndexOfEndPosition = CursorUtil.getColumnIndexOrThrow(_cursor, "endPosition");
           final int _cursorIndexOfColor = CursorUtil.getColumnIndexOrThrow(_cursor, "color");
+          final int _cursorIndexOfNote = CursorUtil.getColumnIndexOrThrow(_cursor, "note");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
           final int _cursorIndexOfUpdatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "updatedAt");
           final List<Highlight> _result = new ArrayList<Highlight>(_cursor.getCount());
@@ -333,11 +344,17 @@ public final class HighlightDao_Impl implements HighlightDao {
             } else {
               _tmpColor = _cursor.getString(_cursorIndexOfColor);
             }
+            final String _tmpNote;
+            if (_cursor.isNull(_cursorIndexOfNote)) {
+              _tmpNote = null;
+            } else {
+              _tmpNote = _cursor.getString(_cursorIndexOfNote);
+            }
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
             final long _tmpUpdatedAt;
             _tmpUpdatedAt = _cursor.getLong(_cursorIndexOfUpdatedAt);
-            _item = new Highlight(_tmpId,_tmpBookId,_tmpContent,_tmpPage,_tmpStartPosition,_tmpEndPosition,_tmpColor,_tmpCreatedAt,_tmpUpdatedAt);
+            _item = new Highlight(_tmpId,_tmpBookId,_tmpContent,_tmpPage,_tmpStartPosition,_tmpEndPosition,_tmpColor,_tmpNote,_tmpCreatedAt,_tmpUpdatedAt);
             _result.add(_item);
           }
           return _result;
@@ -370,6 +387,7 @@ public final class HighlightDao_Impl implements HighlightDao {
           final int _cursorIndexOfStartPosition = CursorUtil.getColumnIndexOrThrow(_cursor, "startPosition");
           final int _cursorIndexOfEndPosition = CursorUtil.getColumnIndexOrThrow(_cursor, "endPosition");
           final int _cursorIndexOfColor = CursorUtil.getColumnIndexOrThrow(_cursor, "color");
+          final int _cursorIndexOfNote = CursorUtil.getColumnIndexOrThrow(_cursor, "note");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
           final int _cursorIndexOfUpdatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "updatedAt");
           final List<Highlight> _result = new ArrayList<Highlight>(_cursor.getCount());
@@ -405,11 +423,17 @@ public final class HighlightDao_Impl implements HighlightDao {
             } else {
               _tmpColor = _cursor.getString(_cursorIndexOfColor);
             }
+            final String _tmpNote;
+            if (_cursor.isNull(_cursorIndexOfNote)) {
+              _tmpNote = null;
+            } else {
+              _tmpNote = _cursor.getString(_cursorIndexOfNote);
+            }
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
             final long _tmpUpdatedAt;
             _tmpUpdatedAt = _cursor.getLong(_cursorIndexOfUpdatedAt);
-            _item = new Highlight(_tmpId,_tmpBookId,_tmpContent,_tmpPage,_tmpStartPosition,_tmpEndPosition,_tmpColor,_tmpCreatedAt,_tmpUpdatedAt);
+            _item = new Highlight(_tmpId,_tmpBookId,_tmpContent,_tmpPage,_tmpStartPosition,_tmpEndPosition,_tmpColor,_tmpNote,_tmpCreatedAt,_tmpUpdatedAt);
             _result.add(_item);
           }
           return _result;
