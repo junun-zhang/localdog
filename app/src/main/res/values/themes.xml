@@ -1,17 +1,13 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme -->
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
     <style name="Theme.IReader" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">@color/background_primary</item>
-        <item name="android:navigationBarColor">@color/background_primary</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowBackground">@color/background_primary</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/white</item>
+        <item name="android:colorPrimary">@color/purple_500</item>
     </style>
     
-    <!-- Dark theme -->
-    <style name="Theme.IReader.Dark" parent="android:Theme.Material.NoActionBar">
-        <item name="android:statusBarColor">@color/background_primary_dark</item>
-        <item name="android:navigationBarColor">@color/background_primary_dark</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowBackground">@color/background_primary_dark</item>
+    <style name="Theme.IReader.Splash" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/purple_500</item>
     </style>
 </resources>

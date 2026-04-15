@@ -17,6 +17,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.ireader.R
 import com.example.ireader.data.model.HighlightColor
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.unit.Dp
 
 @Composable
 fun HighlightDialog(

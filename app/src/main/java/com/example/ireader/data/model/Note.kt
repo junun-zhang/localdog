@@ -1,30 +1,50 @@
 package com.example.ireader.data.model
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
+import androidx.room.Ignore
+import java.util.UUID
 
 /**
  * 笔记数据模型
  * @property id 笔记唯一标识符
  * @property bookId 关联的书籍ID
+ * @property bookTitle 书籍标题（非持久化，运行时填充）
  * @property content 笔记内容
  * @property position 位置信息（页码或章节）
  * @property chapterName 章节名称（EPUB）
- * @property createdTime 创建时间  // ← 改为 createdTime
+ * @property createdTime 创建时间
  * @property updatedAt 更新时间
  */
-@Entity(tableName = "notes")
+@Entity(
+    tableName = "notes",
+    foreignKeys = [
+        ForeignKey(
+            entity = Book::class,
+            parentColumns = ["id"],
+            childColumns = ["bookId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("bookId")]
+)
 data class Note(
-    @PrimaryKey val id: String,
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val bookId: String,
     val content: String,
     val position: Int = 0, // 页码（PDF/TXT）或章节索引（EPUB）
     val chapterName: String = "", // EPUB章节名称
-    val createdTime: Long = System.currentTimeMillis(),  // ← 改为 createdTime
+    val createdTime: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 ) {
+    // 非持久化字段，用于UI显示
+    @Ignore
+    var bookTitle: String = ""
+
     fun getCreatedAtString(): String {
-        val diff = System.currentTimeMillis() - createdTime  // ← 改为 createdTime
+        val diff = System.currentTimeMillis() - createdTime
         return when {
             diff < 60_000 -> "刚刚"
             diff < 3_600_000 -> "${diff / 60_000}分钟前"

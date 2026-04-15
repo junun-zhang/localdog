@@ -39,3 +39,4 @@ build/
 .cxx/                                                                                                                            
 .externalNativeBuild/                                                                                                            
 captured/ 
+app/build/

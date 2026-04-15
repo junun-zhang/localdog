@@ -17,4 +17,7 @@
     <string name="highlight">高亮</string>
     <string name="delete_book">删除书籍</string>
     <string name="confirm_delete">确定要删除这本书吗？</string>
+    <string name="retry">重试</string>
+    <string name="download">下载</string>
+    <string name="free">免费</string>
 </resources>

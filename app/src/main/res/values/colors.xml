@@ -1,49 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary colors -->
-    <color name="primary">#6200EE</color>
-    <color name="primary_dark">#3700B3</color>
-    <color name="primary_light">#BB86FC</color>
-    
-    <!-- Secondary colors -->
-    <color name="secondary">#03DAC5</color>
-    <color name="secondary_dark">#018786</color>
-    <color name="secondary_light">#6EFFFF</color>
-    
-    <!-- Background colors -->
-    <color name="background">#FFFFFF</color>
-    <color name="background_primary">#FFFFFF</color>
-    <color name="background_primary_dark">#000000</color>
-    <color name="splash_background">#FFFFFF</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#F0F0F0</color>
-    
-    <!-- Text colors -->
-    <color name="on_primary">#FFFFFF</color>
-    <color name="on_secondary">#000000</color>
-    <color name="on_background">#000000</color>
-    <color name="on_surface">#000000</color>
-    
-    <!-- Error colors -->
-    <color name="error">#CF6679</color>
-    <color name="on_error">#000000</color>
-    
-    <!-- Book item colors -->
-    <color name="book_item_background">#FAFAFA</color>
-    <color name="book_item_border">#E0E0E0</color>
-    <color name="book_title">#212121</color>
-    <color name="book_author">#757575</color>
-    <color name="book_info">#9E9E9E</color>
-    
-    <!-- Night theme colors -->
-    <color name="night_background">#121212</color>
-    <color name="night_surface">#1E1E1E</color>
-    <color name="night_surface_variant">#2D2D2D</color>
-    <color name="night_on_background">#FFFFFF</color>
-    <color name="night_on_surface">#FFFFFF</color>
-    <color name="night_book_item_background">#2A2A2A</color>
-    <color name="night_book_item_border">#424242</color>
-    <color name="night_book_title">#FFFFFF</color>
-    <color name="night_book_author">#BDBDBD</color>
-    <color name="night_book_info">#9E9E9E</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="splash_background">#FF6200EE</color>
 </resources>

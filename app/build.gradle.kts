@@ -63,6 +63,9 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     
+    // 新增：Splash Screen API
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    
     // Architecture Components
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
@@ -102,6 +105,8 @@ dependencies {
     
     // Image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
+    // Timber logging
+    implementation("com.jakewharton.timber:timber:5.0.1")
     
     // Material Icons
     implementation("androidx.compose.material:material-icons-extended:1.6.0")

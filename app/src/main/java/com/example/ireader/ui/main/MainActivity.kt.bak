@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            IReaderApp(filePicker = { filePicker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain")) })
+            IReaderApp(filePicker = { filePicker.launch(arrayOf(application/epub+zip, application/pdf, text/plain)) })
         }
     }
 }
@@ -62,11 +62,11 @@ fun IReaderScaffold(
     navController: NavHostController,
     onImportClick: () -> Unit
 ) {
-    var currentRoute by remember { mutableStateOf("bookshelf") }
+    var currentRoute by remember { mutableStateOf(bookshelf) }
     
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     navBackStackEntry?.destination?.route?.let { route ->
-        currentRoute = route.split("/")[0]
+        currentRoute = route.split(/)[0]
     }
     
     Scaffold(
@@ -75,9 +75,9 @@ fun IReaderScaffold(
                 currentRoute = currentRoute,
                 onNavigate = { route ->
                     when (route) {
-                        "bookshelf" -> navController.navigate("bookshelf")
-                        "bookmarks" -> navController.navigate("bookmarks")
-                        "settings" -> navController.navigate("settings")
+                        bookshelf -> navController.navigate(bookshelf)
+                        bookmarks -> navController.navigate(bookmarks)
+                        settings -> navController.navigate(settings)
                     }
                 }
             )
@@ -85,19 +85,19 @@ fun IReaderScaffold(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "bookshelf",
+            startDestination = bookshelf,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("bookshelf") {
+            composable(bookshelf) {
                 BookShelfScreen(
                     onBookClick = { },
                     onImportClick = onImportClick
                 )
             }
-            composable("bookmarks") {
+            composable(bookmarks) {
                 BookmarksScreen(navController = navController)
             }
-            composable("settings") {
+            composable(settings) {
                 SettingsScreen(navController = navController)
             }
         }

@@ -1,4 +1,4 @@
-package com.example.ireader.ui.highlights
+package com.example.ireader.ui.notes
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -6,34 +6,34 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
 import com.example.ireader.R
-import com.example.ireader.data.model.Highlight
-import com.example.ireader.ui.reader.ReaderViewModel
+import com.example.ireader.data.model.Note
+import com.example.ireader.ui.main.NotesViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HighlightsScreen(
-    navController: NavHostController,
-    viewModel: HighlightsViewModel = viewModel()
+fun NotesScreen(
+    navController: androidx.navigation.NavHostController,
+    modifier: Modifier = Modifier
 ) {
-    val highlights by viewModel.highlights.observeAsState(emptyList())
+    val viewModel: NotesViewModel = viewModel()
+    val notes by viewModel.notes.collectAsStateWithLifecycle(initialValue = emptyList())
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.highlights)) },
+                title = { Text(stringResource(R.string.notes)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -45,9 +45,9 @@ fun HighlightsScreen(
             )
         }
     ) { paddingValues ->
-        if (highlights.isEmpty()) {
+        if (notes.isEmpty()) {
             Box(
-                modifier = Modifier
+                modifier = modifier
                     .fillMaxSize()
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
@@ -56,14 +56,14 @@ fun HighlightsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.FormatColorFill,
+                        imageVector = androidx.compose.material.icons.Icons.Default.EditNote,
                         contentDescription = null,
                         modifier = Modifier.size(80.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = stringResource(R.string.no_highlights_found),
+                        text = stringResource(R.string.no_notes_found),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -71,13 +71,13 @@ fun HighlightsScreen(
             }
         } else {
             LazyColumn(
-                modifier = Modifier
+                modifier = modifier
                     .fillMaxSize()
                     .padding(paddingValues),
                 contentPadding = PaddingValues(16.dp)
             ) {
-                items(highlights) { highlight ->
-                    HighlightItem(highlight = highlight)
+                items(notes) { note ->
+                    NoteItem(note = note, onDelete = { viewModel.deleteNote(it) })
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -86,18 +86,16 @@ fun HighlightsScreen(
 }
 
 @Composable
-fun HighlightItem(highlight: Highlight) {
+fun NoteItem(
+    note: Note,
+    onDelete: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = when (highlight.color) {
-                "yellow" -> Color.Yellow.copy(alpha = 0.3f)
-                "green" -> Color.Green.copy(alpha = 0.3f)
-                "blue" -> Color.Blue.copy(alpha = 0.3f)
-                "red" -> Color.Red.copy(alpha = 0.3f)
-                else -> MaterialTheme.colorScheme.surface
-            }
-        )
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -107,14 +105,12 @@ fun HighlightItem(highlight: Highlight) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = highlight.bookTitle,
+                    text = note.bookTitle,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    fontWeight = FontWeight.Bold
                 )
-                
                 Text(
-                    text = highlight.getHighlightTimeString(),
+                    text = note.createdTime.toString(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -123,19 +119,45 @@ fun HighlightItem(highlight: Highlight) {
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = highlight.content,
+                text = note.content,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
             
-            if (!highlight.note.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = highlight.note!!,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                IconButton(onClick = { showDeleteDialog = true }) {
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Default.Delete,
+                        contentDescription = "Delete note"
+                    )
+                }
             }
         }
+    }
+    
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("删除笔记") },
+            text = { Text("确定要删除这条笔记吗？") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDelete(note.id)
+                    showDeleteDialog = false
+                }) {
+                    Text("删除")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
     }
 }

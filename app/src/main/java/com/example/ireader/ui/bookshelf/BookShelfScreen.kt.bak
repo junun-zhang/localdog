@@ -31,12 +31,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ireader.R
 import com.example.ireader.data.model.Book
-import com.example.ireader.ui.util.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -50,12 +48,6 @@ fun BookShelfScreen(
     
     // 添加淡入动画状态
     var isVisible by remember { mutableStateOf(false) }
-    
-    // 获取屏幕相关的尺寸
-    val fontSizeMultiplier = getFontSizeMultiplier()
-    val padding = getPadding()
-    val spacing = getSpacing()
-    val columnsCount = getGridColumnsCount()
     
     LaunchedEffect(Unit) {
         viewModel.loadBooks()
@@ -83,11 +75,8 @@ fun BookShelfScreen(
                 TopAppBar(
                     title = { 
                         Text(
-                            text = "stringResource(R.string.bookshelf_title)",
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = MaterialTheme.typography.headlineMedium.fontSize * fontSizeMultiplier
-                            )
+                            text = stringResource(R.string.bookshelf_title),
+                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     },
                     actions = {
@@ -120,15 +109,15 @@ fun BookShelfScreen(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp * fontSizeMultiplier)
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(48.dp),
                                 strokeWidth = 4.dp
                             )
                             Text(
-                                text = "加载中...",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontSizeMultiplier),
+                                text = 加载中...,
+                                style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -142,24 +131,24 @@ fun BookShelfScreen(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(24.dp * fontSizeMultiplier)
+                            verticalArrangement = Arrangement.spacedBy(24.dp)
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_book_placeholder),
                                 contentDescription = null,
-                                modifier = Modifier.size(100.dp * fontSizeMultiplier),
+                                modifier = Modifier.size(100.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "stringResource(R.string.no_books_found)",
-                                style = MaterialTheme.typography.headlineSmall.copy(fontSize = MaterialTheme.typography.headlineSmall.fontSize * fontSizeMultiplier),
+                                text = stringResource(R.string.no_books_found),
+                                style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "从设备导入您的电子书开始阅读之旅",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontSizeMultiplier),
+                                text = 从设备导入您的电子书开始阅读之旅,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 24.dp * fontSizeMultiplier)
+                                modifier = Modifier.padding(horizontal = 24.dp)
                             )
                             Button(
                                 onClick = onImportClick,
@@ -169,59 +158,46 @@ fun BookShelfScreen(
                                 ),
                                 shape = RoundedCornerShape(24.dp),
                                 modifier = Modifier
-                                    .padding(top = 8.dp * fontSizeMultiplier)
+                                    .padding(top = 8.dp)
                             ) {
-                                Text(text = "导入书籍")
+                                Text(text = 导入书籍)
                             }
                         }
                     }
                 } else {
                     LazyVerticalGrid(
-                        columns = GridCells.Fixed(columnsCount), // 使用动态列数
-                        contentPadding = PaddingValues(padding),
-                        verticalArrangement = Arrangement.spacedBy(spacing),
-                        horizontalArrangement = Arrangement.spacedBy(spacing),
+                        columns = GridCells.Adaptive(minSize = 160.dp),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues)
                     ) {
                         items(books, key = { book -> book.id }) { book ->
-                            BookItemWithAnimation(
-                                book = book,
-                                onClick = { onBookClick(book.id) },
-                                isVisible = isVisible,
-                                fontSizeMultiplier = fontSizeMultiplier
-                            )
+                            AnimatedVisibility(
+                                visible = isVisible,
+                                enter = androidx.compose.animation.slideInVertically(
+                                    initialOffsetY = 50,
+                                    animationSpec = tween(durationMillis = 300)
+                                ) + androidx.compose.animation.fadeIn(
+                                    initialAlpha = 0.7f,
+                                    animationSpec = tween(durationMillis = 300)
+                                )
+                            ) {
+                                BookItem(
+                                    book = book,
+                                    onClick = { onBookClick(book.id) },
+                                    modifier = Modifier
+                                        .animateItemPlacement( // 添加项目重新排列动画
+                                            animationSpec = tween(durationMillis = 300)
+                                        )
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BookItemWithAnimation(
-    book: Book,
-    onClick: () -> Unit,
-    isVisible: Boolean,
-    fontSizeMultiplier: Float
-) {
-    AnimatedVisibility(
-        visible = isVisible,
-        enter = androidx.compose.animation.slideInVertically(
-            initialOffsetY = { (50 * fontSizeMultiplier).toInt() },
-            animationSpec = tween(durationMillis = 300)
-        ) + androidx.compose.animation.fadeIn(
-            initialAlpha = 0.7f,
-            animationSpec = tween(durationMillis = 300)
-        )
-    ) {
-        BookItem(
-            book = book,
-            onClick = onClick,
-            modifier = Modifier
-                .then(Modifier) // 移除animateItemPlacement，因为不是所有Grid item 都需要它
-        )
     }
 }

@@ -1,9 +1,18 @@
 package com.example.ireader.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -19,93 +28,122 @@ fun SettingsScreen(
     var isDarkTheme by remember { mutableStateOf(false) }
     var brightness by remember { mutableStateOf(0.8f) }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+    // 添加淡入动画状态
+    var isVisible by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        // 延迟显示以产生动画效果
+        kotlinx.coroutines.delay(100)
+        isVisible = true
+    }
+    
+    // 创建渐变背景
+    val gradientBrush = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.secondaryContainer,
+            MaterialTheme.colorScheme.primaryContainer
+        )
+    )
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(brush = gradientBrush)
+    ) {
+        Scaffold(
+            modifier = modifier,
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.settings_title)) },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                )
+            }
+        ) { paddingValues ->
+            AnimatedVisibility(
+                visible = isVisible,
+                enter = androidx.compose.animation.fadeIn(initialAlpha = 0.5f)
+            ) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(16.dp)
+                ) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.reading_settings),
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                    
+                    item {
+                        SettingItem(
+                            title = stringResource(R.string.font_size),
+                            value = "${fontSize.toInt()}sp",
+                            onValueChange = { fontSize = it }
+                        )
+                    }
+                    
+                    item {
+                        SettingItem(
+                            title = stringResource(R.string.theme),
+                            value = if (isDarkTheme) stringResource(R.string.night_theme) else stringResource(R.string.day_theme),
+                            onToggle = { isDarkTheme = !isDarkTheme }
+                        )
+                    }
+                    
+                    item {
+                        Column(
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        ) {
+                            Text(
+                                text = "亮度",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            Slider(
+                                value = brightness,
+                                onValueChange = { brightness = it },
+                                valueRange = 0.1f..1.0f,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                    
+                    item {
+                        Divider(modifier = Modifier.padding(vertical = 16.dp))
+                    }
+                    
+                    item {
+                        Text(
+                            text = "应用信息",
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                    
+                    item {
+                        ListItem(
+                            headlineContent = { Text("版本") },
+                            supportingContent = { Text("1.0.0") }
+                        )
+                    }
+                    
+                    item {
+                        ListItem(
+                            headlineContent = { Text("存储位置") },
+                            supportingContent = { Text("内部存储") }
                         )
                     }
                 }
-            )
-        }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-        ) {
-            item {
-                Text(
-                    text = stringResource(R.string.reading_settings),
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
-            
-            item {
-                SettingItem(
-                    title = stringResource(R.string.font_size),
-                    value = "${fontSize.toInt()}sp",
-                    onValueChange = { fontSize = it }
-                )
-            }
-            
-            item {
-                SettingItem(
-                    title = stringResource(R.string.theme),
-                    value = if (isDarkTheme) stringResource(R.string.night_theme) else stringResource(R.string.day_theme),
-                    onToggle = { isDarkTheme = !isDarkTheme }
-                )
-            }
-            
-            item {
-                Column(
-                    modifier = Modifier.padding(vertical = 12.dp)
-                ) {
-                    Text(
-                        text = "亮度",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Slider(
-                        value = brightness,
-                        onValueChange = { brightness = it },
-                        valueRange = 0.1f..1.0f,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-            
-            item {
-                Divider(modifier = Modifier.padding(vertical = 16.dp))
-            }
-            
-            item {
-                Text(
-                    text = "应用信息",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
-            
-            item {
-                ListItem(
-                    headlineContent = { Text("版本") },
-                    supportingContent = { Text("1.0.0") }
-                )
-            }
-            
-            item {
-                ListItem(
-                    headlineContent = { Text("存储位置") },
-                    supportingContent = { Text("内部存储") }
-                )
             }
         }
     }
