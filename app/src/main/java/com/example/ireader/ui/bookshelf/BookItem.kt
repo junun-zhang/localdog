@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.ireader.data.model.Book
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -71,7 +74,7 @@ fun BookItem(
                 .fillMaxSize()
                 .padding(8.dp)
         ) {
-            // 封面：固定 80x80dp
+            // 封面：固定 80x80dp，带进度显示
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -86,6 +89,26 @@ fun BookItem(
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
+                
+                // 进度显示（右下角）
+                if (book.progress > 0) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .offset(x = (-4).dp, y = (-4).dp),
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color.White.copy(alpha = 0.9f)
+                    ) {
+                        Text(
+                            text = "${book.progress}%",
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                    }
+                }
             }
             
             Spacer(modifier = Modifier.height(4.dp))
@@ -186,6 +209,22 @@ fun BookListItem(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+        
+        // 进度显示（右下角）
+        if (book.progress > 0) {
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+            ) {
+                Text(
+                    text = "${book.progress}%",
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
