@@ -26,6 +26,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -135,8 +136,8 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                                 val pfd = ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY)
                                 val renderer = PdfRenderer(pfd)
                                 val pages = renderer.pageCount
-                                val firstPage = renderPageSync(renderer, book.lastReadPage, context, 1.0f)
-                                PdfRenderState(renderer, pfd, pages, book.lastReadPage, firstPage)
+                                val firstPage = renderPageSync(renderer, book.lastReadPage, context, book.lastZoom)
+                                PdfRenderState(renderer, pfd, pages, book.lastReadPage, firstPage, book.lastZoom)
                             }
                         }
                         if (result == null) {
@@ -693,10 +694,15 @@ private fun PdfViewer(
     val swipeThreshold = 100f
     var dragOffset by remember { mutableStateOf(0f) }
     
-    // 缩放状态 - 使用graphicsLayer实时缩放
-    var scale by remember { mutableStateOf(state.zoom) }
+    // 缩放状态 - 使用graphicsLayer实时缩放，从state.zoom恢复
+    var scale by remember(state.zoom) { mutableStateOf(state.zoom) }
     
-    Box(Modifier.fillMaxSize().background(bgColor)) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(bgColor)
+            .clipToBounds()
+    ) {
         // PDF 内容 - 使用 graphicsLayer 进行实时缩放变换
         if (state.currentBitmap != null && !isRendering) {
             Image(
