@@ -35,17 +35,6 @@ import androidx.compose.ui.unit.dp
 import com.example.ireader.R
 import com.example.ireader.data.model.Book
 
-// 定义格式颜色
-private fun getFormatColor(format: String): Color {
-    return when (format.lowercase()) {
-        "pdf" -> Color(0xFFE53935) // 红色
-        "epub" -> Color(0xFF1E88E5) // 蓝色
-        "txt" -> Color(0xFF43A047) // 绿色
-        "json" -> Color(0xFF8E24AA) // 紫色
-        else -> Color.Gray
-    }
-}
-
 @Composable
 fun BookItem(
     book: Book,
@@ -66,20 +55,18 @@ fun BookItem(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(8.dp)
         ) {
-            // Book cover placeholder with format-specific background
+            // Book cover placeholder
             Box(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(getFormatColor(book.format)),
-                contentAlignment = Alignment.Center
+                    .background(MaterialTheme.colorScheme.primaryContainer)
             ) {
-                Text(
-                    text = book.format.uppercase(),
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                Image(
+                    painter = painterResource(id = R.drawable.ic_book_placeholder),
+                    contentDescription = "Book cover",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
             
@@ -124,20 +111,18 @@ fun BookListItem(
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Book cover thumbnail with format-specific background
+        // Book cover thumbnail
         Box(
             modifier = Modifier
                 .size(60.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(getFormatColor(book.format)),
-            contentAlignment = Alignment.Center
+                .background(MaterialTheme.colorScheme.primaryContainer)
         ) {
-            Text(
-                text = book.format.uppercase(),
-                color = Color.White,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+            Image(
+                painter = painterResource(id = R.drawable.ic_book_placeholder),
+                contentDescription = "Book cover",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
         }
         
