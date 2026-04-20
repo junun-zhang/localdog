@@ -244,6 +244,7 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                 bgColor = bgColor,
                 textColor = textColor,
                 fontSize = readingPrefs.fontSize,
+                readingMode = readingPrefs.readingMode,
                 onTapCenter = { 
                     Log.d(TAG, "EpubViewer onTapCenter called")
                     showSettingsPanel = true 
@@ -437,22 +438,14 @@ private fun TxtScrollViewer(
     }
     
     Box(Modifier.fillMaxSize().background(bgColor)) {
-        // 文本内容
+        // 文本内容（可滚动）
         Column(
             Modifier
                 .fillMaxSize()
                 .padding(16.dp)
                 .verticalScroll(scrollState)
-        ) {
-            Text(content, color = textColor, fontSize = fontSize.sp, lineHeight = (fontSize + 4).sp)
-        }
-        
-        // 透明覆盖层用于手势检测（仅点击中央区域触发设置）
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Color(0x01000000))
                 .pointerInput(Unit) {
+                    // 只检测点击中央区域
                     detectTapGestures(onTap = { offset ->
                         val width = size.width
                         if (offset.x >= width / 3 && offset.x < width * 2 / 3) {
@@ -460,7 +453,9 @@ private fun TxtScrollViewer(
                         }
                     })
                 }
-        )
+        ) {
+            Text(content, color = textColor, fontSize = fontSize.sp, lineHeight = (fontSize + 4).sp)
+        }
         
         // 滚动进度指示（右上角）
         if (scrollState.maxValue > 0) {
@@ -502,16 +497,14 @@ private fun SettingsPanelContent(
         Text("阅读设置", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(16.dp))
         
-        // 阅读模式切换（仅 TXT/EPUB 支持）
-        if (!isPdf) {
-            Text("阅读模式", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
-                ModeButton(ReadingMode.PAGED, currentReadingMode, onReadingModeChanged, "翻页")
-                ModeButton(ReadingMode.SCROLL, currentReadingMode, onReadingModeChanged, "滚动")
-            }
-            Spacer(Modifier.height(16.dp))
+        // 阅读模式选择（所有格式都支持）
+        Text("阅读模式", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
+            ModeButton(ReadingMode.PAGED, currentReadingMode, onReadingModeChanged, "翻页")
+            ModeButton(ReadingMode.SCROLL, currentReadingMode, onReadingModeChanged, "滚动")
         }
+        Spacer(Modifier.height(16.dp))
         
         // 主题选择
         Text("主题", style = MaterialTheme.typography.titleMedium)
@@ -712,6 +705,7 @@ private fun EpubViewer(
     bgColor: Color,
     textColor: Color,
     fontSize: Int,
+    readingMode: ReadingMode,
     onTapCenter: () -> Unit,
     onIndexChange: (Int) -> Unit
 ) {
@@ -749,51 +743,53 @@ private fun EpubViewer(
                 }
             )
             
-            // 透明覆盖层用于手势检测
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(Color(0x01000000))
-                    .pointerInput(content.size, index) {
-                        // 垂直滑动翻页（拖拽式）
-                        detectVerticalDragGestures(
-                            onDragEnd = {
-                                Log.d(TAG, "EPUB drag end: offset=$dragOffset")
-                                // 拖拽式翻页：手指向下拖=上一章，手指向上拖=下一章
-                                if (dragOffset > swipeThreshold && index > 0) {
-                                    // 向下滑动 = 上一章
-                                    onIndexChange(index - 1)
-                                } else if (dragOffset < -swipeThreshold && index < content.size - 1) {
-                                    // 向上滑动 = 下一章
-                                    onIndexChange(index + 1)
+            // 翻页模式：透明覆盖层用于手势检测
+            // 滚动模式：WebView 自带滚动，不需要覆盖层
+            if (readingMode == ReadingMode.PAGED) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color(0x01000000))
+                        .pointerInput(content.size, index) {
+                            // 垂直滑动翻页（拖拽式）
+                            detectVerticalDragGestures(
+                                onDragEnd = {
+                                    Log.d(TAG, "EPUB drag end: offset=$dragOffset")
+                                    if (dragOffset > swipeThreshold && index > 0) {
+                                        onIndexChange(index - 1)
+                                    } else if (dragOffset < -swipeThreshold && index < content.size - 1) {
+                                        onIndexChange(index + 1)
+                                    }
+                                    dragOffset = 0f
+                                },
+                                onVerticalDrag = { _, dragAmount ->
+                                    dragOffset += dragAmount
                                 }
-                                dragOffset = 0f
-                            },
-                            onVerticalDrag = { _, dragAmount ->
-                                dragOffset += dragAmount
-                            }
-                        )
-                    }
-                    .pointerInput(Unit) {
-                        detectTapGestures(onTap = { offset ->
-                            Log.d(TAG, "EPUB tap at offset: $offset, width: ${size.width}")
-                            val width = size.width
-                            if (offset.x >= width / 3 && offset.x < width * 2 / 3) {
-                                onTapCenter()
-                            }
-                        })
-                    }
-            )
+                            )
+                        }
+                        .pointerInput(Unit) {
+                            detectTapGestures(onTap = { offset ->
+                                Log.d(TAG, "EPUB tap at offset: $offset, width: ${size.width}")
+                                val width = size.width
+                                if (offset.x >= width / 3 && offset.x < width * 2 / 3) {
+                                    onTapCenter()
+                                }
+                            })
+                        }
+                )
+            }
         }
         
-        // 翻页控制（上下箭头）
-        Row(Modifier.fillMaxWidth().padding(8.dp), Arrangement.SpaceBetween) {
-            IconButton({ if (index > 0) onIndexChange(index - 1) }, enabled = index > 0) { 
-                Icon(Icons.Filled.KeyboardArrowUp, "上一章") 
-            }
-            Text("${index + 1} / ${content.size}")
-            IconButton({ if (index < content.size - 1) onIndexChange(index + 1) }, enabled = index < content.size - 1) { 
-                Icon(Icons.Filled.KeyboardArrowDown, "下一章") 
+        // 翻页控制（仅翻页模式显示）
+        if (readingMode == ReadingMode.PAGED) {
+            Row(Modifier.fillMaxWidth().padding(8.dp), Arrangement.SpaceBetween) {
+                IconButton({ if (index > 0) onIndexChange(index - 1) }, enabled = index > 0) { 
+                    Icon(Icons.Filled.KeyboardArrowUp, "上一章") 
+                }
+                Text("${index + 1} / ${content.size}")
+                IconButton({ if (index < content.size - 1) onIndexChange(index + 1) }, enabled = index < content.size - 1) { 
+                    Icon(Icons.Filled.KeyboardArrowDown, "下一章") 
+                }
             }
         }
     }
