@@ -13,7 +13,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -37,8 +36,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.math.max
-import kotlin.math.min
 import java.io.*
 import java.io.File
 
@@ -116,8 +113,8 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                                 val pfd = ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY)
                                 val renderer = PdfRenderer(pfd)
                                 val pages = renderer.pageCount
-                                val firstPage = renderPageSync(renderer, book.lastReadPage, context, 1.0f) // 默认缩放1.0
-                                PdfRenderState(renderer, pfd, pages, book.lastReadPage, firstPage, 1.0f)
+                                val firstPage = renderPageSync(renderer, book.lastReadPage, context)
+                                PdfRenderState(renderer, pfd, pages, book.lastReadPage, firstPage)
                             }
                         }
                         if (result == null) {
@@ -150,12 +147,12 @@ fun ReaderScreen(bookId: String, navController: NavController) {
         }
     }
     
-    LaunchedEffect(pdfState?.currentPage, pdfState?.zoom) {
+    LaunchedEffect(pdfState?.currentPage) {
         val state = pdfState
         if (state != null && state.renderer != null) {
             val result = withTimeoutOrNull(15000L) {
                 withContext(Dispatchers.IO) {
-                    renderPageSync(state.renderer!!, state.currentPage, context, state.zoom)
+                    renderPageSync(state.renderer!!, state.currentPage, context)
                 }
             }
             if (result != null) {
@@ -228,8 +225,7 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                     Log.d(TAG, "onTapCenter called")
                     showSettingsPanel = true 
                 },
-                onPageChange = { page -> pdfState = pdfState?.copy(currentPage = page) },
-                onZoomChange = { zoom -> pdfState = pdfState?.copy(zoom = zoom) }
+                onPageChange = { page -> pdfState = pdfState?.copy(currentPage = page) }
             )
             epubContent.isNotEmpty() -> EpubViewer(
                 content = epubContent, 
@@ -339,94 +335,45 @@ private fun PdfViewer(
     state: PdfRenderState,
     bgColor: Color,
     onTapCenter: () -> Unit,
-    onPageChange: (Int) -> Unit,
-    onZoomChange: (Float) -> Unit
+    onPageChange: (Int) -> Unit
 ) {
     var isRendering by remember { mutableStateOf(false) }
-    var doubleTapCount by remember { mutableStateOf(0) }
-    var lastTapTime by remember { mutableStateOf(0L) }
     
     Box(Modifier.fillMaxSize().background(bgColor)) {
-        // PDF 内容 - 使用可缩放的容器
+        // PDF 内容
         if (state.currentBitmap != null && !isRendering) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectTransformGestures { centroid, pan, zoom, rotation ->
-                            // 只处理缩放手势，忽略旋转和平移
-                            if (zoom != 1f) {
-                                val newZoom = min(max(state.zoom * zoom, 0.5f), 3.0f)
-                                onZoomChange(newZoom)
-                            }
-                        }
-                    }
-            ) {
-                // 根据缩放级别调整图片大小
-                val displayWidth = (state.currentBitmap!!.width * state.zoom).toInt()
-                val displayHeight = (state.currentBitmap!!.height * state.zoom).toInt()
-                
-                Image(
-                    bitmap = state.currentBitmap.asImageBitmap(),
-                    contentDescription = "PDF 页面",
-                    modifier = Modifier
-                        .size(displayWidth.dp, displayHeight.dp)
-                        .align(Alignment.Center)
-                )
-            }
+            Image(
+                bitmap = state.currentBitmap.asImageBitmap(),
+                contentDescription = "PDF 页面",
+                modifier = Modifier.fillMaxSize()
+            )
         }
         
-        // 透明覆盖层用于手势检测（仅用于翻页和中心点击，避免与缩放冲突）
+        // 透明覆盖层用于手势检测
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Color(0x01000000))
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { offset ->
-                            val currentTime = System.currentTimeMillis()
-                            
-                            // 检查是否是双击
-                            if (currentTime - lastTapTime < 300) { // 300ms内为双击
-                                doubleTapCount++
-                            } else {
-                                doubleTapCount = 1
+                .background(Color(0x01000000)).pointerInput(Unit) {
+                    detectTapGestures(onTap = { offset ->
+                        Log.d(TAG, "PDF tap at offset: $offset, width: ${size.width}")
+                        val width = size.width
+                        when {
+                            offset.x < width / 3 && state.currentPage > 0 -> {
+                                Log.d(TAG, "Tap left - prev page")
+                                onPageChange(state.currentPage - 1)
+                                isRendering = true
                             }
-                            
-                            lastTapTime = currentTime
-                            
-                            if (doubleTapCount == 2) {
-                                // 双击放大/缩小切换
-                                val newZoom = if (state.zoom <= 1.0f) 1.5f else 1.0f
-                                onZoomChange(newZoom)
-                                doubleTapCount = 0
-                            } else {
-                                // 延迟处理单击，以防是双击的第一下
-                                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                                    if (doubleTapCount == 1) { // 确认是单击
-                                        Log.d(TAG, "PDF tap at offset: $offset, width: ${size.width}")
-                                        val width = size.width
-                                        when {
-                                            offset.x < width / 3 && state.currentPage > 0 -> {
-                                                Log.d(TAG, "Tap left - prev page")
-                                                onPageChange(state.currentPage - 1)
-                                                isRendering = true
-                                            }
-                                            offset.x >= width * 2 / 3 && state.currentPage < state.totalPages - 1 -> {
-                                                Log.d(TAG, "Tap right - next page")
-                                                onPageChange(state.currentPage + 1)
-                                                isRendering = true
-                                            }
-                                            else -> {
-                                                Log.d(TAG, "Tap center - show settings")
-                                                onTapCenter()
-                                            }
-                                        }
-                                    }
-                                }, 300) // 300ms后确认是单击
+                            offset.x >= width * 2 / 3 && state.currentPage < state.totalPages - 1 -> {
+                                Log.d(TAG, "Tap right - next page")
+                                onPageChange(state.currentPage + 1)
+                                isRendering = true
+                            }
+                            else -> {
+                                Log.d(TAG, "Tap center - show settings")
+                                onTapCenter()
                             }
                         }
-                    )
+                    })
                 }
         )
         
@@ -434,63 +381,17 @@ private fun PdfViewer(
             Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
         }
         
-        // 页码指示和缩放比例
+        // 页码指示
         if (state.totalPages > 0 && state.currentBitmap != null) {
-            Box(Modifier.fillMaxSize(), Alignment.BottomCenter) {
-                Column(
-                    Modifier
-                        .padding(bottom = 16.dp)
-                        .align(Alignment.BottomCenter)
-                ) {
-                    // 显示缩放比例
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-                    ) {
-                        Row(
-                            Modifier
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("${(state.zoom * 100).toInt()}%", fontSize = 12.sp)
+            Box(Modifier.fillMaxSize().padding(bottom = 16.dp), Alignment.BottomCenter) {
+                Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)) {
+                    Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton({ if (state.currentPage > 0) { onPageChange(state.currentPage - 1); isRendering = true } }, enabled = state.currentPage > 0) {
+                            Icon(Icons.Filled.KeyboardArrowLeft, "上一页")
                         }
-                    }
-                    
-                    Spacer(Modifier.height(4.dp))
-                    
-                    // 页码控制
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-                    ) {
-                        Row(
-                            Modifier
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = { 
-                                    if (state.currentPage > 0) { 
-                                        onPageChange(state.currentPage - 1); 
-                                        isRendering = true 
-                                    } 
-                                }, 
-                                enabled = state.currentPage > 0
-                            ) {
-                                Icon(Icons.Filled.KeyboardArrowLeft, "上一页")
-                            }
-                            Text("${state.currentPage + 1} / ${state.totalPages}")
-                            IconButton(
-                                onClick = { 
-                                    if (state.currentPage < state.totalPages - 1) { 
-                                        onPageChange(state.currentPage + 1); 
-                                        isRendering = true 
-                                    } 
-                                }, 
-                                enabled = state.currentPage < state.totalPages - 1
-                            ) {
-                                Icon(Icons.Filled.KeyboardArrowRight, "下一页")
-                            }
+                        Text("${state.currentPage + 1} / ${state.totalPages}")
+                        IconButton({ if (state.currentPage < state.totalPages - 1) { onPageChange(state.currentPage + 1); isRendering = true } }, enabled = state.currentPage < state.totalPages - 1) {
+                            Icon(Icons.Filled.KeyboardArrowRight, "下一页")
                         }
                     }
                 }
@@ -615,17 +516,16 @@ data class PdfRenderState(
     val parcelFileDescriptor: ParcelFileDescriptor?, 
     val totalPages: Int, 
     val currentPage: Int, 
-    val currentBitmap: Bitmap?,
-    val zoom: Float = 1.0f // 添加缩放属性
+    val currentBitmap: Bitmap?
 )
 
 data class SpineItem(val id: String, val href: String, val content: String)
 
 // 辅助函数
-private fun renderPageSync(renderer: PdfRenderer, pageIndex: Int, context: Context, zoom: Float = 1.0f): Bitmap {
+private fun renderPageSync(renderer: PdfRenderer, pageIndex: Int, context: Context): Bitmap {
     val page = renderer.openPage(pageIndex)
-    val width = (context.resources.displayMetrics.widthPixels * zoom).toInt()
-    val height = ((width * page.height) / page.width)
+    val width = context.resources.displayMetrics.widthPixels
+    val height = (width * page.height / page.width)
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     bitmap.eraseColor(android.graphics.Color.WHITE)
     page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
