@@ -192,14 +192,14 @@ fun ReaderScreen(bookId: String, navController: NavController) {
             val page = pdfState?.currentPage ?: currentTxtPage
             val chapter = currentSpineIndex
             val progress = if (pdfState != null) {
-                // PDF：页码进度
-                ((page.toFloat() / (pdfState?.totalPages ?: 1)) * 100).toInt()
+                // PDF：页码进度（页码+1因为从0开始）
+                (((page + 1).toFloat() / (pdfState?.totalPages ?: 1)) * 100).toInt()
             } else if (epubContent.isNotEmpty()) {
-                // EPUB：章节进度
-                ((currentSpineIndex.toFloat() / epubContent.size) * 100).toInt()
+                // EPUB：章节进度（索引+1因为从0开始）
+                (((currentSpineIndex + 1).toFloat() / epubContent.size) * 100).toInt()
             } else if (txtPages.isNotEmpty()) {
-                // TXT：页码进度
-                ((currentTxtPage.toFloat() / txtPages.size) * 100).toInt()
+                // TXT：页码进度（页码+1因为从0开始）
+                (((currentTxtPage + 1).toFloat() / txtPages.size) * 100).toInt()
             } else {
                 book.progress
             }
