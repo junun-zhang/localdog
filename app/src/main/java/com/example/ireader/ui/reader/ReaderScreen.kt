@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.core.content.edit
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -182,9 +183,14 @@ fun ReaderScreen(bookId: String, navController: NavController) {
             SettingsPanelContent(
                 currentTheme = readingPrefs.theme,
                 currentFontSize = readingPrefs.fontSize,
+                currentReadingMode = readingPrefs.readingMode,
                 isPdf = book.format.lowercase() == "pdf",
                 onThemeChanged = { newTheme ->
                     readingPrefs = readingPrefs.copy(theme = newTheme)
+                    settingsManager.saveReadingPreferences(readingPrefs)
+                },
+                onReadingModeChanged = { newMode ->
+                    readingPrefs = readingPrefs.copy(readingMode = newMode)
                     settingsManager.saveReadingPreferences(readingPrefs)
                 },
                 onFontSizeIncrease = {
@@ -244,6 +250,15 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                 },
                 onIndexChange = { currentSpineIndex = it }
             )
+            // 根据阅读模式选择显示方式
+            showText && readingPrefs.readingMode == ReadingMode.SCROLL -> TxtScrollViewer(
+                content = textContent,
+                bgColor = bgColor,
+                textColor = textColor,
+                fontSize = readingPrefs.fontSize,
+                bookId = book.id,
+                onTapCenter = { showSettingsPanel = true }
+            )
             showText && txtPages.isNotEmpty() -> TxtViewer(
                 pages = txtPages,
                 currentPage = currentTxtPage,
@@ -261,6 +276,7 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                 bgColor = bgColor,
                 textColor = textColor,
                 fontSize = readingPrefs.fontSize,
+                bookId = book.id,
                 onTapCenter = { showSettingsPanel = true }
             )
         }
@@ -400,20 +416,38 @@ private fun TxtScrollViewer(
     bgColor: Color,
     textColor: Color,
     fontSize: Int,
+    bookId: String,
     onTapCenter: () -> Unit
 ) {
+    val context = LocalContext.current
+    val scrollPrefs = remember { context.getSharedPreferences("scroll_positions", Context.MODE_PRIVATE) }
+    val scrollState = rememberScrollState()
+    
+    // 恢复滚动位置
+    LaunchedEffect(bookId) {
+        val savedPosition = scrollPrefs.getInt(bookId, 0)
+        scrollState.scrollTo(savedPosition)
+    }
+    
+    // 保存滚动位置（滚动停止时）
+    LaunchedEffect(scrollState.value) {
+        if (!scrollState.isScrollInProgress) {
+            scrollPrefs.edit { putInt(bookId, scrollState.value) }
+        }
+    }
+    
     Box(Modifier.fillMaxSize().background(bgColor)) {
         // 文本内容
         Column(
             Modifier
                 .fillMaxSize()
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
         ) {
-            Text(content, color = textColor, fontSize = fontSize.sp)
+            Text(content, color = textColor, fontSize = fontSize.sp, lineHeight = (fontSize + 4).sp)
         }
         
-        // 透明覆盖层用于手势检测
+        // 透明覆盖层用于手势检测（仅点击中央区域触发设置）
         Box(
             Modifier
                 .fillMaxSize()
@@ -427,6 +461,29 @@ private fun TxtScrollViewer(
                     })
                 }
         )
+        
+        // 滚动进度指示（右上角）
+        if (scrollState.maxValue > 0) {
+            val progress = (scrollState.value.toFloat() / scrollState.maxValue * 100).toInt()
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(top = 8.dp, end = 8.dp),
+                Alignment.TopEnd
+            ) {
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = bgColor.copy(alpha = 0.8f)
+                ) {
+                    Text(
+                        "${progress}%",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = textColor
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -434,14 +491,27 @@ private fun TxtScrollViewer(
 private fun SettingsPanelContent(
     currentTheme: ReadingTheme,
     currentFontSize: Int,
+    currentReadingMode: ReadingMode,
     isPdf: Boolean,
     onThemeChanged: (ReadingTheme) -> Unit,
+    onReadingModeChanged: (ReadingMode) -> Unit,
     onFontSizeIncrease: () -> Unit,
     onFontSizeDecrease: () -> Unit
 ) {
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
         Text("阅读设置", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(16.dp))
+        
+        // 阅读模式切换（仅 TXT/EPUB 支持）
+        if (!isPdf) {
+            Text("阅读模式", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
+                ModeButton(ReadingMode.PAGED, currentReadingMode, onReadingModeChanged, "翻页")
+                ModeButton(ReadingMode.SCROLL, currentReadingMode, onReadingModeChanged, "滚动")
+            }
+            Spacer(Modifier.height(16.dp))
+        }
         
         // 主题选择
         Text("主题", style = MaterialTheme.typography.titleMedium)
@@ -472,6 +542,40 @@ private fun SettingsPanelContent(
         }
         
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun ModeButton(
+    mode: ReadingMode,
+    currentMode: ReadingMode,
+    onClick: (ReadingMode) -> Unit,
+    label: String
+) {
+    val isSelected = mode == currentMode
+    
+    Column(
+        Modifier
+            .clickable { onClick(mode) }
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            modifier = Modifier.size(40.dp),
+            shape = MaterialTheme.shapes.small,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+            border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        ) {
+            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                Icon(
+                    imageVector = if (mode == ReadingMode.PAGED) Icons.Filled.MenuBook else Icons.Filled.ViewStream,
+                    contentDescription = label,
+                    tint = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(label, style = MaterialTheme.typography.bodySmall)
     }
 }
 
