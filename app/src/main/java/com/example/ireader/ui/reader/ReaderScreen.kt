@@ -340,12 +340,13 @@ private fun TxtViewer(
                     detectVerticalDragGestures(
                         onDragEnd = {
                             Log.d(TAG, "TXT drag end: offset=$dragOffset, threshold=$swipeThreshold")
-                            if (dragOffset > swipeThreshold && currentPage < pages.size - 1) {
-                                // 向下滑动 = 下一页
-                                onPageChange(currentPage + 1)
-                            } else if (dragOffset < -swipeThreshold && currentPage > 0) {
-                                // 向上滑动 = 上一页
+                            // 拖拽式翻页：手指向下拖=内容下移=露出上方=上一页，手指向上拖=内容上移=露出下方=下一页
+                            if (dragOffset > swipeThreshold && currentPage > 0) {
+                                // 向下滑动（手指向下拖）= 上一页
                                 onPageChange(currentPage - 1)
+                            } else if (dragOffset < -swipeThreshold && currentPage < pages.size - 1) {
+                                // 向上滑动（手指向上拖）= 下一页
+                                onPageChange(currentPage + 1)
                             }
                             dragOffset = 0f
                         },
@@ -533,15 +534,18 @@ private fun PdfViewer(
                 .fillMaxSize()
                 .background(Color(0x01000000))
                 .pointerInput(state.totalPages, state.currentPage) {
-                    // 垂直滑动翻页
+                    // 垂直滑动翻页（拖拽式）
                     detectVerticalDragGestures(
                         onDragEnd = {
                             Log.d(TAG, "PDF drag end: offset=$dragOffset")
-                            if (dragOffset > swipeThreshold && state.currentPage < state.totalPages - 1) {
-                                onPageChange(state.currentPage + 1)
-                                isRendering = true
-                            } else if (dragOffset < -swipeThreshold && state.currentPage > 0) {
+                            // 拖拽式翻页：手指向下拖=上一页，手指向上拖=下一页
+                            if (dragOffset > swipeThreshold && state.currentPage > 0) {
+                                // 向下滑动 = 上一页
                                 onPageChange(state.currentPage - 1)
+                                isRendering = true
+                            } else if (dragOffset < -swipeThreshold && state.currentPage < state.totalPages - 1) {
+                                // 向上滑动 = 下一页
+                                onPageChange(state.currentPage + 1)
                                 isRendering = true
                             }
                             dragOffset = 0f
@@ -647,14 +651,17 @@ private fun EpubViewer(
                     .fillMaxSize()
                     .background(Color(0x01000000))
                     .pointerInput(content.size, index) {
-                        // 垂直滑动翻页
+                        // 垂直滑动翻页（拖拽式）
                         detectVerticalDragGestures(
                             onDragEnd = {
                                 Log.d(TAG, "EPUB drag end: offset=$dragOffset")
-                                if (dragOffset > swipeThreshold && index < content.size - 1) {
-                                    onIndexChange(index + 1)
-                                } else if (dragOffset < -swipeThreshold && index > 0) {
+                                // 拖拽式翻页：手指向下拖=上一章，手指向上拖=下一章
+                                if (dragOffset > swipeThreshold && index > 0) {
+                                    // 向下滑动 = 上一章
                                     onIndexChange(index - 1)
+                                } else if (dragOffset < -swipeThreshold && index < content.size - 1) {
+                                    // 向上滑动 = 下一章
+                                    onIndexChange(index + 1)
                                 }
                                 dragOffset = 0f
                             },
