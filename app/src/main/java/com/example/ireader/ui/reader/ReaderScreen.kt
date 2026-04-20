@@ -75,11 +75,26 @@ fun ReaderScreen(bookId: String, navController: NavController) {
     var error by remember { mutableStateOf("") }
     var pdfState by remember { mutableStateOf<PdfRenderState?>(null) }
     var epubContent by remember { mutableStateOf<List<SpineItem>>(emptyList()) }
-    var currentSpineIndex by remember { mutableStateOf(0) }
+    var currentSpineIndex by remember { mutableStateOf(book.lastReadChapter) }  // 恢复章节
     var showText by remember { mutableStateOf(false) }
     var textContent by remember { mutableStateOf("") }
     var txtPages by remember { mutableStateOf<List<String>>(emptyList()) }
-    var currentTxtPage by remember { mutableStateOf(0) }
+    var currentTxtPage by remember { mutableStateOf(book.lastReadPage) }  // 恢复页码
+    
+    // 恢复阅读模式
+    LaunchedEffect(book.id) {
+        try {
+            val savedMode = ReadingMode.valueOf(book.lastReadMode)
+            readingPrefs = readingPrefs.copy(readingMode = savedMode)
+        } catch (e: Exception) {
+            // 默认翻页模式
+        }
+        // 恢复字体大小
+        if (book.lastFontSize in 12..24) {
+            readingPrefs = readingPrefs.copy(fontSize = book.lastFontSize)
+            settingsManager.saveReadingPreferences(readingPrefs)
+        }
+    }
     
     // 根据主题获取颜色
     val bgColor = when (readingPrefs.theme) {
@@ -172,6 +187,28 @@ fun ReaderScreen(bookId: String, navController: NavController) {
         onDispose {
             pdfState?.renderer?.close()
             pdfState?.parcelFileDescriptor?.close()
+            
+            // 退出时保存阅读进度
+            val page = pdfState?.currentPage ?: currentTxtPage
+            val chapter = currentSpineIndex
+            val progress = if (pdfState != null) {
+                ((page.toFloat() / (pdfState?.totalPages ?: 1)) * 100).toInt()
+            } else if (txtPages.isNotEmpty()) {
+                ((currentTxtPage.toFloat() / txtPages.size) * 100).toInt()
+            } else {
+                book.progress
+            }
+            
+            viewModel.saveReadProgress(
+                bookId = book.id,
+                page = page,
+                chapter = chapter,
+                progress = progress,
+                readingMode = readingPrefs.readingMode.name,
+                scrollPosition = 0,
+                fontSize = readingPrefs.fontSize,
+                zoom = pdfState?.zoom ?: 1.0f
+            )
         }
     }
     
@@ -193,6 +230,12 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                 onReadingModeChanged = { newMode ->
                     readingPrefs = readingPrefs.copy(readingMode = newMode)
                     settingsManager.saveReadingPreferences(readingPrefs)
+                    // 保存阅读模式到数据库
+                    viewModel.updateReadProgress(
+                        bookId = book.id,
+                        readingMode = newMode.name,
+                        fontSize = readingPrefs.fontSize
+                    )
                 },
                 onFontSizeIncrease = {
                     if (readingPrefs.fontSize < 24) {
