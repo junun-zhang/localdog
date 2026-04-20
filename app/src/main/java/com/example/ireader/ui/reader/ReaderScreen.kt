@@ -15,8 +15,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.core.content.edit
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.edit
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
@@ -744,14 +745,12 @@ private fun EpubViewer(
             )
             
             // 翻页模式：透明覆盖层用于手势检测
-            // 滚动模式：WebView 自带滚动，不需要覆盖层
             if (readingMode == ReadingMode.PAGED) {
                 Box(
                     Modifier
                         .fillMaxSize()
                         .background(Color(0x01000000))
                         .pointerInput(content.size, index) {
-                            // 垂直滑动翻页（拖拽式）
                             detectVerticalDragGestures(
                                 onDragEnd = {
                                     Log.d(TAG, "EPUB drag end: offset=$dragOffset")
@@ -769,7 +768,6 @@ private fun EpubViewer(
                         }
                         .pointerInput(Unit) {
                             detectTapGestures(onTap = { offset ->
-                                Log.d(TAG, "EPUB tap at offset: $offset, width: ${size.width}")
                                 val width = size.width
                                 if (offset.x >= width / 3 && offset.x < width * 2 / 3) {
                                     onTapCenter()
@@ -777,6 +775,30 @@ private fun EpubViewer(
                             })
                         }
                 )
+            }
+            
+            // 滚动模式：添加设置按钮（右上角悬浮）
+            if (readingMode == ReadingMode.SCROLL) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(8.dp),
+                    Alignment.TopEnd
+                ) {
+                    FloatingActionButton(
+                        onClick = onTapCenter,
+                        modifier = Modifier.size(40.dp),
+                        shape = RoundedCornerShape(50),
+                        containerColor = bgColor.copy(alpha = 0.9f)
+                    ) {
+                        Icon(
+                            Icons.Filled.Settings,
+                            "设置",
+                            tint = textColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
         }
         
