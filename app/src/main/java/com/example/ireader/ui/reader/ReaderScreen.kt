@@ -41,14 +41,11 @@ import java.io.File
 
 private const val TAG = "ReaderScreen"
 
-// 使用 ReadingSettings.kt 中已定义的 ReadingTheme 和 ReadingPreferences
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReaderScreen(bookId: String, navController: NavController) {
     val context = LocalContext.current
     val viewModel: ReaderViewModel = viewModel()
-    val scope = rememberCoroutineScope()
     
     // 阅读设置
     val settingsManager = remember { ReadingSettingsManager(context) }
@@ -224,7 +221,10 @@ fun ReaderScreen(bookId: String, navController: NavController) {
             pdfState != null -> PdfViewer(
                 state = pdfState!!, 
                 bgColor = bgColor,
-                onTapCenter = { showSettingsPanel = true },
+                onTapCenter = { 
+                    Log.d(TAG, "onTapCenter called")
+                    showSettingsPanel = true 
+                },
                 onPageChange = { page -> pdfState = pdfState?.copy(currentPage = page) }
             )
             epubContent.isNotEmpty() -> EpubViewer(
@@ -233,7 +233,10 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                 bgColor = bgColor,
                 textColor = textColor,
                 fontSize = readingPrefs.fontSize,
-                onTapCenter = { showSettingsPanel = true },
+                onTapCenter = { 
+                    Log.d(TAG, "EpubViewer onTapCenter called")
+                    showSettingsPanel = true 
+                },
                 onIndexChange = { currentSpineIndex = it }
             )
             showText -> TxtViewer(
@@ -241,7 +244,10 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                 bgColor = bgColor,
                 textColor = textColor,
                 fontSize = readingPrefs.fontSize,
-                onTapCenter = { showSettingsPanel = true }
+                onTapCenter = { 
+                    Log.d(TAG, "TxtViewer onTapCenter called")
+                    showSettingsPanel = true 
+                }
             )
         }
     }
@@ -334,28 +340,42 @@ private fun PdfViewer(
     var isRendering by remember { mutableStateOf(false) }
     
     Box(Modifier.fillMaxSize().background(bgColor)) {
+        // PDF 内容
         if (state.currentBitmap != null && !isRendering) {
             Image(
                 bitmap = state.currentBitmap.asImageBitmap(),
                 contentDescription = "PDF 页面",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectTapGestures(onTap = {
-                            val width = size.width
-                            if (it.x < width / 3 && state.currentPage > 0) {
-                                onPageChange(state.currentPage - 1)
-                                isRendering = true
-                            } else if (it.x >= width * 2 / 3 && state.currentPage < state.totalPages - 1) {
-                                onPageChange(state.currentPage + 1)
-                                isRendering = true
-                            } else {
-                                onTapCenter()
-                            }
-                        })
-                    }
+                modifier = Modifier.fillMaxSize()
             )
         }
+        
+        // 透明覆盖层用于手势检测
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color(0x01000000)).pointerInput(Unit) {
+                    detectTapGestures(onTap = { offset ->
+                        Log.d(TAG, "PDF tap at offset: $offset, width: ${size.width}")
+                        val width = size.width
+                        when {
+                            offset.x < width / 3 && state.currentPage > 0 -> {
+                                Log.d(TAG, "Tap left - prev page")
+                                onPageChange(state.currentPage - 1)
+                                isRendering = true
+                            }
+                            offset.x >= width * 2 / 3 && state.currentPage < state.totalPages - 1 -> {
+                                Log.d(TAG, "Tap right - next page")
+                                onPageChange(state.currentPage + 1)
+                                isRendering = true
+                            }
+                            else -> {
+                                Log.d(TAG, "Tap center - show settings")
+                                onTapCenter()
+                            }
+                        }
+                    })
+                }
+        )
         
         if (isRendering || state.currentBitmap == null) {
             Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
@@ -392,45 +412,53 @@ private fun EpubViewer(
     onTapCenter: () -> Unit,
     onIndexChange: (Int) -> Unit
 ) {
-    val scope = rememberCoroutineScope()
-    
     Column(Modifier.fillMaxSize().background(bgColor)) {
-        AndroidView(
-            factory = { ctx -> 
-                WebView(ctx).apply { 
-                    webViewClient = WebViewClient()
-                    settings.javaScriptEnabled = true
-                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                }
-            },
-            modifier = Modifier
-                .weight(1f)
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = {
-                        val width = size.width
-                        if (it.x >= width / 3 && it.x < width * 2 / 3) {
-                            onTapCenter()
-                        }
-                    })
+        Box(Modifier.weight(1f)) {
+            // WebView 内容
+            AndroidView(
+                factory = { ctx -> 
+                    WebView(ctx).apply { 
+                        webViewClient = WebViewClient()
+                        settings.javaScriptEnabled = true
+                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    }
                 },
-            update = { view -> 
-                val css = """
-                    <style>
-                        body { 
-                            background-color: transparent;
-                            color: ${when(textColor) {
-                                Color.White -> "#FFFFFF"
-                                Color.Black -> "#000000"
-                                else -> "#5D4037"
-                            }};
-                            font-size: ${fontSize}px;
-                            padding: 16px;
-                        }
-                    </style>
-                """
-                view.loadDataWithBaseURL(null, css + content[index].content, "text/html", "UTF-8", null)
-            }
-        )
+                update = { view -> 
+                    val cssColor = when(textColor) {
+                        Color.White -> "#FFFFFF"
+                        Color.Black -> "#000000"
+                        else -> "#5D4037"
+                    }
+                    val css = """
+                        <style>
+                            body { 
+                                background-color: transparent;
+                                color: $cssColor;
+                                font-size: ${fontSize}px;
+                                padding: 16px;
+                            }
+                        </style>
+                    """
+                    view.loadDataWithBaseURL(null, css + content[index].content, "text/html", "UTF-8", null)
+                }
+            )
+            
+            // 透明覆盖层用于手势检测
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color(0x01000000)).pointerInput(Unit) {
+                        detectTapGestures(onTap = { offset ->
+                            Log.d(TAG, "EPUB tap at offset: $offset, width: ${size.width}")
+                            val width = size.width
+                            if (offset.x >= width / 3 && offset.x < width * 2 / 3) {
+                                Log.d(TAG, "EPUB tap center - show settings")
+                                onTapCenter()
+                            }
+                        })
+                    }
+            )
+        }
         
         // 翻页控制
         Row(Modifier.fillMaxWidth().padding(8.dp), Arrangement.SpaceBetween) {
@@ -453,19 +481,8 @@ private fun TxtViewer(
     fontSize: Int,
     onTapCenter: () -> Unit
 ) {
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(bgColor)
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = {
-                    val width = size.width
-                    if (it.x >= width / 3 && it.x < width * 2 / 3) {
-                        onTapCenter()
-                    }
-                })
-            }
-    ) {
+    Box(Modifier.fillMaxSize().background(bgColor)) {
+        // 文本内容
         Column(
             Modifier
                 .fillMaxSize()
@@ -474,6 +491,22 @@ private fun TxtViewer(
         ) {
             Text(content, color = textColor, fontSize = fontSize.sp)
         }
+        
+        // 透明覆盖层用于手势检测
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color(0x01000000)).pointerInput(Unit) {
+                    detectTapGestures(onTap = { offset ->
+                        Log.d(TAG, "TXT tap at offset: $offset, width: ${size.width}")
+                        val width = size.width
+                        if (offset.x >= width / 3 && offset.x < width * 2 / 3) {
+                            Log.d(TAG, "TXT tap center - show settings")
+                            onTapCenter()
+                        }
+                    })
+                }
+        )
     }
 }
 
