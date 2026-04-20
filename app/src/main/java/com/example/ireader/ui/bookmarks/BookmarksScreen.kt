@@ -45,7 +45,7 @@ fun BookmarksScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = Back
+                            contentDescription = "Back"
                         )
                     }
                 }
@@ -145,19 +145,19 @@ fun BookmarkItem(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text(删除书签) },
-            text = { Text(确定要删除这个书签吗？) },
+            title = { Text("删除书签") },
+            text = { Text("确定要删除这个书签吗？") },
             confirmButton = {
                 Button(onClick = {
                     onDelete()
                     showDeleteDialog = false
                 }) {
-                    Text(删除)
+                    Text("删除")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(取消)
+                    Text("取消")
                 }
             }
         )

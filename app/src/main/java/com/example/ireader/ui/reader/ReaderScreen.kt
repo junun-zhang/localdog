@@ -13,7 +13,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -31,19 +30,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.math.max
-import kotlin.math.min
 import java.io.*
 import java.io.File
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextField
 
 private const val TAG = "ReaderScreen"
 
@@ -81,6 +75,8 @@ fun ReaderScreen(bookId: String, navController: NavController) {
     var currentSpineIndex by remember { mutableStateOf(0) }
     var showText by remember { mutableStateOf(false) }
     var textContent by remember { mutableStateOf("") }
+    var txtPages by remember { mutableStateOf<List<String>>(emptyList()) }
+    var currentTxtPage by remember { mutableStateOf(0) }
     
     // 根据主题获取颜色
     val bgColor = when (readingPrefs.theme) {
@@ -119,8 +115,8 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                                 val pfd = ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY)
                                 val renderer = PdfRenderer(pfd)
                                 val pages = renderer.pageCount
-                                val firstPage = renderPageSync(renderer, book.lastReadPage, context, 1.0f) // 默认缩放1.0
-                                PdfRenderState(renderer, pfd, pages, book.lastReadPage, firstPage, 1.0f)
+                                val firstPage = renderPageSync(renderer, book.lastReadPage, context)
+                                PdfRenderState(renderer, pfd, pages, book.lastReadPage, firstPage)
                             }
                         }
                         if (result == null) {
@@ -139,6 +135,8 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                 "txt", "json" -> {
                     showText = true
                     textContent = loadText(context, uri)
+                    // 分页处理
+                    txtPages = splitTextToPages(textContent, 3000) // 每页约3000字符
                     isLoading = false
                 }
                 else -> {
@@ -153,12 +151,12 @@ fun ReaderScreen(bookId: String, navController: NavController) {
         }
     }
     
-    LaunchedEffect(pdfState?.currentPage, pdfState?.zoom) {
+    LaunchedEffect(pdfState?.currentPage) {
         val state = pdfState
         if (state != null && state.renderer != null) {
             val result = withTimeoutOrNull(15000L) {
                 withContext(Dispatchers.IO) {
-                    renderPageSync(state.renderer!!, state.currentPage, context, state.zoom)
+                    renderPageSync(state.renderer!!, state.currentPage, context)
                 }
             }
             if (result != null) {
@@ -231,8 +229,7 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                     Log.d(TAG, "onTapCenter called")
                     showSettingsPanel = true 
                 },
-                onPageChange = { page -> pdfState = pdfState?.copy(currentPage = page) },
-                onZoomChange = { zoom -> pdfState = pdfState?.copy(zoom = zoom) }
+                onPageChange = { page -> pdfState = pdfState?.copy(currentPage = page) }
             )
             epubContent.isNotEmpty() -> EpubViewer(
                 content = epubContent, 
@@ -246,17 +243,165 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                 },
                 onIndexChange = { currentSpineIndex = it }
             )
-            showText -> TxtViewer(
-                content = textContent, 
+            showText && txtPages.isNotEmpty() -> TxtViewer(
+                pages = txtPages,
+                currentPage = currentTxtPage,
                 bgColor = bgColor,
                 textColor = textColor,
                 fontSize = readingPrefs.fontSize,
                 onTapCenter = { 
                     Log.d(TAG, "TxtViewer onTapCenter called")
                     showSettingsPanel = true 
-                }
+                },
+                onPageChange = { currentTxtPage = it }
+            )
+            showText -> TxtScrollViewer(
+                content = textContent,
+                bgColor = bgColor,
+                textColor = textColor,
+                fontSize = readingPrefs.fontSize,
+                onTapCenter = { showSettingsPanel = true }
             )
         }
+    }
+}
+
+// 将文本分割成多页
+private fun splitTextToPages(text: String, charsPerPage: Int): List<String> {
+    if (text.length <= charsPerPage) return listOf(text)
+    
+    val pages = mutableListOf<String>()
+    var start = 0
+    
+    while (start < text.length) {
+        var end = minOf(start + charsPerPage, text.length)
+        
+        // 尝试在句子结尾处分割
+        if (end < text.length) {
+            val searchStart = maxOf(start + charsPerPage - 200, start)
+            val searchEnd = minOf(start + charsPerPage + 200, text.length)
+            val segment = text.substring(searchStart, searchEnd)
+            
+            // 寻找句号、换行等自然分割点
+            val breakPoints = listOf('\n', '\n', '.', '!', '?', '。', '！', '？')
+            for (bp in breakPoints) {
+                val idx = segment.lastIndexOf(bp)
+                if (idx >= 0) {
+                    end = searchStart + idx + 1
+                    break
+                }
+            }
+        }
+        
+        pages.add(text.substring(start, end))
+        start = end
+    }
+    
+    return pages
+}
+
+@Composable
+private fun TxtViewer(
+    pages: List<String>,
+    currentPage: Int,
+    bgColor: Color,
+    textColor: Color,
+    fontSize: Int,
+    onTapCenter: () -> Unit,
+    onPageChange: (Int) -> Unit
+) {
+    Box(Modifier.fillMaxSize().background(bgColor)) {
+        // 文本内容
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                pages[currentPage],
+                color = textColor,
+                fontSize = fontSize.sp,
+                lineHeight = (fontSize + 4).sp
+            )
+        }
+        
+        // 透明覆盖层用于手势检测
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color(0x01000000))
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { offset ->
+                        Log.d(TAG, "TXT tap at offset: $offset, width: ${size.width}")
+                        val width = size.width
+                        when {
+                            offset.x < width / 3 && currentPage > 0 -> {
+                                onPageChange(currentPage - 1)
+                            }
+                            offset.x >= width * 2 / 3 && currentPage < pages.size - 1 -> {
+                                onPageChange(currentPage + 1)
+                            }
+                            else -> {
+                                onTapCenter()
+                            }
+                        }
+                    })
+                }
+        )
+        
+        // 页码指示
+        if (pages.size > 1) {
+            Box(Modifier.fillMaxSize().padding(bottom = 16.dp), Alignment.BottomCenter) {
+                Surface(shape = MaterialTheme.shapes.small, color = bgColor.copy(alpha = 0.9f)) {
+                    Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton({ if (currentPage > 0) onPageChange(currentPage - 1) }, enabled = currentPage > 0) {
+                            Icon(Icons.Filled.KeyboardArrowLeft, "上一页", tint = textColor)
+                        }
+                        Text("${currentPage + 1} / ${pages.size}", color = textColor)
+                        IconButton({ if (currentPage < pages.size - 1) onPageChange(currentPage + 1) }, enabled = currentPage < pages.size - 1) {
+                            Icon(Icons.Filled.KeyboardArrowRight, "下一页", tint = textColor)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TxtScrollViewer(
+    content: String,
+    bgColor: Color,
+    textColor: Color,
+    fontSize: Int,
+    onTapCenter: () -> Unit
+) {
+    Box(Modifier.fillMaxSize().background(bgColor)) {
+        // 文本内容
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(content, color = textColor, fontSize = fontSize.sp)
+        }
+        
+        // 透明覆盖层用于手势检测
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color(0x01000000))
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { offset ->
+                        val width = size.width
+                        if (offset.x >= width / 3 && offset.x < width * 2 / 3) {
+                            onTapCenter()
+                        }
+                    })
+                }
+        )
     }
 }
 
@@ -342,96 +487,43 @@ private fun PdfViewer(
     state: PdfRenderState,
     bgColor: Color,
     onTapCenter: () -> Unit,
-    onPageChange: (Int) -> Unit,
-    onZoomChange: (Float) -> Unit
+    onPageChange: (Int) -> Unit
 ) {
     var isRendering by remember { mutableStateOf(false) }
-    var doubleTapCount by remember { mutableStateOf(0) }
-    var lastTapTime by remember { mutableStateOf(0L) }
-    var showJumpDialog by remember { mutableStateOf(false) }
-    var jumpPage by remember { mutableStateOf("") }
     
     Box(Modifier.fillMaxSize().background(bgColor)) {
-        // PDF 内容 - 使用可缩放的容器
+        // PDF 内容
         if (state.currentBitmap != null && !isRendering) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectTransformGestures { centroid, pan, zoom, rotation ->
-                            // 只处理缩放手势，忽略旋转和平移
-                            if (zoom != 1f) {
-                                val newZoom = min(max(state.zoom * zoom, 0.5f), 3.0f)
-                                onZoomChange(newZoom)
-                            }
-                        }
-                    }
-            ) {
-                // 根据缩放级别调整图片大小
-                val displayWidth = (state.currentBitmap!!.width * state.zoom).toInt()
-                val displayHeight = (state.currentBitmap!!.height * state.zoom).toInt()
-                
-                Image(
-                    bitmap = state.currentBitmap.asImageBitmap(),
-                    contentDescription = "PDF 页面",
-                    modifier = Modifier
-                        .size(displayWidth.dp, displayHeight.dp)
-                        .align(Alignment.Center)
-                )
-            }
+            Image(
+                bitmap = state.currentBitmap.asImageBitmap(),
+                contentDescription = "PDF 页面",
+                modifier = Modifier.fillMaxSize()
+            )
         }
         
-        // 透明覆盖层用于手势检测（仅用于翻页和中心点击，避免与缩放冲突）
+        // 透明覆盖层用于手势检测
         Box(
             Modifier
                 .fillMaxSize()
                 .background(Color(0x01000000))
                 .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { offset ->
-                            val currentTime = System.currentTimeMillis()
-                            
-                            // 检查是否是双击
-                            if (currentTime - lastTapTime < 300) { // 300ms内为双击
-                                doubleTapCount++
-                            } else {
-                                doubleTapCount = 1
+                    detectTapGestures(onTap = { offset ->
+                        Log.d(TAG, "PDF tap at offset: $offset, width: ${size.width}")
+                        val width = size.width
+                        when {
+                            offset.x < width / 3 && state.currentPage > 0 -> {
+                                onPageChange(state.currentPage - 1)
+                                isRendering = true
                             }
-                            
-                            lastTapTime = currentTime
-                            
-                            if (doubleTapCount == 2) {
-                                // 双击放大/缩小切换
-                                val newZoom = if (state.zoom <= 1.0f) 1.5f else 1.0f
-                                onZoomChange(newZoom)
-                                doubleTapCount = 0
-                            } else {
-                                // 延迟处理单击，以防是双击的第一下
-                                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                                    if (doubleTapCount == 1) { // 确认是单击
-                                        Log.d(TAG, "PDF tap at offset: $offset, width: ${size.width}")
-                                        val width = size.width
-                                        when {
-                                            offset.x < width / 3 && state.currentPage > 0 -> {
-                                                Log.d(TAG, "Tap left - prev page")
-                                                onPageChange(state.currentPage - 1)
-                                                isRendering = true
-                                            }
-                                            offset.x >= width * 2 / 3 && state.currentPage < state.totalPages - 1 -> {
-                                                Log.d(TAG, "Tap right - next page")
-                                                onPageChange(state.currentPage + 1)
-                                                isRendering = true
-                                            }
-                                            else -> {
-                                                Log.d(TAG, "Tap center - show settings")
-                                                onTapCenter()
-                                            }
-                                        }
-                                    }
-                                }, 300) // 300ms后确认是单击
+                            offset.x >= width * 2 / 3 && state.currentPage < state.totalPages - 1 -> {
+                                onPageChange(state.currentPage + 1)
+                                isRendering = true
+                            }
+                            else -> {
+                                onTapCenter()
                             }
                         }
-                    )
+                    })
                 }
         )
         
@@ -439,63 +531,17 @@ private fun PdfViewer(
             Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
         }
         
-        // 页码指示和缩放比例
+        // 页码指示
         if (state.totalPages > 0 && state.currentBitmap != null) {
-            Box(Modifier.fillMaxSize(), Alignment.BottomCenter) {
-                Column(
-                    Modifier
-                        .padding(bottom = 16.dp)
-                        .align(Alignment.BottomCenter)
-                ) {
-                    // 显示缩放比例
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-                    ) {
-                        Row(
-                            Modifier
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("${(state.zoom * 100).toInt()}%", fontSize = 12.sp)
+            Box(Modifier.fillMaxSize().padding(bottom = 16.dp), Alignment.BottomCenter) {
+                Surface(shape = MaterialTheme.shapes.small, color = bgColor.copy(alpha = 0.9f)) {
+                    Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton({ if (state.currentPage > 0) { onPageChange(state.currentPage - 1); isRendering = true } }, enabled = state.currentPage > 0) {
+                            Icon(Icons.Filled.KeyboardArrowLeft, "上一页")
                         }
-                    }
-                    
-                    Spacer(Modifier.height(4.dp))
-                    
-                    // 页码控制
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-                    ) {
-                        Row(
-                            Modifier
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = { 
-                                    if (state.currentPage > 0) { 
-                                        onPageChange(state.currentPage - 1); 
-                                        isRendering = true 
-                                    } 
-                                }, 
-                                enabled = state.currentPage > 0
-                            ) {
-                                Icon(Icons.Filled.KeyboardArrowLeft, "上一页")
-                            }
-                            Text("${state.currentPage + 1} / ${state.totalPages}", modifier = Modifier.clickable { jumpPage = (state.currentPage + 1).toString(); showJumpDialog = true })
-                            IconButton(
-                                onClick = { 
-                                    if (state.currentPage < state.totalPages - 1) { 
-                                        onPageChange(state.currentPage + 1); 
-                                        isRendering = true 
-                                    } 
-                                }, 
-                                enabled = state.currentPage < state.totalPages - 1
-                            ) {
-                                Icon(Icons.Filled.KeyboardArrowRight, "下一页")
-                            }
+                        Text("${state.currentPage + 1} / ${state.totalPages}")
+                        IconButton({ if (state.currentPage < state.totalPages - 1) { onPageChange(state.currentPage + 1); isRendering = true } }, enabled = state.currentPage < state.totalPages - 1) {
+                            Icon(Icons.Filled.KeyboardArrowRight, "下一页")
                         }
                     }
                 }
@@ -504,47 +550,6 @@ private fun PdfViewer(
     }
     
     LaunchedEffect(state.currentBitmap) { if (state.currentBitmap != null) isRendering = false }
-    // 页面跳转对话框
-    if (showJumpDialog) {
-        AlertDialog(
-            onDismissRequest = { showJumpDialog = false },
-            title = { Text("跳转到页面") },
-            text = {
-                Column {
-                    Text("当前: ${state.currentPage + 1} / ${state.totalPages}")
-                    TextField(
-                        value = jumpPage,
-                        onValueChange = { newValue ->
-                            // 只允许数字输入
-                            if (newValue.all { it.isDigit() }) {
-                                jumpPage = newValue
-                            }
-                        },
-                        label = { Text("页码") },
-                        placeholder = { Text("输入页码 1-${state.totalPages}") }
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val page = jumpPage.toIntOrNull()?.minus(1) ?: -1
-                        if (page in 0 until state.totalPages) {
-                            onPageChange(page)
-                            showJumpDialog = false
-                        }
-                    },
-                    enabled = {
-                        val page = jumpPage.toIntOrNull()?.minus(1) ?: -1
-                        page in 0 until state.totalPages
-                    }()
-                ) { Text("跳转") }
-            },
-            dismissButton = {
-                Button(onClick = { showJumpDialog = false }) { Text("取消") }
-            }
-        )
-    }
 }
 
 @Composable
@@ -592,12 +597,12 @@ private fun EpubViewer(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(Color(0x01000000)).pointerInput(Unit) {
+                    .background(Color(0x01000000))
+                    .pointerInput(Unit) {
                         detectTapGestures(onTap = { offset ->
                             Log.d(TAG, "EPUB tap at offset: $offset, width: ${size.width}")
                             val width = size.width
                             if (offset.x >= width / 3 && offset.x < width * 2 / 3) {
-                                Log.d(TAG, "EPUB tap center - show settings")
                                 onTapCenter()
                             }
                         })
@@ -618,43 +623,6 @@ private fun EpubViewer(
     }
 }
 
-@Composable
-private fun TxtViewer(
-    content: String,
-    bgColor: Color,
-    textColor: Color,
-    fontSize: Int,
-    onTapCenter: () -> Unit
-) {
-    Box(Modifier.fillMaxSize().background(bgColor)) {
-        // 文本内容
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Text(content, color = textColor, fontSize = fontSize.sp)
-        }
-        
-        // 透明覆盖层用于手势检测
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Color(0x01000000)).pointerInput(Unit) {
-                    detectTapGestures(onTap = { offset ->
-                        Log.d(TAG, "TXT tap at offset: $offset, width: ${size.width}")
-                        val width = size.width
-                        if (offset.x >= width / 3 && offset.x < width * 2 / 3) {
-                            Log.d(TAG, "TXT tap center - show settings")
-                            onTapCenter()
-                        }
-                    })
-                }
-        )
-    }
-}
-
 // 数据类
 data class PdfRenderState(
     val renderer: PdfRenderer?, 
@@ -662,16 +630,16 @@ data class PdfRenderState(
     val totalPages: Int, 
     val currentPage: Int, 
     val currentBitmap: Bitmap?,
-    val zoom: Float = 1.0f // 添加缩放属性
+    val zoom: Float = 1.0f
 )
 
 data class SpineItem(val id: String, val href: String, val content: String)
 
 // 辅助函数
-private fun renderPageSync(renderer: PdfRenderer, pageIndex: Int, context: Context, zoom: Float = 1.0f): Bitmap {
+private fun renderPageSync(renderer: PdfRenderer, pageIndex: Int, context: Context): Bitmap {
     val page = renderer.openPage(pageIndex)
-    val width = (context.resources.displayMetrics.widthPixels * zoom).toInt()
-    val height = ((width * page.height) / page.width)
+    val width = context.resources.displayMetrics.widthPixels
+    val height = (width * page.height / page.width)
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     bitmap.eraseColor(android.graphics.Color.WHITE)
     page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
