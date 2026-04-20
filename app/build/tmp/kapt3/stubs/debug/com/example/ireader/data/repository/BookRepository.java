@@ -48,7 +48,7 @@ public final class BookRepository implements kotlinx.coroutines.CoroutineScope {
     }
     
     /**
-     * 从数据库加载书籍
+     * 从数据库加载书籍（按书名排序）
      */
     private final void loadBooksFromDatabase() {
     }

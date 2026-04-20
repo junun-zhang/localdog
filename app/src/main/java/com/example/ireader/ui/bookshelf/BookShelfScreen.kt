@@ -3,10 +3,15 @@ package com.example.ireader.ui.bookshelf
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.ViewStream
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +31,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ireader.R
 import com.example.ireader.data.model.Book
 
+enum class ViewMode { GRID, LIST }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookShelfScreen(
@@ -35,6 +42,9 @@ fun BookShelfScreen(
 ) {
     val books by viewModel.books.collectAsStateWithLifecycle(emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle(false)
+    
+    // 视图模式
+    var viewMode by remember { mutableStateOf(ViewMode.GRID) }
     
     // 删除确认对话框状态
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -103,6 +113,13 @@ fun BookShelfScreen(
                     )
                 },
                 actions = {
+                    // 视图切换按钮
+                    IconButton(onClick = { viewMode = if (viewMode == ViewMode.GRID) ViewMode.LIST else ViewMode.GRID }) {
+                        Icon(
+                            imageVector = if (viewMode == ViewMode.GRID) Icons.Filled.ViewStream else Icons.Filled.GridView,
+                            contentDescription = if (viewMode == ViewMode.GRID) "列表视图" else "网格视图"
+                        )
+                    }
                     IconButton(onClick = { /* 搜索功能 */ }) {
                         Icon(
                             painter = painterResource(id = android.R.drawable.ic_menu_search),
@@ -162,20 +179,38 @@ fun BookShelfScreen(
                 }
             }
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 150.dp),
-                contentPadding = paddingValues,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(books) { book ->
-                    BookItem(
-                        book = book,
-                        onClick = { onBookClick(book.id) },
-                        onLongClick = {
-                            bookToDelete = book
-                            showDeleteDialog = true
-                        }
-                    )
+            if (viewMode == ViewMode.GRID) {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 150.dp),
+                    contentPadding = paddingValues,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(books) { book ->
+                        BookItem(
+                            book = book,
+                            onClick = { onBookClick(book.id) },
+                            onLongClick = {
+                                bookToDelete = book
+                                showDeleteDialog = true
+                            }
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    contentPadding = paddingValues,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(books) { book ->
+                        BookListItem(
+                            book = book,
+                            onClick = { onBookClick(book.id) },
+                            onLongClick = {
+                                bookToDelete = book
+                                showDeleteDialog = true
+                            }
+                        )
+                    }
                 }
             }
         }

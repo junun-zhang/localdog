@@ -557,8 +557,221 @@ public final class BookDao_Impl implements BookDao {
   }
 
   @Override
+  public Flow<List<Book>> getAllBooksByTitle() {
+    final String _sql = "SELECT * FROM books ORDER BY title ASC";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
+    return CoroutinesRoom.createFlow(__db, false, new String[] {"books"}, new Callable<List<Book>>() {
+      @Override
+      @NonNull
+      public List<Book> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfTitle = CursorUtil.getColumnIndexOrThrow(_cursor, "title");
+          final int _cursorIndexOfAuthor = CursorUtil.getColumnIndexOrThrow(_cursor, "author");
+          final int _cursorIndexOfCoverUri = CursorUtil.getColumnIndexOrThrow(_cursor, "coverUri");
+          final int _cursorIndexOfFilePath = CursorUtil.getColumnIndexOrThrow(_cursor, "filePath");
+          final int _cursorIndexOfFileSize = CursorUtil.getColumnIndexOrThrow(_cursor, "fileSize");
+          final int _cursorIndexOfPageCount = CursorUtil.getColumnIndexOrThrow(_cursor, "pageCount");
+          final int _cursorIndexOfLastReadPage = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadPage");
+          final int _cursorIndexOfLastReadChapter = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadChapter");
+          final int _cursorIndexOfLastReadMode = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadMode");
+          final int _cursorIndexOfLastScrollPosition = CursorUtil.getColumnIndexOrThrow(_cursor, "lastScrollPosition");
+          final int _cursorIndexOfLastFontSize = CursorUtil.getColumnIndexOrThrow(_cursor, "lastFontSize");
+          final int _cursorIndexOfLastZoom = CursorUtil.getColumnIndexOrThrow(_cursor, "lastZoom");
+          final int _cursorIndexOfLastReadTime = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadTime");
+          final int _cursorIndexOfProgress = CursorUtil.getColumnIndexOrThrow(_cursor, "progress");
+          final int _cursorIndexOfFormat = CursorUtil.getColumnIndexOrThrow(_cursor, "format");
+          final int _cursorIndexOfAddedTime = CursorUtil.getColumnIndexOrThrow(_cursor, "addedTime");
+          final List<Book> _result = new ArrayList<Book>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final Book _item;
+            final String _tmpId;
+            if (_cursor.isNull(_cursorIndexOfId)) {
+              _tmpId = null;
+            } else {
+              _tmpId = _cursor.getString(_cursorIndexOfId);
+            }
+            final String _tmpTitle;
+            if (_cursor.isNull(_cursorIndexOfTitle)) {
+              _tmpTitle = null;
+            } else {
+              _tmpTitle = _cursor.getString(_cursorIndexOfTitle);
+            }
+            final String _tmpAuthor;
+            if (_cursor.isNull(_cursorIndexOfAuthor)) {
+              _tmpAuthor = null;
+            } else {
+              _tmpAuthor = _cursor.getString(_cursorIndexOfAuthor);
+            }
+            final String _tmpCoverUri;
+            if (_cursor.isNull(_cursorIndexOfCoverUri)) {
+              _tmpCoverUri = null;
+            } else {
+              _tmpCoverUri = _cursor.getString(_cursorIndexOfCoverUri);
+            }
+            final String _tmpFilePath;
+            if (_cursor.isNull(_cursorIndexOfFilePath)) {
+              _tmpFilePath = null;
+            } else {
+              _tmpFilePath = _cursor.getString(_cursorIndexOfFilePath);
+            }
+            final long _tmpFileSize;
+            _tmpFileSize = _cursor.getLong(_cursorIndexOfFileSize);
+            final int _tmpPageCount;
+            _tmpPageCount = _cursor.getInt(_cursorIndexOfPageCount);
+            final int _tmpLastReadPage;
+            _tmpLastReadPage = _cursor.getInt(_cursorIndexOfLastReadPage);
+            final int _tmpLastReadChapter;
+            _tmpLastReadChapter = _cursor.getInt(_cursorIndexOfLastReadChapter);
+            final String _tmpLastReadMode;
+            if (_cursor.isNull(_cursorIndexOfLastReadMode)) {
+              _tmpLastReadMode = null;
+            } else {
+              _tmpLastReadMode = _cursor.getString(_cursorIndexOfLastReadMode);
+            }
+            final int _tmpLastScrollPosition;
+            _tmpLastScrollPosition = _cursor.getInt(_cursorIndexOfLastScrollPosition);
+            final int _tmpLastFontSize;
+            _tmpLastFontSize = _cursor.getInt(_cursorIndexOfLastFontSize);
+            final float _tmpLastZoom;
+            _tmpLastZoom = _cursor.getFloat(_cursorIndexOfLastZoom);
+            final long _tmpLastReadTime;
+            _tmpLastReadTime = _cursor.getLong(_cursorIndexOfLastReadTime);
+            final int _tmpProgress;
+            _tmpProgress = _cursor.getInt(_cursorIndexOfProgress);
+            final String _tmpFormat;
+            if (_cursor.isNull(_cursorIndexOfFormat)) {
+              _tmpFormat = null;
+            } else {
+              _tmpFormat = _cursor.getString(_cursorIndexOfFormat);
+            }
+            final long _tmpAddedTime;
+            _tmpAddedTime = _cursor.getLong(_cursorIndexOfAddedTime);
+            _item = new Book(_tmpId,_tmpTitle,_tmpAuthor,_tmpCoverUri,_tmpFilePath,_tmpFileSize,_tmpPageCount,_tmpLastReadPage,_tmpLastReadChapter,_tmpLastReadMode,_tmpLastScrollPosition,_tmpLastFontSize,_tmpLastZoom,_tmpLastReadTime,_tmpProgress,_tmpFormat,_tmpAddedTime);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+        }
+      }
+
+      @Override
+      protected void finalize() {
+        _statement.release();
+      }
+    });
+  }
+
+  @Override
   public Object getAllBooksOnce(final Continuation<? super List<Book>> $completion) {
     final String _sql = "SELECT * FROM books ORDER BY lastReadTime DESC";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<Book>>() {
+      @Override
+      @NonNull
+      public List<Book> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfTitle = CursorUtil.getColumnIndexOrThrow(_cursor, "title");
+          final int _cursorIndexOfAuthor = CursorUtil.getColumnIndexOrThrow(_cursor, "author");
+          final int _cursorIndexOfCoverUri = CursorUtil.getColumnIndexOrThrow(_cursor, "coverUri");
+          final int _cursorIndexOfFilePath = CursorUtil.getColumnIndexOrThrow(_cursor, "filePath");
+          final int _cursorIndexOfFileSize = CursorUtil.getColumnIndexOrThrow(_cursor, "fileSize");
+          final int _cursorIndexOfPageCount = CursorUtil.getColumnIndexOrThrow(_cursor, "pageCount");
+          final int _cursorIndexOfLastReadPage = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadPage");
+          final int _cursorIndexOfLastReadChapter = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadChapter");
+          final int _cursorIndexOfLastReadMode = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadMode");
+          final int _cursorIndexOfLastScrollPosition = CursorUtil.getColumnIndexOrThrow(_cursor, "lastScrollPosition");
+          final int _cursorIndexOfLastFontSize = CursorUtil.getColumnIndexOrThrow(_cursor, "lastFontSize");
+          final int _cursorIndexOfLastZoom = CursorUtil.getColumnIndexOrThrow(_cursor, "lastZoom");
+          final int _cursorIndexOfLastReadTime = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadTime");
+          final int _cursorIndexOfProgress = CursorUtil.getColumnIndexOrThrow(_cursor, "progress");
+          final int _cursorIndexOfFormat = CursorUtil.getColumnIndexOrThrow(_cursor, "format");
+          final int _cursorIndexOfAddedTime = CursorUtil.getColumnIndexOrThrow(_cursor, "addedTime");
+          final List<Book> _result = new ArrayList<Book>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final Book _item;
+            final String _tmpId;
+            if (_cursor.isNull(_cursorIndexOfId)) {
+              _tmpId = null;
+            } else {
+              _tmpId = _cursor.getString(_cursorIndexOfId);
+            }
+            final String _tmpTitle;
+            if (_cursor.isNull(_cursorIndexOfTitle)) {
+              _tmpTitle = null;
+            } else {
+              _tmpTitle = _cursor.getString(_cursorIndexOfTitle);
+            }
+            final String _tmpAuthor;
+            if (_cursor.isNull(_cursorIndexOfAuthor)) {
+              _tmpAuthor = null;
+            } else {
+              _tmpAuthor = _cursor.getString(_cursorIndexOfAuthor);
+            }
+            final String _tmpCoverUri;
+            if (_cursor.isNull(_cursorIndexOfCoverUri)) {
+              _tmpCoverUri = null;
+            } else {
+              _tmpCoverUri = _cursor.getString(_cursorIndexOfCoverUri);
+            }
+            final String _tmpFilePath;
+            if (_cursor.isNull(_cursorIndexOfFilePath)) {
+              _tmpFilePath = null;
+            } else {
+              _tmpFilePath = _cursor.getString(_cursorIndexOfFilePath);
+            }
+            final long _tmpFileSize;
+            _tmpFileSize = _cursor.getLong(_cursorIndexOfFileSize);
+            final int _tmpPageCount;
+            _tmpPageCount = _cursor.getInt(_cursorIndexOfPageCount);
+            final int _tmpLastReadPage;
+            _tmpLastReadPage = _cursor.getInt(_cursorIndexOfLastReadPage);
+            final int _tmpLastReadChapter;
+            _tmpLastReadChapter = _cursor.getInt(_cursorIndexOfLastReadChapter);
+            final String _tmpLastReadMode;
+            if (_cursor.isNull(_cursorIndexOfLastReadMode)) {
+              _tmpLastReadMode = null;
+            } else {
+              _tmpLastReadMode = _cursor.getString(_cursorIndexOfLastReadMode);
+            }
+            final int _tmpLastScrollPosition;
+            _tmpLastScrollPosition = _cursor.getInt(_cursorIndexOfLastScrollPosition);
+            final int _tmpLastFontSize;
+            _tmpLastFontSize = _cursor.getInt(_cursorIndexOfLastFontSize);
+            final float _tmpLastZoom;
+            _tmpLastZoom = _cursor.getFloat(_cursorIndexOfLastZoom);
+            final long _tmpLastReadTime;
+            _tmpLastReadTime = _cursor.getLong(_cursorIndexOfLastReadTime);
+            final int _tmpProgress;
+            _tmpProgress = _cursor.getInt(_cursorIndexOfProgress);
+            final String _tmpFormat;
+            if (_cursor.isNull(_cursorIndexOfFormat)) {
+              _tmpFormat = null;
+            } else {
+              _tmpFormat = _cursor.getString(_cursorIndexOfFormat);
+            }
+            final long _tmpAddedTime;
+            _tmpAddedTime = _cursor.getLong(_cursorIndexOfAddedTime);
+            _item = new Book(_tmpId,_tmpTitle,_tmpAuthor,_tmpCoverUri,_tmpFilePath,_tmpFileSize,_tmpPageCount,_tmpLastReadPage,_tmpLastReadChapter,_tmpLastReadMode,_tmpLastScrollPosition,_tmpLastFontSize,_tmpLastZoom,_tmpLastReadTime,_tmpProgress,_tmpFormat,_tmpAddedTime);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object getAllBooksOnceByTitle(final Continuation<? super List<Book>> $completion) {
+    final String _sql = "SELECT * FROM books ORDER BY title ASC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
     return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<Book>>() {

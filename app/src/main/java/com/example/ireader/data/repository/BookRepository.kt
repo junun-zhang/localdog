@@ -44,12 +44,12 @@ class BookRepository private constructor(private val context: Context) : Corouti
     }
     
     /**
-     * 从数据库加载书籍
+     * 从数据库加载书籍（按书名排序）
      */
     private fun loadBooksFromDatabase() {
         launch {
             val booksFromDb = withContext(Dispatchers.IO) {
-                bookDao.getAllBooksOnce()
+                bookDao.getAllBooksOnceByTitle()
             }
             _books.postValue(booksFromDb)
         }

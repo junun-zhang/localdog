@@ -18,11 +18,23 @@ interface BookDao {
     fun getAllBooks(): Flow<List<Book>>
     
     /**
+     * Get all books sorted by title
+     */
+    @Query("SELECT * FROM books ORDER BY title ASC")
+    fun getAllBooksByTitle(): Flow<List<Book>>
+    
+    /**
      * Get all books from the database (one-shot query)
      * @return List of books
      */
     @Query("SELECT * FROM books ORDER BY lastReadTime DESC")
     suspend fun getAllBooksOnce(): List<Book>
+    
+    /**
+     * Get all books sorted by title (one-shot)
+     */
+    @Query("SELECT * FROM books ORDER BY title ASC")
+    suspend fun getAllBooksOnceByTitle(): List<Book>
     
     /**
      * Get a book by its ID
