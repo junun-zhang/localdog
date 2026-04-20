@@ -13,6 +13,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -310,13 +311,16 @@ private fun TxtViewer(
     onTapCenter: () -> Unit,
     onPageChange: (Int) -> Unit
 ) {
+    // 滑动阈值
+    val swipeThreshold = 100f
+    var dragOffset by remember { mutableStateOf(0f) }
+    
     Box(Modifier.fillMaxSize().background(bgColor)) {
         // 文本内容
         Column(
             Modifier
                 .fillMaxSize()
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState())
         ) {
             Text(
                 pages[currentPage],
@@ -326,12 +330,32 @@ private fun TxtViewer(
             )
         }
         
-        // 透明覆盖层用于手势检测
+        // 透明覆盖层用于手势检测（点击 + 滑动）
         Box(
             Modifier
                 .fillMaxSize()
                 .background(Color(0x01000000))
+                .pointerInput(pages, currentPage) {
+                    // 垂直滑动翻页
+                    detectVerticalDragGestures(
+                        onDragEnd = {
+                            Log.d(TAG, "TXT drag end: offset=$dragOffset, threshold=$swipeThreshold")
+                            if (dragOffset > swipeThreshold && currentPage < pages.size - 1) {
+                                // 向下滑动 = 下一页
+                                onPageChange(currentPage + 1)
+                            } else if (dragOffset < -swipeThreshold && currentPage > 0) {
+                                // 向上滑动 = 上一页
+                                onPageChange(currentPage - 1)
+                            }
+                            dragOffset = 0f
+                        },
+                        onVerticalDrag = { _, dragAmount ->
+                            dragOffset += dragAmount
+                        }
+                    )
+                }
                 .pointerInput(Unit) {
+                    // 点击手势
                     detectTapGestures(onTap = { offset ->
                         Log.d(TAG, "TXT tap at offset: $offset, width: ${size.width}")
                         val width = size.width
@@ -350,17 +374,17 @@ private fun TxtViewer(
                 }
         )
         
-        // 页码指示
+        // 页码指示（上下箭头）
         if (pages.size > 1) {
             Box(Modifier.fillMaxSize().padding(bottom = 16.dp), Alignment.BottomCenter) {
                 Surface(shape = MaterialTheme.shapes.small, color = bgColor.copy(alpha = 0.9f)) {
                     Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         IconButton({ if (currentPage > 0) onPageChange(currentPage - 1) }, enabled = currentPage > 0) {
-                            Icon(Icons.Filled.KeyboardArrowLeft, "上一页", tint = textColor)
+                            Icon(Icons.Filled.KeyboardArrowUp, "上一页", tint = textColor)
                         }
                         Text("${currentPage + 1} / ${pages.size}", color = textColor)
                         IconButton({ if (currentPage < pages.size - 1) onPageChange(currentPage + 1) }, enabled = currentPage < pages.size - 1) {
-                            Icon(Icons.Filled.KeyboardArrowRight, "下一页", tint = textColor)
+                            Icon(Icons.Filled.KeyboardArrowDown, "下一页", tint = textColor)
                         }
                     }
                 }
