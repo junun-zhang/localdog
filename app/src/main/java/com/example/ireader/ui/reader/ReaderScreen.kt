@@ -724,6 +724,11 @@ private fun EpubViewer(
                     settings.setSupportZoom(false)
                     settings.builtInZoomControls = false
                     setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    // 启用原生滚动
+                    setVerticalScrollBarEnabled(true)
+                    setHorizontalScrollBarEnabled(false)
+                    scrollBarStyle = WebView.SCROLLBARS_INSIDE_OVERLAY
+                    overScrollMode = WebView.OVER_SCROLL_NEVER
                 }
             },
             update = { view -> 
@@ -733,22 +738,29 @@ private fun EpubViewer(
                     else -> "#5D4037"
                 }
                 val scrollStyle = if (readingMode == ReadingMode.SCROLL) {
-                    "overflow: auto;"
+                    "overflow-y: scroll; overflow-x: hidden; height: auto;"
                 } else {
                     "overflow: hidden;"
                 }
-                val css = """
-                    <style>
-                        body { 
-                            background-color: transparent;
-                            color: $cssColor;
-                            font-size: ${fontSize}px;
-                            padding: 16px;
-                            $scrollStyle
-                        }
-                    </style>
+                val htmlContent = """
+                    <!DOCTYPE html>
+                    <html>
+                    <head><style>
+                    html { height: 100%; }
+                    body { 
+                        background-color: transparent;
+                        color: $cssColor;
+                        font-size: ${fontSize}px;
+                        padding: 16px;
+                        margin: 0;
+                        min-height: 100%;
+                        $scrollStyle
+                    }
+                    </style></head>
+                    <body>${content[index].content}</body>
+                    </html>
                 """
-                view.loadDataWithBaseURL(null, css + content[index].content, "text/html", "UTF-8", null)
+                view.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
             }
         )
         
