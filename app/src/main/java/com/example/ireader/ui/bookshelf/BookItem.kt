@@ -1,9 +1,6 @@
 package com.example.ireader.ui.bookshelf
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,13 +23,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.ireader.R
 import com.example.ireader.data.model.Book
 
 // 定义格式颜色
@@ -52,9 +46,11 @@ fun BookItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // 固定卡片尺寸：宽120dp，高140dp（封面80dp + 标题区域60dp）
     Card(
         modifier = modifier
             .width(120.dp)
+            .height(140.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
@@ -64,9 +60,11 @@ fun BookItem(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(8.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp)
         ) {
-            // Book cover placeholder with format-specific background
+            // 封面：固定 80x80dp
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -77,35 +75,36 @@ fun BookItem(
                 Text(
                     text = book.format.uppercase(),
                     color = Color.White,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Book title
-            Text(
-                text = book.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
             Spacer(modifier = Modifier.height(4.dp))
             
-            // Book author
+            // 标题区域：固定高度 40dp，最多2行
             Text(
-                text = book.author,
+                text = book.title,
                 style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                minLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.height(40.dp)
+            )
+            
+            // 作者：固定高度 16dp，单行
+            Text(
+                text = book.author.ifEmpty { "未知作者" },
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.height(16.dp)
             )
         }
     }
@@ -117,14 +116,16 @@ fun BookListItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // 固定列表项高度：100dp
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .height(100.dp)
             .clickable { onClick() }
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Book cover thumbnail with format-specific background
+        // 封面：固定 60x60dp
         Box(
             modifier = Modifier
                 .size(60.dp)
@@ -135,7 +136,7 @@ fun BookListItem(
             Text(
                 text = book.format.uppercase(),
                 color = Color.White,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
@@ -144,11 +145,12 @@ fun BookListItem(
         Spacer(modifier = Modifier.width(12.dp))
         
         Column(
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = book.title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -158,8 +160,8 @@ fun BookListItem(
             Spacer(modifier = Modifier.height(4.dp))
             
             Text(
-                text = book.author,
-                style = MaterialTheme.typography.bodyMedium,
+                text = book.author.ifEmpty { "未知作者" },
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -168,8 +170,8 @@ fun BookListItem(
             Spacer(modifier = Modifier.height(4.dp))
             
             Text(
-                text = book.format + " • " + book.getFileSizeString(),
-                style = MaterialTheme.typography.bodySmall,
+                text = book.format.uppercase() + " • " + book.getFileSizeString(),
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
