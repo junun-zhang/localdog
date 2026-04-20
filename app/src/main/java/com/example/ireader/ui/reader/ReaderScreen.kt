@@ -227,6 +227,7 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                 currentTheme = readingPrefs.theme,
                 currentFontSize = readingPrefs.fontSize,
                 currentReadingMode = readingPrefs.readingMode,
+                currentZoom = pdfState?.zoom ?: 1.0f,
                 isPdf = book.format.lowercase() == "pdf",
                 onThemeChanged = { newTheme ->
                     readingPrefs = readingPrefs.copy(theme = newTheme)
@@ -252,6 +253,11 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                     if (readingPrefs.fontSize > 12) {
                         readingPrefs = readingPrefs.copy(fontSize = readingPrefs.fontSize - 2)
                         settingsManager.saveReadingPreferences(readingPrefs)
+                    }
+                },
+                onZoomChanged = { newZoom ->
+                    if (pdfState != null) {
+                        pdfState = pdfState?.copy(zoom = newZoom)
                     }
                 }
             )
@@ -536,17 +542,38 @@ private fun SettingsPanelContent(
     currentTheme: ReadingTheme,
     currentFontSize: Int,
     currentReadingMode: ReadingMode,
+    currentZoom: Float,
     isPdf: Boolean,
     onThemeChanged: (ReadingTheme) -> Unit,
     onReadingModeChanged: (ReadingMode) -> Unit,
     onFontSizeIncrease: () -> Unit,
-    onFontSizeDecrease: () -> Unit
+    onFontSizeDecrease: () -> Unit,
+    onZoomChanged: (Float) -> Unit
 ) {
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
         Text("阅读设置", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(16.dp))
         
-        // 阅读模式选择（所有格式都支持）
+        // PDF 缩放滑块
+        if (isPdf) {
+            Text("页面缩放: ${(currentZoom * 100).toInt()}%", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Slider(
+                value = currentZoom,
+                onValueChange = onZoomChanged,
+                valueRange = 0.5f..3.0f,
+                steps = 50,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                Text("50%", style = MaterialTheme.typography.labelSmall)
+                Text("100%", style = MaterialTheme.typography.labelSmall)
+                Text("300%", style = MaterialTheme.typography.labelSmall)
+            }
+            Spacer(Modifier.height(16.dp))
+        }
+        
+        // 阅读模式选择
         Text("阅读模式", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
@@ -578,9 +605,6 @@ private fun SettingsPanelContent(
                     Icon(Icons.Filled.Add, "增大")
                 }
             }
-        } else {
-            Spacer(Modifier.height(16.dp))
-            Text("PDF 文件不支持字体调整", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         
         Spacer(Modifier.height(24.dp))
