@@ -247,15 +247,9 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                         fontSize = readingPrefs.fontSize
                     )
                 },
-                onFontSizeIncrease = {
-                    if (readingPrefs.fontSize < 24) {
-                        readingPrefs = readingPrefs.copy(fontSize = readingPrefs.fontSize + 2)
-                        settingsManager.saveReadingPreferences(readingPrefs)
-                    }
-                },
-                onFontSizeDecrease = {
-                    if (readingPrefs.fontSize > 12) {
-                        readingPrefs = readingPrefs.copy(fontSize = readingPrefs.fontSize - 2)
+                onFontSizeChanged = { newSize ->
+                    if (newSize != readingPrefs.fontSize) {
+                        readingPrefs = readingPrefs.copy(fontSize = newSize)
                         settingsManager.saveReadingPreferences(readingPrefs)
                     }
                 },
@@ -551,8 +545,7 @@ private fun SettingsPanelContent(
     isPdf: Boolean,
     onThemeChanged: (ReadingTheme) -> Unit,
     onReadingModeChanged: (ReadingMode) -> Unit,
-    onFontSizeIncrease: () -> Unit,
-    onFontSizeDecrease: () -> Unit,
+    onFontSizeChanged: (Int) -> Unit,
     onZoomChanged: (Float) -> Unit
 ) {
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
@@ -601,14 +594,17 @@ private fun SettingsPanelContent(
             Spacer(Modifier.height(16.dp))
             Text("字体大小: ${currentFontSize}sp", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), Arrangement.Center) {
-                FilledIconButton(onClick = onFontSizeDecrease, enabled = currentFontSize > 12) {
-                    Icon(Icons.Filled.Remove, "减小")
-                }
-                Spacer(Modifier.width(16.dp))
-                FilledIconButton(onClick = onFontSizeIncrease, enabled = currentFontSize < 24) {
-                    Icon(Icons.Filled.Add, "增大")
-                }
+            Slider(
+                value = currentFontSize.toFloat(),
+                onValueChange = { newSize -> onFontSizeChanged(newSize.toInt()) },
+                valueRange = 12f..24f,
+                steps = 6,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                Text("12sp", style = MaterialTheme.typography.labelSmall)
+                Text("18sp", style = MaterialTheme.typography.labelSmall)
+                Text("24sp", style = MaterialTheme.typography.labelSmall)
             }
         }
         
