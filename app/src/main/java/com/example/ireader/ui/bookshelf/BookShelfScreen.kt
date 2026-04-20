@@ -36,8 +36,61 @@ fun BookShelfScreen(
     val books by viewModel.books.collectAsStateWithLifecycle(emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle(false)
     
+    // 删除确认对话框状态
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var bookToDelete by remember { mutableStateOf<Book?>(null) }
+    
     LaunchedEffect(Unit) {
         viewModel.loadBooks()
+    }
+    
+    // 删除确认对话框
+    if (showDeleteDialog && bookToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { 
+                showDeleteDialog = false
+                bookToDelete = null
+            },
+            title = { Text("删除书籍") },
+            text = { 
+                Column {
+                    Text("确定要删除这本书吗？")
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = bookToDelete!!.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${bookToDelete!!.format.uppercase()} • ${bookToDelete!!.getFileSizeString()}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteBook(bookToDelete!!.id)
+                        showDeleteDialog = false
+                        bookToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("删除")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    showDeleteDialog = false
+                    bookToDelete = null
+                }) {
+                    Text("取消")
+                }
+            }
+        )
     }
     
     Scaffold(
@@ -117,7 +170,11 @@ fun BookShelfScreen(
                 items(books) { book ->
                     BookItem(
                         book = book,
-                        onClick = { onBookClick(book.id) }
+                        onClick = { onBookClick(book.id) },
+                        onLongClick = {
+                            bookToDelete = book
+                            showDeleteDialog = true
+                        }
                     )
                 }
             }

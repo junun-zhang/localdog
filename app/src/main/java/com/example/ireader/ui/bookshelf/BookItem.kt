@@ -28,6 +28,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.ireader.data.model.Book
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 
 // 定义格式颜色
 private fun getFormatColor(format: String): Color {
@@ -40,10 +42,12 @@ private fun getFormatColor(format: String): Color {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BookItem(
     book: Book,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // 固定卡片尺寸：宽120dp，高140dp（封面80dp + 标题区域60dp）
@@ -51,7 +55,10 @@ fun BookItem(
         modifier = modifier
             .width(120.dp)
             .height(140.dp)
-            .clickable { onClick() },
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -110,10 +117,12 @@ fun BookItem(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BookListItem(
     book: Book,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // 固定列表项高度：100dp
@@ -121,7 +130,10 @@ fun BookListItem(
         modifier = modifier
             .fillMaxWidth()
             .height(100.dp)
-            .clickable { onClick() }
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
