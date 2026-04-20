@@ -38,17 +38,17 @@ public final class IReaderDatabase_Impl extends IReaderDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(2) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(3) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS `books` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `author` TEXT NOT NULL, `coverUri` TEXT, `filePath` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `pageCount` INTEGER NOT NULL, `lastReadPage` INTEGER NOT NULL, `lastReadTime` INTEGER NOT NULL, `progress` INTEGER NOT NULL, `format` TEXT NOT NULL, `addedTime` INTEGER NOT NULL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `books` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `author` TEXT NOT NULL, `coverUri` TEXT, `filePath` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `pageCount` INTEGER NOT NULL, `lastReadPage` INTEGER NOT NULL, `lastReadChapter` INTEGER NOT NULL, `lastReadMode` TEXT NOT NULL, `lastScrollPosition` INTEGER NOT NULL, `lastFontSize` INTEGER NOT NULL, `lastZoom` REAL NOT NULL, `lastReadTime` INTEGER NOT NULL, `progress` INTEGER NOT NULL, `format` TEXT NOT NULL, `addedTime` INTEGER NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `bookmarks` (`id` TEXT NOT NULL, `bookId` TEXT NOT NULL, `title` TEXT NOT NULL, `page` INTEGER NOT NULL, `position` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `note` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )");
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_bookmarks_bookId` ON `bookmarks` (`bookId`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `highlights` (`id` TEXT NOT NULL, `bookId` TEXT NOT NULL, `content` TEXT NOT NULL, `page` INTEGER NOT NULL, `startPosition` INTEGER NOT NULL, `endPosition` INTEGER NOT NULL, `color` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )");
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_highlights_bookId` ON `highlights` (`bookId`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `notes` (`id` TEXT NOT NULL, `bookId` TEXT NOT NULL, `content` TEXT NOT NULL, `position` INTEGER NOT NULL, `chapterName` TEXT NOT NULL, `createdTime` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2b68ec5dc3e2523980da24440c4a87fd')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '65cb3428cbdce45188fdc742fa2a74f3')");
       }
 
       @Override
@@ -101,7 +101,7 @@ public final class IReaderDatabase_Impl extends IReaderDatabase {
       @NonNull
       public RoomOpenHelper.ValidationResult onValidateSchema(
           @NonNull final SupportSQLiteDatabase db) {
-        final HashMap<String, TableInfo.Column> _columnsBooks = new HashMap<String, TableInfo.Column>(12);
+        final HashMap<String, TableInfo.Column> _columnsBooks = new HashMap<String, TableInfo.Column>(17);
         _columnsBooks.put("id", new TableInfo.Column("id", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBooks.put("title", new TableInfo.Column("title", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBooks.put("author", new TableInfo.Column("author", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -110,6 +110,11 @@ public final class IReaderDatabase_Impl extends IReaderDatabase {
         _columnsBooks.put("fileSize", new TableInfo.Column("fileSize", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBooks.put("pageCount", new TableInfo.Column("pageCount", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBooks.put("lastReadPage", new TableInfo.Column("lastReadPage", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsBooks.put("lastReadChapter", new TableInfo.Column("lastReadChapter", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsBooks.put("lastReadMode", new TableInfo.Column("lastReadMode", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsBooks.put("lastScrollPosition", new TableInfo.Column("lastScrollPosition", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsBooks.put("lastFontSize", new TableInfo.Column("lastFontSize", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsBooks.put("lastZoom", new TableInfo.Column("lastZoom", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBooks.put("lastReadTime", new TableInfo.Column("lastReadTime", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBooks.put("progress", new TableInfo.Column("progress", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBooks.put("format", new TableInfo.Column("format", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -182,7 +187,7 @@ public final class IReaderDatabase_Impl extends IReaderDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "2b68ec5dc3e2523980da24440c4a87fd", "8e6bb1b59326961e70eaf50e8215422a");
+    }, "65cb3428cbdce45188fdc742fa2a74f3", "ffc1007f299f28d16815cb553c712402");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

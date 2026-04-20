@@ -112,6 +112,27 @@ class BookRepository private constructor(private val context: Context) : Corouti
     }
     
     /**
+     * 根据 ID 获取书籍
+     */
+    suspend fun getBookById(bookId: String): Book? {
+        return withContext(Dispatchers.IO) {
+            bookDao.getBookById(bookId)
+        }
+    }
+    
+    /**
+     * 更新书籍
+     */
+    fun updateBook(book: Book) {
+        launch {
+            withContext(Dispatchers.IO) {
+                bookDao.updateBook(book)
+            }
+            loadBooksFromDatabase()
+        }
+    }
+    
+    /**
      * 清理资源
      */
     fun clear() {

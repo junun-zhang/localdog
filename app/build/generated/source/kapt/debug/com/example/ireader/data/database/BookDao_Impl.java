@@ -42,6 +42,10 @@ public final class BookDao_Impl implements BookDao {
 
   private final SharedSQLiteStatement __preparedStmtOfUpdateBookProgress;
 
+  private final SharedSQLiteStatement __preparedStmtOfUpdateReadProgress;
+
+  private final SharedSQLiteStatement __preparedStmtOfUpdateReadingSettings;
+
   private final SharedSQLiteStatement __preparedStmtOfDeleteBook;
 
   private final SharedSQLiteStatement __preparedStmtOfDeleteAllBooks;
@@ -52,7 +56,7 @@ public final class BookDao_Impl implements BookDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `books` (`id`,`title`,`author`,`coverUri`,`filePath`,`fileSize`,`pageCount`,`lastReadPage`,`lastReadTime`,`progress`,`format`,`addedTime`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `books` (`id`,`title`,`author`,`coverUri`,`filePath`,`fileSize`,`pageCount`,`lastReadPage`,`lastReadChapter`,`lastReadMode`,`lastScrollPosition`,`lastFontSize`,`lastZoom`,`lastReadTime`,`progress`,`format`,`addedTime`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -86,21 +90,30 @@ public final class BookDao_Impl implements BookDao {
         statement.bindLong(6, entity.getFileSize());
         statement.bindLong(7, entity.getPageCount());
         statement.bindLong(8, entity.getLastReadPage());
-        statement.bindLong(9, entity.getLastReadTime());
-        statement.bindLong(10, entity.getProgress());
-        if (entity.getFormat() == null) {
-          statement.bindNull(11);
+        statement.bindLong(9, entity.getLastReadChapter());
+        if (entity.getLastReadMode() == null) {
+          statement.bindNull(10);
         } else {
-          statement.bindString(11, entity.getFormat());
+          statement.bindString(10, entity.getLastReadMode());
         }
-        statement.bindLong(12, entity.getAddedTime());
+        statement.bindLong(11, entity.getLastScrollPosition());
+        statement.bindLong(12, entity.getLastFontSize());
+        statement.bindDouble(13, entity.getLastZoom());
+        statement.bindLong(14, entity.getLastReadTime());
+        statement.bindLong(15, entity.getProgress());
+        if (entity.getFormat() == null) {
+          statement.bindNull(16);
+        } else {
+          statement.bindString(16, entity.getFormat());
+        }
+        statement.bindLong(17, entity.getAddedTime());
       }
     };
     this.__updateAdapterOfBook = new EntityDeletionOrUpdateAdapter<Book>(__db) {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `books` SET `id` = ?,`title` = ?,`author` = ?,`coverUri` = ?,`filePath` = ?,`fileSize` = ?,`pageCount` = ?,`lastReadPage` = ?,`lastReadTime` = ?,`progress` = ?,`format` = ?,`addedTime` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `books` SET `id` = ?,`title` = ?,`author` = ?,`coverUri` = ?,`filePath` = ?,`fileSize` = ?,`pageCount` = ?,`lastReadPage` = ?,`lastReadChapter` = ?,`lastReadMode` = ?,`lastScrollPosition` = ?,`lastFontSize` = ?,`lastZoom` = ?,`lastReadTime` = ?,`progress` = ?,`format` = ?,`addedTime` = ? WHERE `id` = ?";
       }
 
       @Override
@@ -134,18 +147,27 @@ public final class BookDao_Impl implements BookDao {
         statement.bindLong(6, entity.getFileSize());
         statement.bindLong(7, entity.getPageCount());
         statement.bindLong(8, entity.getLastReadPage());
-        statement.bindLong(9, entity.getLastReadTime());
-        statement.bindLong(10, entity.getProgress());
-        if (entity.getFormat() == null) {
-          statement.bindNull(11);
+        statement.bindLong(9, entity.getLastReadChapter());
+        if (entity.getLastReadMode() == null) {
+          statement.bindNull(10);
         } else {
-          statement.bindString(11, entity.getFormat());
+          statement.bindString(10, entity.getLastReadMode());
         }
-        statement.bindLong(12, entity.getAddedTime());
-        if (entity.getId() == null) {
-          statement.bindNull(13);
+        statement.bindLong(11, entity.getLastScrollPosition());
+        statement.bindLong(12, entity.getLastFontSize());
+        statement.bindDouble(13, entity.getLastZoom());
+        statement.bindLong(14, entity.getLastReadTime());
+        statement.bindLong(15, entity.getProgress());
+        if (entity.getFormat() == null) {
+          statement.bindNull(16);
         } else {
-          statement.bindString(13, entity.getId());
+          statement.bindString(16, entity.getFormat());
+        }
+        statement.bindLong(17, entity.getAddedTime());
+        if (entity.getId() == null) {
+          statement.bindNull(18);
+        } else {
+          statement.bindString(18, entity.getId());
         }
       }
     };
@@ -154,6 +176,22 @@ public final class BookDao_Impl implements BookDao {
       @NonNull
       public String createQuery() {
         final String _query = "UPDATE books SET progress = ?, lastReadPage = ?, lastReadTime = ? WHERE id = ?";
+        return _query;
+      }
+    };
+    this.__preparedStmtOfUpdateReadProgress = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "UPDATE books SET progress = ?, lastReadPage = ?, lastReadChapter = ?, lastReadMode = ?, lastScrollPosition = ?, lastFontSize = ?, lastZoom = ?, lastReadTime = ? WHERE id = ?";
+        return _query;
+      }
+    };
+    this.__preparedStmtOfUpdateReadingSettings = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "UPDATE books SET lastReadMode = ?, lastFontSize = ?, lastReadTime = ? WHERE id = ?";
         return _query;
       }
     };
@@ -266,6 +304,99 @@ public final class BookDao_Impl implements BookDao {
   }
 
   @Override
+  public Object updateReadProgress(final String id, final int progress, final int lastReadPage,
+      final int lastReadChapter, final String lastReadMode, final int lastScrollPosition,
+      final int lastFontSize, final float lastZoom, final long lastReadTime,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfUpdateReadProgress.acquire();
+        int _argIndex = 1;
+        _stmt.bindLong(_argIndex, progress);
+        _argIndex = 2;
+        _stmt.bindLong(_argIndex, lastReadPage);
+        _argIndex = 3;
+        _stmt.bindLong(_argIndex, lastReadChapter);
+        _argIndex = 4;
+        if (lastReadMode == null) {
+          _stmt.bindNull(_argIndex);
+        } else {
+          _stmt.bindString(_argIndex, lastReadMode);
+        }
+        _argIndex = 5;
+        _stmt.bindLong(_argIndex, lastScrollPosition);
+        _argIndex = 6;
+        _stmt.bindLong(_argIndex, lastFontSize);
+        _argIndex = 7;
+        _stmt.bindDouble(_argIndex, lastZoom);
+        _argIndex = 8;
+        _stmt.bindLong(_argIndex, lastReadTime);
+        _argIndex = 9;
+        if (id == null) {
+          _stmt.bindNull(_argIndex);
+        } else {
+          _stmt.bindString(_argIndex, id);
+        }
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfUpdateReadProgress.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object updateReadingSettings(final String id, final String lastReadMode,
+      final int lastFontSize, final long lastReadTime,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfUpdateReadingSettings.acquire();
+        int _argIndex = 1;
+        if (lastReadMode == null) {
+          _stmt.bindNull(_argIndex);
+        } else {
+          _stmt.bindString(_argIndex, lastReadMode);
+        }
+        _argIndex = 2;
+        _stmt.bindLong(_argIndex, lastFontSize);
+        _argIndex = 3;
+        _stmt.bindLong(_argIndex, lastReadTime);
+        _argIndex = 4;
+        if (id == null) {
+          _stmt.bindNull(_argIndex);
+        } else {
+          _stmt.bindString(_argIndex, id);
+        }
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfUpdateReadingSettings.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
   public Object deleteBook(final String id, final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
@@ -335,6 +466,11 @@ public final class BookDao_Impl implements BookDao {
           final int _cursorIndexOfFileSize = CursorUtil.getColumnIndexOrThrow(_cursor, "fileSize");
           final int _cursorIndexOfPageCount = CursorUtil.getColumnIndexOrThrow(_cursor, "pageCount");
           final int _cursorIndexOfLastReadPage = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadPage");
+          final int _cursorIndexOfLastReadChapter = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadChapter");
+          final int _cursorIndexOfLastReadMode = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadMode");
+          final int _cursorIndexOfLastScrollPosition = CursorUtil.getColumnIndexOrThrow(_cursor, "lastScrollPosition");
+          final int _cursorIndexOfLastFontSize = CursorUtil.getColumnIndexOrThrow(_cursor, "lastFontSize");
+          final int _cursorIndexOfLastZoom = CursorUtil.getColumnIndexOrThrow(_cursor, "lastZoom");
           final int _cursorIndexOfLastReadTime = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadTime");
           final int _cursorIndexOfProgress = CursorUtil.getColumnIndexOrThrow(_cursor, "progress");
           final int _cursorIndexOfFormat = CursorUtil.getColumnIndexOrThrow(_cursor, "format");
@@ -378,6 +514,20 @@ public final class BookDao_Impl implements BookDao {
             _tmpPageCount = _cursor.getInt(_cursorIndexOfPageCount);
             final int _tmpLastReadPage;
             _tmpLastReadPage = _cursor.getInt(_cursorIndexOfLastReadPage);
+            final int _tmpLastReadChapter;
+            _tmpLastReadChapter = _cursor.getInt(_cursorIndexOfLastReadChapter);
+            final String _tmpLastReadMode;
+            if (_cursor.isNull(_cursorIndexOfLastReadMode)) {
+              _tmpLastReadMode = null;
+            } else {
+              _tmpLastReadMode = _cursor.getString(_cursorIndexOfLastReadMode);
+            }
+            final int _tmpLastScrollPosition;
+            _tmpLastScrollPosition = _cursor.getInt(_cursorIndexOfLastScrollPosition);
+            final int _tmpLastFontSize;
+            _tmpLastFontSize = _cursor.getInt(_cursorIndexOfLastFontSize);
+            final float _tmpLastZoom;
+            _tmpLastZoom = _cursor.getFloat(_cursorIndexOfLastZoom);
             final long _tmpLastReadTime;
             _tmpLastReadTime = _cursor.getLong(_cursorIndexOfLastReadTime);
             final int _tmpProgress;
@@ -390,7 +540,7 @@ public final class BookDao_Impl implements BookDao {
             }
             final long _tmpAddedTime;
             _tmpAddedTime = _cursor.getLong(_cursorIndexOfAddedTime);
-            _item = new Book(_tmpId,_tmpTitle,_tmpAuthor,_tmpCoverUri,_tmpFilePath,_tmpFileSize,_tmpPageCount,_tmpLastReadPage,_tmpLastReadTime,_tmpProgress,_tmpFormat,_tmpAddedTime);
+            _item = new Book(_tmpId,_tmpTitle,_tmpAuthor,_tmpCoverUri,_tmpFilePath,_tmpFileSize,_tmpPageCount,_tmpLastReadPage,_tmpLastReadChapter,_tmpLastReadMode,_tmpLastScrollPosition,_tmpLastFontSize,_tmpLastZoom,_tmpLastReadTime,_tmpProgress,_tmpFormat,_tmpAddedTime);
             _result.add(_item);
           }
           return _result;
@@ -425,6 +575,11 @@ public final class BookDao_Impl implements BookDao {
           final int _cursorIndexOfFileSize = CursorUtil.getColumnIndexOrThrow(_cursor, "fileSize");
           final int _cursorIndexOfPageCount = CursorUtil.getColumnIndexOrThrow(_cursor, "pageCount");
           final int _cursorIndexOfLastReadPage = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadPage");
+          final int _cursorIndexOfLastReadChapter = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadChapter");
+          final int _cursorIndexOfLastReadMode = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadMode");
+          final int _cursorIndexOfLastScrollPosition = CursorUtil.getColumnIndexOrThrow(_cursor, "lastScrollPosition");
+          final int _cursorIndexOfLastFontSize = CursorUtil.getColumnIndexOrThrow(_cursor, "lastFontSize");
+          final int _cursorIndexOfLastZoom = CursorUtil.getColumnIndexOrThrow(_cursor, "lastZoom");
           final int _cursorIndexOfLastReadTime = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadTime");
           final int _cursorIndexOfProgress = CursorUtil.getColumnIndexOrThrow(_cursor, "progress");
           final int _cursorIndexOfFormat = CursorUtil.getColumnIndexOrThrow(_cursor, "format");
@@ -468,6 +623,20 @@ public final class BookDao_Impl implements BookDao {
             _tmpPageCount = _cursor.getInt(_cursorIndexOfPageCount);
             final int _tmpLastReadPage;
             _tmpLastReadPage = _cursor.getInt(_cursorIndexOfLastReadPage);
+            final int _tmpLastReadChapter;
+            _tmpLastReadChapter = _cursor.getInt(_cursorIndexOfLastReadChapter);
+            final String _tmpLastReadMode;
+            if (_cursor.isNull(_cursorIndexOfLastReadMode)) {
+              _tmpLastReadMode = null;
+            } else {
+              _tmpLastReadMode = _cursor.getString(_cursorIndexOfLastReadMode);
+            }
+            final int _tmpLastScrollPosition;
+            _tmpLastScrollPosition = _cursor.getInt(_cursorIndexOfLastScrollPosition);
+            final int _tmpLastFontSize;
+            _tmpLastFontSize = _cursor.getInt(_cursorIndexOfLastFontSize);
+            final float _tmpLastZoom;
+            _tmpLastZoom = _cursor.getFloat(_cursorIndexOfLastZoom);
             final long _tmpLastReadTime;
             _tmpLastReadTime = _cursor.getLong(_cursorIndexOfLastReadTime);
             final int _tmpProgress;
@@ -480,7 +649,7 @@ public final class BookDao_Impl implements BookDao {
             }
             final long _tmpAddedTime;
             _tmpAddedTime = _cursor.getLong(_cursorIndexOfAddedTime);
-            _item = new Book(_tmpId,_tmpTitle,_tmpAuthor,_tmpCoverUri,_tmpFilePath,_tmpFileSize,_tmpPageCount,_tmpLastReadPage,_tmpLastReadTime,_tmpProgress,_tmpFormat,_tmpAddedTime);
+            _item = new Book(_tmpId,_tmpTitle,_tmpAuthor,_tmpCoverUri,_tmpFilePath,_tmpFileSize,_tmpPageCount,_tmpLastReadPage,_tmpLastReadChapter,_tmpLastReadMode,_tmpLastScrollPosition,_tmpLastFontSize,_tmpLastZoom,_tmpLastReadTime,_tmpProgress,_tmpFormat,_tmpAddedTime);
             _result.add(_item);
           }
           return _result;
@@ -517,6 +686,11 @@ public final class BookDao_Impl implements BookDao {
           final int _cursorIndexOfFileSize = CursorUtil.getColumnIndexOrThrow(_cursor, "fileSize");
           final int _cursorIndexOfPageCount = CursorUtil.getColumnIndexOrThrow(_cursor, "pageCount");
           final int _cursorIndexOfLastReadPage = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadPage");
+          final int _cursorIndexOfLastReadChapter = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadChapter");
+          final int _cursorIndexOfLastReadMode = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadMode");
+          final int _cursorIndexOfLastScrollPosition = CursorUtil.getColumnIndexOrThrow(_cursor, "lastScrollPosition");
+          final int _cursorIndexOfLastFontSize = CursorUtil.getColumnIndexOrThrow(_cursor, "lastFontSize");
+          final int _cursorIndexOfLastZoom = CursorUtil.getColumnIndexOrThrow(_cursor, "lastZoom");
           final int _cursorIndexOfLastReadTime = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadTime");
           final int _cursorIndexOfProgress = CursorUtil.getColumnIndexOrThrow(_cursor, "progress");
           final int _cursorIndexOfFormat = CursorUtil.getColumnIndexOrThrow(_cursor, "format");
@@ -559,6 +733,20 @@ public final class BookDao_Impl implements BookDao {
             _tmpPageCount = _cursor.getInt(_cursorIndexOfPageCount);
             final int _tmpLastReadPage;
             _tmpLastReadPage = _cursor.getInt(_cursorIndexOfLastReadPage);
+            final int _tmpLastReadChapter;
+            _tmpLastReadChapter = _cursor.getInt(_cursorIndexOfLastReadChapter);
+            final String _tmpLastReadMode;
+            if (_cursor.isNull(_cursorIndexOfLastReadMode)) {
+              _tmpLastReadMode = null;
+            } else {
+              _tmpLastReadMode = _cursor.getString(_cursorIndexOfLastReadMode);
+            }
+            final int _tmpLastScrollPosition;
+            _tmpLastScrollPosition = _cursor.getInt(_cursorIndexOfLastScrollPosition);
+            final int _tmpLastFontSize;
+            _tmpLastFontSize = _cursor.getInt(_cursorIndexOfLastFontSize);
+            final float _tmpLastZoom;
+            _tmpLastZoom = _cursor.getFloat(_cursorIndexOfLastZoom);
             final long _tmpLastReadTime;
             _tmpLastReadTime = _cursor.getLong(_cursorIndexOfLastReadTime);
             final int _tmpProgress;
@@ -571,7 +759,7 @@ public final class BookDao_Impl implements BookDao {
             }
             final long _tmpAddedTime;
             _tmpAddedTime = _cursor.getLong(_cursorIndexOfAddedTime);
-            _result = new Book(_tmpId,_tmpTitle,_tmpAuthor,_tmpCoverUri,_tmpFilePath,_tmpFileSize,_tmpPageCount,_tmpLastReadPage,_tmpLastReadTime,_tmpProgress,_tmpFormat,_tmpAddedTime);
+            _result = new Book(_tmpId,_tmpTitle,_tmpAuthor,_tmpCoverUri,_tmpFilePath,_tmpFileSize,_tmpPageCount,_tmpLastReadPage,_tmpLastReadChapter,_tmpLastReadMode,_tmpLastScrollPosition,_tmpLastFontSize,_tmpLastZoom,_tmpLastReadTime,_tmpProgress,_tmpFormat,_tmpAddedTime);
           } else {
             _result = null;
           }
@@ -646,6 +834,11 @@ public final class BookDao_Impl implements BookDao {
           final int _cursorIndexOfFileSize = CursorUtil.getColumnIndexOrThrow(_cursor, "fileSize");
           final int _cursorIndexOfPageCount = CursorUtil.getColumnIndexOrThrow(_cursor, "pageCount");
           final int _cursorIndexOfLastReadPage = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadPage");
+          final int _cursorIndexOfLastReadChapter = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadChapter");
+          final int _cursorIndexOfLastReadMode = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadMode");
+          final int _cursorIndexOfLastScrollPosition = CursorUtil.getColumnIndexOrThrow(_cursor, "lastScrollPosition");
+          final int _cursorIndexOfLastFontSize = CursorUtil.getColumnIndexOrThrow(_cursor, "lastFontSize");
+          final int _cursorIndexOfLastZoom = CursorUtil.getColumnIndexOrThrow(_cursor, "lastZoom");
           final int _cursorIndexOfLastReadTime = CursorUtil.getColumnIndexOrThrow(_cursor, "lastReadTime");
           final int _cursorIndexOfProgress = CursorUtil.getColumnIndexOrThrow(_cursor, "progress");
           final int _cursorIndexOfFormat = CursorUtil.getColumnIndexOrThrow(_cursor, "format");
@@ -689,6 +882,20 @@ public final class BookDao_Impl implements BookDao {
             _tmpPageCount = _cursor.getInt(_cursorIndexOfPageCount);
             final int _tmpLastReadPage;
             _tmpLastReadPage = _cursor.getInt(_cursorIndexOfLastReadPage);
+            final int _tmpLastReadChapter;
+            _tmpLastReadChapter = _cursor.getInt(_cursorIndexOfLastReadChapter);
+            final String _tmpLastReadMode;
+            if (_cursor.isNull(_cursorIndexOfLastReadMode)) {
+              _tmpLastReadMode = null;
+            } else {
+              _tmpLastReadMode = _cursor.getString(_cursorIndexOfLastReadMode);
+            }
+            final int _tmpLastScrollPosition;
+            _tmpLastScrollPosition = _cursor.getInt(_cursorIndexOfLastScrollPosition);
+            final int _tmpLastFontSize;
+            _tmpLastFontSize = _cursor.getInt(_cursorIndexOfLastFontSize);
+            final float _tmpLastZoom;
+            _tmpLastZoom = _cursor.getFloat(_cursorIndexOfLastZoom);
             final long _tmpLastReadTime;
             _tmpLastReadTime = _cursor.getLong(_cursorIndexOfLastReadTime);
             final int _tmpProgress;
@@ -701,7 +908,7 @@ public final class BookDao_Impl implements BookDao {
             }
             final long _tmpAddedTime;
             _tmpAddedTime = _cursor.getLong(_cursorIndexOfAddedTime);
-            _item = new Book(_tmpId,_tmpTitle,_tmpAuthor,_tmpCoverUri,_tmpFilePath,_tmpFileSize,_tmpPageCount,_tmpLastReadPage,_tmpLastReadTime,_tmpProgress,_tmpFormat,_tmpAddedTime);
+            _item = new Book(_tmpId,_tmpTitle,_tmpAuthor,_tmpCoverUri,_tmpFilePath,_tmpFileSize,_tmpPageCount,_tmpLastReadPage,_tmpLastReadChapter,_tmpLastReadMode,_tmpLastScrollPosition,_tmpLastFontSize,_tmpLastZoom,_tmpLastReadTime,_tmpProgress,_tmpFormat,_tmpAddedTime);
             _result.add(_item);
           }
           return _result;
