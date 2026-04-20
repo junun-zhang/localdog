@@ -192,8 +192,13 @@ fun ReaderScreen(bookId: String, navController: NavController) {
             val page = pdfState?.currentPage ?: currentTxtPage
             val chapter = currentSpineIndex
             val progress = if (pdfState != null) {
+                // PDF：页码进度
                 ((page.toFloat() / (pdfState?.totalPages ?: 1)) * 100).toInt()
+            } else if (epubContent.isNotEmpty()) {
+                // EPUB：章节进度
+                ((currentSpineIndex.toFloat() / epubContent.size) * 100).toInt()
             } else if (txtPages.isNotEmpty()) {
+                // TXT：页码进度
                 ((currentTxtPage.toFloat() / txtPages.size) * 100).toInt()
             } else {
                 book.progress
