@@ -303,7 +303,13 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                     Log.d(TAG, "EpubViewer onTapCenter called")
                     showSettingsPanel = true 
                 },
-                onIndexChange = { currentSpineIndex = it }
+                onIndexChange = { currentSpineIndex = it },
+                onFontSizeChange = { newSize ->
+                    if (newSize != readingPrefs.fontSize) {
+                        readingPrefs = readingPrefs.copy(fontSize = newSize)
+                        settingsManager.saveReadingPreferences(readingPrefs)
+                    }
+                }
             )
             // 根据阅读模式选择显示方式
             showText && readingPrefs.readingMode == ReadingMode.SCROLL -> TxtScrollViewer(
@@ -324,7 +330,13 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                     Log.d(TAG, "TxtViewer onTapCenter called")
                     showSettingsPanel = true 
                 },
-                onPageChange = { currentTxtPage = it }
+                onPageChange = { currentTxtPage = it },
+                onFontSizeChange = { newSize ->
+                    if (newSize != readingPrefs.fontSize) {
+                        readingPrefs = readingPrefs.copy(fontSize = newSize)
+                        settingsManager.saveReadingPreferences(readingPrefs)
+                    }
+                }
             )
             showText -> TxtScrollViewer(
                 content = textContent,
@@ -380,7 +392,8 @@ private fun TxtViewer(
     textColor: Color,
     fontSize: Int,
     onTapCenter: () -> Unit,
-    onPageChange: (Int) -> Unit
+    onPageChange: (Int) -> Unit,
+    onFontSizeChange: (Int) -> Unit
 ) {
     // 滑动阈值
     val swipeThreshold = 100f
@@ -401,22 +414,28 @@ private fun TxtViewer(
             )
         }
         
-        // 透明覆盖层用于手势检测（点击 + 滑动）
+        // 透明覆盖层用于手势检测（点击 + 滑动 + 双指缩放调整字体）
         Box(
             Modifier
                 .fillMaxSize()
                 .background(Color(0x01000000))
+                .pointerInput(fontSize) {
+                    // 双指缩放调整字体大小
+                    detectTransformGestures { _, pan, zoomChange, rotation ->
+                        val newFontSize = (fontSize * zoomChange).toInt().coerceIn(12, 24)
+                        if (newFontSize != fontSize) {
+                            onFontSizeChange(newFontSize)
+                        }
+                    }
+                }
                 .pointerInput(pages, currentPage) {
                     // 垂直滑动翻页
                     detectVerticalDragGestures(
                         onDragEnd = {
-                            Log.d(TAG, "TXT drag end: offset=$dragOffset, threshold=$swipeThreshold")
-                            // 拖拽式翻页：手指向下拖=内容下移=露出上方=上一页，手指向上拖=内容上移=露出下方=下一页
+                            // 拖拽式翻页
                             if (dragOffset > swipeThreshold && currentPage > 0) {
-                                // 向下滑动（手指向下拖）= 上一页
                                 onPageChange(currentPage - 1)
                             } else if (dragOffset < -swipeThreshold && currentPage < pages.size - 1) {
-                                // 向上滑动（手指向上拖）= 下一页
                                 onPageChange(currentPage + 1)
                             }
                             dragOffset = 0f
@@ -429,7 +448,6 @@ private fun TxtViewer(
                 .pointerInput(Unit) {
                     // 点击手势
                     detectTapGestures(onTap = { offset ->
-                        Log.d(TAG, "TXT tap at offset: $offset, width: ${size.width}")
                         val width = size.width
                         when {
                             offset.x < width / 3 && currentPage > 0 -> {
