@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ireader.R
 import com.example.ireader.data.model.Book
+import android.content.Context
 
 enum class ViewMode { GRID, LIST }
 
@@ -40,11 +42,27 @@ fun BookShelfScreen(
     onImportClick: () -> Unit,
     viewModel: BookShelfViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val books by viewModel.books.collectAsStateWithLifecycle(emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle(false)
     
-    // 视图模式
-    var viewMode by remember { mutableStateOf(ViewMode.GRID) }
+    // 视图模式 - 从SharedPreferences恢复
+    val viewPrefs = remember { context.getSharedPreferences("view_settings", Context.MODE_PRIVATE) }
+    var viewMode by remember { 
+        mutableStateOf(
+            try {
+                ViewMode.valueOf(viewPrefs.getString("viewMode", "GRID") ?: "GRID")
+            } catch (e: Exception) {
+                ViewMode.GRID
+            }
+        )
+    }
+    
+    // 保存视图模式变更
+    fun saveViewMode(mode: ViewMode) {
+        viewMode = mode
+        viewPrefs.edit().putString("viewMode", mode.name).apply()
+    }
     
     // 删除确认对话框状态
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -114,7 +132,7 @@ fun BookShelfScreen(
                 },
                 actions = {
                     // 视图切换按钮
-                    IconButton(onClick = { viewMode = if (viewMode == ViewMode.GRID) ViewMode.LIST else ViewMode.GRID }) {
+                    IconButton(onClick = { saveViewMode(if (viewMode == ViewMode.GRID) ViewMode.LIST else ViewMode.GRID) }) {
                         Icon(
                             imageVector = if (viewMode == ViewMode.GRID) Icons.Filled.ViewStream else Icons.Filled.GridView,
                             contentDescription = if (viewMode == ViewMode.GRID) "列表视图" else "网格视图"
