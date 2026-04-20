@@ -713,104 +713,109 @@ private fun EpubViewer(
     val swipeThreshold = 100f
     var dragOffset by remember { mutableStateOf(0f) }
     
-    Column(Modifier.fillMaxSize().background(bgColor)) {
-        Box(Modifier.weight(1f)) {
-            // WebView 内容
-            AndroidView(
-                factory = { ctx -> 
-                    WebView(ctx).apply { 
-                        webViewClient = WebViewClient()
-                        settings.javaScriptEnabled = true
-                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                    }
-                },
-                update = { view -> 
-                    val cssColor = when(textColor) {
-                        Color.White -> "#FFFFFF"
-                        Color.Black -> "#000000"
-                        else -> "#5D4037"
-                    }
-                    val css = """
-                        <style>
-                            body { 
-                                background-color: transparent;
-                                color: $cssColor;
-                                font-size: ${fontSize}px;
-                                padding: 16px;
-                            }
-                        </style>
-                    """
-                    view.loadDataWithBaseURL(null, css + content[index].content, "text/html", "UTF-8", null)
+    Box(Modifier.fillMaxSize().background(bgColor)) {
+        // WebView 内容
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx -> 
+                WebView(ctx).apply { 
+                    webViewClient = WebViewClient()
+                    settings.javaScriptEnabled = true
+                    settings.setSupportZoom(false)
+                    settings.builtInZoomControls = false
+                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
                 }
+            },
+            update = { view -> 
+                val cssColor = when(textColor) {
+                    Color.White -> "#FFFFFF"
+                    Color.Black -> "#000000"
+                    else -> "#5D4037"
+                }
+                val scrollStyle = if (readingMode == ReadingMode.SCROLL) {
+                    "overflow: auto;"
+                } else {
+                    "overflow: hidden;"
+                }
+                val css = """
+                    <style>
+                        body { 
+                            background-color: transparent;
+                            color: $cssColor;
+                            font-size: ${fontSize}px;
+                            padding: 16px;
+                            $scrollStyle
+                        }
+                    </style>
+                """
+                view.loadDataWithBaseURL(null, css + content[index].content, "text/html", "UTF-8", null)
+            }
+        )
+        
+        // 翻页模式：覆盖层拦截手势
+        if (readingMode == ReadingMode.PAGED) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Transparent)
+                    .pointerInput(content.size, index) {
+                        detectVerticalDragGestures(
+                            onDragEnd = {
+                                Log.d(TAG, "EPUB PAGED drag end: offset=$dragOffset")
+                                if (dragOffset > swipeThreshold && index > 0) {
+                                    onIndexChange(index - 1)
+                                } else if (dragOffset < -swipeThreshold && index < content.size - 1) {
+                                    onIndexChange(index + 1)
+                                }
+                                dragOffset = 0f
+                            },
+                            onVerticalDrag = { _, dragAmount ->
+                                dragOffset += dragAmount
+                            }
+                        )
+                    }
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = { offset ->
+                            val width = size.width
+                            Log.d(TAG, "EPUB PAGED tap: x=${offset.x}, width=$width")
+                            if (offset.x >= width / 3 && offset.x < width * 2 / 3) {
+                                onTapCenter()
+                            }
+                        })
+                    }
             )
             
-            // 翻页模式：透明覆盖层用于手势检测
-            if (readingMode == ReadingMode.PAGED) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(Color(0x01000000))
-                        .pointerInput(content.size, index) {
-                            detectVerticalDragGestures(
-                                onDragEnd = {
-                                    Log.d(TAG, "EPUB drag end: offset=$dragOffset")
-                                    if (dragOffset > swipeThreshold && index > 0) {
-                                        onIndexChange(index - 1)
-                                    } else if (dragOffset < -swipeThreshold && index < content.size - 1) {
-                                        onIndexChange(index + 1)
-                                    }
-                                    dragOffset = 0f
-                                },
-                                onVerticalDrag = { _, dragAmount ->
-                                    dragOffset += dragAmount
-                                }
-                            )
+            // 底部翻页控制
+            Box(Modifier.fillMaxSize().padding(bottom = 16.dp), Alignment.BottomCenter) {
+                Surface(shape = MaterialTheme.shapes.small, color = bgColor.copy(alpha = 0.9f)) {
+                    Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton({ if (index > 0) onIndexChange(index - 1) }, enabled = index > 0) { 
+                            Icon(Icons.Filled.KeyboardArrowUp, "上一章", tint = textColor) 
                         }
-                        .pointerInput(Unit) {
-                            detectTapGestures(onTap = { offset ->
-                                val width = size.width
-                                if (offset.x >= width / 3 && offset.x < width * 2 / 3) {
-                                    onTapCenter()
-                                }
-                            })
+                        Text("${index + 1} / ${content.size}", color = textColor)
+                        IconButton({ if (index < content.size - 1) onIndexChange(index + 1) }, enabled = index < content.size - 1) { 
+                            Icon(Icons.Filled.KeyboardArrowDown, "下一章", tint = textColor) 
                         }
-                )
-            }
-            
-            // 滚动模式：添加设置按钮（右上角悬浮）
-            if (readingMode == ReadingMode.SCROLL) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(8.dp),
-                    Alignment.TopEnd
-                ) {
-                    FloatingActionButton(
-                        onClick = onTapCenter,
-                        modifier = Modifier.size(40.dp),
-                        shape = RoundedCornerShape(50),
-                        containerColor = bgColor.copy(alpha = 0.9f)
-                    ) {
-                        Icon(
-                            Icons.Filled.Settings,
-                            "设置",
-                            tint = textColor,
-                            modifier = Modifier.size(20.dp)
-                        )
                     }
                 }
             }
         }
         
-        // 翻页控制（仅翻页模式显示）
-        if (readingMode == ReadingMode.PAGED) {
-            Row(Modifier.fillMaxWidth().padding(8.dp), Arrangement.SpaceBetween) {
-                IconButton({ if (index > 0) onIndexChange(index - 1) }, enabled = index > 0) { 
-                    Icon(Icons.Filled.KeyboardArrowUp, "上一章") 
-                }
-                Text("${index + 1} / ${content.size}")
-                IconButton({ if (index < content.size - 1) onIndexChange(index + 1) }, enabled = index < content.size - 1) { 
-                    Icon(Icons.Filled.KeyboardArrowDown, "下一章") 
+        // 滚动模式：设置按钮（右上角悬浮）
+        if (readingMode == ReadingMode.SCROLL) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                Alignment.TopEnd
+            ) {
+                FloatingActionButton(
+                    onClick = onTapCenter,
+                    modifier = Modifier.size(40.dp),
+                    shape = RoundedCornerShape(50),
+                    containerColor = bgColor.copy(alpha = 0.9f)
+                ) {
+                    Icon(Icons.Filled.Settings, "设置", tint = textColor, modifier = Modifier.size(20.dp))
                 }
             }
         }
