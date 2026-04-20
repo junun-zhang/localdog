@@ -548,7 +548,12 @@ private fun SettingsPanelContent(
     onFontSizeChanged: (Int) -> Unit,
     onZoomChanged: (Float) -> Unit
 ) {
-    Column(Modifier.fillMaxWidth().padding(16.dp)) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
         Text("阅读设置", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(16.dp))
         
