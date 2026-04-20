@@ -71,7 +71,7 @@ class BookmarksViewModel(application: Application) : AndroidViewModel(applicatio
      */
     fun deleteBookmark(bookmarkId: String) {
         viewModelScope.launch {
-            bookmarkDao.deleteBookmark(bookmarkId)
+            bookmarkDao.deleteBookmarkById(bookmarkId)
             loadAllBookmarks()
         }
     }

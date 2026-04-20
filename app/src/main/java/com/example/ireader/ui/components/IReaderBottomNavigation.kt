@@ -49,7 +49,7 @@ fun IReaderBottomNavigation(
             onClick = { onNavigate("reader") },
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_reader),
+                    painter = painterResource(id = R.drawable.ic_book_placeholder),
                     contentDescription = stringResource(R.string.reader_title)
                 )
             },

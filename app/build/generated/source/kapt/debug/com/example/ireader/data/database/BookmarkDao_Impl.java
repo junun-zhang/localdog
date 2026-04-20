@@ -1,6 +1,7 @@
 package com.example.ireader.data.database;
 
 import android.database.Cursor;
+import android.os.CancellationSignal;
 import androidx.annotation.NonNull;
 import androidx.room.CoroutinesRoom;
 import androidx.room.EntityDeletionOrUpdateAdapter;
@@ -39,6 +40,8 @@ public final class BookmarkDao_Impl implements BookmarkDao {
   private final EntityDeletionOrUpdateAdapter<Bookmark> __updateAdapterOfBookmark;
 
   private final SharedSQLiteStatement __preparedStmtOfDeleteBookmarkById;
+
+  private final SharedSQLiteStatement __preparedStmtOfUpdateBookmarkNote;
 
   private final SharedSQLiteStatement __preparedStmtOfDeleteBookmarksByBook;
 
@@ -152,6 +155,14 @@ public final class BookmarkDao_Impl implements BookmarkDao {
         return _query;
       }
     };
+    this.__preparedStmtOfUpdateBookmarkNote = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "UPDATE bookmarks SET note = ? WHERE id = ?";
+        return _query;
+      }
+    };
     this.__preparedStmtOfDeleteBookmarksByBook = new SharedSQLiteStatement(__db) {
       @Override
       @NonNull
@@ -244,6 +255,42 @@ public final class BookmarkDao_Impl implements BookmarkDao {
           }
         } finally {
           __preparedStmtOfDeleteBookmarkById.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object updateBookmarkNote(final String bookmarkId, final String note,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfUpdateBookmarkNote.acquire();
+        int _argIndex = 1;
+        if (note == null) {
+          _stmt.bindNull(_argIndex);
+        } else {
+          _stmt.bindString(_argIndex, note);
+        }
+        _argIndex = 2;
+        if (bookmarkId == null) {
+          _stmt.bindNull(_argIndex);
+        } else {
+          _stmt.bindString(_argIndex, bookmarkId);
+        }
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfUpdateBookmarkNote.release(_stmt);
         }
       }
     }, $completion);
@@ -356,6 +403,80 @@ public final class BookmarkDao_Impl implements BookmarkDao {
   }
 
   @Override
+  public Object getBookmarksForBook(final String bookId,
+      final Continuation<? super List<Bookmark>> $completion) {
+    final String _sql = "SELECT * FROM bookmarks WHERE bookId = ? ORDER BY createdAt DESC";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
+    int _argIndex = 1;
+    if (bookId == null) {
+      _statement.bindNull(_argIndex);
+    } else {
+      _statement.bindString(_argIndex, bookId);
+    }
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<Bookmark>>() {
+      @Override
+      @NonNull
+      public List<Bookmark> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfBookId = CursorUtil.getColumnIndexOrThrow(_cursor, "bookId");
+          final int _cursorIndexOfTitle = CursorUtil.getColumnIndexOrThrow(_cursor, "title");
+          final int _cursorIndexOfPage = CursorUtil.getColumnIndexOrThrow(_cursor, "page");
+          final int _cursorIndexOfPosition = CursorUtil.getColumnIndexOrThrow(_cursor, "position");
+          final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
+          final int _cursorIndexOfNote = CursorUtil.getColumnIndexOrThrow(_cursor, "note");
+          final List<Bookmark> _result = new ArrayList<Bookmark>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final Bookmark _item;
+            final String _tmpId;
+            if (_cursor.isNull(_cursorIndexOfId)) {
+              _tmpId = null;
+            } else {
+              _tmpId = _cursor.getString(_cursorIndexOfId);
+            }
+            final String _tmpBookId;
+            if (_cursor.isNull(_cursorIndexOfBookId)) {
+              _tmpBookId = null;
+            } else {
+              _tmpBookId = _cursor.getString(_cursorIndexOfBookId);
+            }
+            final String _tmpTitle;
+            if (_cursor.isNull(_cursorIndexOfTitle)) {
+              _tmpTitle = null;
+            } else {
+              _tmpTitle = _cursor.getString(_cursorIndexOfTitle);
+            }
+            final int _tmpPage;
+            _tmpPage = _cursor.getInt(_cursorIndexOfPage);
+            final String _tmpPosition;
+            if (_cursor.isNull(_cursorIndexOfPosition)) {
+              _tmpPosition = null;
+            } else {
+              _tmpPosition = _cursor.getString(_cursorIndexOfPosition);
+            }
+            final long _tmpCreatedAt;
+            _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
+            final String _tmpNote;
+            if (_cursor.isNull(_cursorIndexOfNote)) {
+              _tmpNote = null;
+            } else {
+              _tmpNote = _cursor.getString(_cursorIndexOfNote);
+            }
+            _item = new Bookmark(_tmpId,_tmpBookId,_tmpTitle,_tmpPage,_tmpPosition,_tmpCreatedAt,_tmpNote);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
   public Flow<List<Bookmark>> getAllBookmarks() {
     final String _sql = "SELECT * FROM bookmarks ORDER BY createdAt DESC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
@@ -423,6 +544,73 @@ public final class BookmarkDao_Impl implements BookmarkDao {
         _statement.release();
       }
     });
+  }
+
+  @Override
+  public Object getAllBookmarksList(final Continuation<? super List<Bookmark>> $completion) {
+    final String _sql = "SELECT * FROM bookmarks ORDER BY createdAt DESC";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<Bookmark>>() {
+      @Override
+      @NonNull
+      public List<Bookmark> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfBookId = CursorUtil.getColumnIndexOrThrow(_cursor, "bookId");
+          final int _cursorIndexOfTitle = CursorUtil.getColumnIndexOrThrow(_cursor, "title");
+          final int _cursorIndexOfPage = CursorUtil.getColumnIndexOrThrow(_cursor, "page");
+          final int _cursorIndexOfPosition = CursorUtil.getColumnIndexOrThrow(_cursor, "position");
+          final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
+          final int _cursorIndexOfNote = CursorUtil.getColumnIndexOrThrow(_cursor, "note");
+          final List<Bookmark> _result = new ArrayList<Bookmark>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final Bookmark _item;
+            final String _tmpId;
+            if (_cursor.isNull(_cursorIndexOfId)) {
+              _tmpId = null;
+            } else {
+              _tmpId = _cursor.getString(_cursorIndexOfId);
+            }
+            final String _tmpBookId;
+            if (_cursor.isNull(_cursorIndexOfBookId)) {
+              _tmpBookId = null;
+            } else {
+              _tmpBookId = _cursor.getString(_cursorIndexOfBookId);
+            }
+            final String _tmpTitle;
+            if (_cursor.isNull(_cursorIndexOfTitle)) {
+              _tmpTitle = null;
+            } else {
+              _tmpTitle = _cursor.getString(_cursorIndexOfTitle);
+            }
+            final int _tmpPage;
+            _tmpPage = _cursor.getInt(_cursorIndexOfPage);
+            final String _tmpPosition;
+            if (_cursor.isNull(_cursorIndexOfPosition)) {
+              _tmpPosition = null;
+            } else {
+              _tmpPosition = _cursor.getString(_cursorIndexOfPosition);
+            }
+            final long _tmpCreatedAt;
+            _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
+            final String _tmpNote;
+            if (_cursor.isNull(_cursorIndexOfNote)) {
+              _tmpNote = null;
+            } else {
+              _tmpNote = _cursor.getString(_cursorIndexOfNote);
+            }
+            _item = new Bookmark(_tmpId,_tmpBookId,_tmpTitle,_tmpPage,_tmpPosition,_tmpCreatedAt,_tmpNote);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
   }
 
   @NonNull

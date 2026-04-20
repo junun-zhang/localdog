@@ -92,6 +92,7 @@
     <string name="new_releases">新书上架</string>
     <string name="night_theme">夜间</string>
     <string name="no_bookmarks">暂无书签</string>
+    <string name="no_bookmarks_found">暂无书签</string>
     <string name="no_books_found">暂无书籍</string>
     <string name="no_books_found_store">未找到相关书籍</string>
     <string name="no_highlights">暂无高亮</string>

@@ -1,68 +1,57 @@
 package com.example.ireader.ui.reader
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
-import com.example.ireader.R
+import android.content.Context
+import androidx.core.content.edit
 
-@Composable
-fun ReadingSettingsDialog(
-    onDismiss: () -> Unit,
-    onFontSizeChanged: (Float) -> Unit,
-    onThemeChanged: (Boolean) -> Unit,
-    currentFontSize: Float,
-    isNightMode: Boolean
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.reading_settings)) },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Font Size Slider
-                Column {
-                    Text(text = stringResource(R.string.font_size))
-                    Slider(
-                        value = currentFontSize,
-                        onValueChange = onFontSizeChanged,
-                        valueRange = 12f..24f,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text(
-                        text = "${currentFontSize.toInt()}sp",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                
-                // Theme Switch
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = stringResource(R.string.theme))
-                    Switch(
-                        checked = isNightMode,
-                        onCheckedChange = onThemeChanged
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("确定")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
+// 阅读主题枚举
+enum class ReadingTheme {
+    LIGHT, DARK, SEPIA, GREEN
+}
+
+// 阅读设置数据类
+data class ReadingPreferences(
+    val theme: ReadingTheme = ReadingTheme.LIGHT,
+    val fontSize: Int = 16
+)
+
+// 阅读设置管理类
+class ReadingSettingsManager(private val context: Context) {
+    private val prefs: android.content.SharedPreferences = context.getSharedPreferences("reading_settings", Context.MODE_PRIVATE)
+    
+    companion object {
+        private const val KEY_THEME = "reading_theme"
+        private const val KEY_FONT_SIZE = "font_size"
+        private const val DEFAULT_FONT_SIZE = 16
+    }
+    
+    fun saveReadingPreferences(preferences: ReadingPreferences) {
+        prefs.edit {
+            putString(KEY_THEME, preferences.theme.name)
+            putInt(KEY_FONT_SIZE, preferences.fontSize)
         }
-    )
+    }
+    
+    fun loadReadingPreferences(): ReadingPreferences {
+        val themeName = prefs.getString(KEY_THEME, ReadingTheme.LIGHT.name) ?: ReadingTheme.LIGHT.name
+        val theme = try {
+            ReadingTheme.valueOf(themeName)
+        } catch (e: IllegalArgumentException) {
+            ReadingTheme.LIGHT
+        }
+        val fontSize = prefs.getInt(KEY_FONT_SIZE, DEFAULT_FONT_SIZE)
+        
+        return ReadingPreferences(theme, fontSize)
+    }
+    
+    fun updateTheme(theme: ReadingTheme) {
+        prefs.edit {
+            putString(KEY_THEME, theme.name)
+        }
+    }
+    
+    fun updateFontSize(fontSize: Int) {
+        prefs.edit {
+            putInt(KEY_FONT_SIZE, fontSize)
+        }
+    }
 }

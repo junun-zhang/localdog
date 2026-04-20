@@ -99,6 +99,7 @@ string network_error
 string new_releases
 string night_theme
 string no_bookmarks
+string no_bookmarks_found
 string no_books_found
 string no_books_found_store
 string no_highlights
