@@ -41,8 +41,6 @@ import kotlin.math.max
 import kotlin.math.min
 import java.io.*
 import java.io.File
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextField
 
 private const val TAG = "ReaderScreen"
 
@@ -347,8 +345,6 @@ private fun PdfViewer(
     var isRendering by remember { mutableStateOf(false) }
     var doubleTapCount by remember { mutableStateOf(0) }
     var lastTapTime by remember { mutableStateOf(0L) }
-    var showJumpDialog by remember { mutableStateOf(false) }
-    var jumpPage by remember { mutableStateOf("") }
     
     Box(Modifier.fillMaxSize().background(bgColor)) {
         // PDF 内容 - 使用可缩放的容器
@@ -483,7 +479,7 @@ private fun PdfViewer(
                             ) {
                                 Icon(Icons.Filled.KeyboardArrowLeft, "上一页")
                             }
-                            Text("${state.currentPage + 1} / ${state.totalPages}", modifier = Modifier.clickable { jumpPage = (state.currentPage + 1).toString(); showJumpDialog = true })
+                            Text("${state.currentPage + 1} / ${state.totalPages}")
                             IconButton(
                                 onClick = { 
                                     if (state.currentPage < state.totalPages - 1) { 
@@ -503,47 +499,6 @@ private fun PdfViewer(
     }
     
     LaunchedEffect(state.currentBitmap) { if (state.currentBitmap != null) isRendering = false }
-    // 页面跳转对话框
-    if (showJumpDialog) {
-        AlertDialog(
-            onDismissRequest = { showJumpDialog = false },
-            title = { Text("跳转到页面") },
-            text = {
-                Column {
-                    Text("当前: ${state.currentPage + 1} / ${state.totalPages}")
-                    TextField(
-                        value = jumpPage,
-                        onValueChange = { newValue ->
-                            // 只允许数字输入
-                            if (newValue.all { it.isDigit() }) {
-                                jumpPage = newValue
-                            }
-                        },
-                        label = { Text("页码") },
-                        placeholder = { Text("输入页码 1-${state.totalPages}") }
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val page = jumpPage.toIntOrNull()?.minus(1) ?: -1
-                        if (page in 0 until state.totalPages) {
-                            onPageChange(page)
-                            showJumpDialog = false
-                        }
-                    },
-                    enabled = {
-                        val page = jumpPage.toIntOrNull()?.minus(1) ?: -1
-                        page in 0 until state.totalPages
-                    }()
-                ) { Text("跳转") }
-            },
-            dismissButton = {
-                Button(onClick = { showJumpDialog = false }) { Text("取消") }
-            }
-        )
-    }
 }
 
 @Composable
