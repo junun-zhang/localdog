@@ -813,18 +813,22 @@ private fun EpubViewer(
             }
         }
         
-        // 滚动模式：设置按钮（右上角悬浮）- 不覆盖 WebView
+        // 滚动模式：设置按钮（右上角悬浮）
         if (readingMode == ReadingMode.SCROLL) {
-            FloatingActionButton(
-                onClick = onTapCenter,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-                    .size(40.dp),
-                shape = RoundedCornerShape(50),
-                containerColor = bgColor.copy(alpha = 0.9f)
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                Alignment.TopEnd
             ) {
-                Icon(Icons.Filled.Settings, "设置", tint = textColor, modifier = Modifier.size(20.dp))
+                FloatingActionButton(
+                    onClick = onTapCenter,
+                    modifier = Modifier.size(40.dp),
+                    shape = RoundedCornerShape(50),
+                    containerColor = bgColor.copy(alpha = 0.9f)
+                ) {
+                    Icon(Icons.Filled.Settings, "设置", tint = textColor, modifier = Modifier.size(20.dp))
+                }
             }
         }
     }
