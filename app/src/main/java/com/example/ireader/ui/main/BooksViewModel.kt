@@ -12,13 +12,12 @@ class BooksViewModel(application: Application) : AndroidViewModel(application) {
     private val bookRepository = BookRepository.getInstance(application)
     val books = bookRepository.books
     
-    fun addBookFromUri(uri: Uri) {
-        viewModelScope.launch {
-            try {
-                bookRepository.addBookFromUri(uri)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+    suspend fun addBookFromUri(uri: Uri): BookRepository.AddBookResult {
+        return try {
+            bookRepository.addBookFromUri(uri)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            BookRepository.AddBookResult(success = false, duplicate = false, book = null)
         }
     }
 }

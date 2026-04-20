@@ -174,8 +174,7 @@ public final class BookmarkDao_Impl implements BookmarkDao {
   }
 
   @Override
-  public Object insertBookmark(final Bookmark bookmark,
-      final Continuation<? super Unit> $completion) {
+  public Object insertBookmark(final Bookmark bookmark, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -189,12 +188,11 @@ public final class BookmarkDao_Impl implements BookmarkDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object deleteBookmark(final Bookmark bookmark,
-      final Continuation<? super Unit> $completion) {
+  public Object deleteBookmark(final Bookmark bookmark, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -208,12 +206,11 @@ public final class BookmarkDao_Impl implements BookmarkDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object updateBookmark(final Bookmark bookmark,
-      final Continuation<? super Unit> $completion) {
+  public Object updateBookmark(final Bookmark bookmark, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -227,12 +224,11 @@ public final class BookmarkDao_Impl implements BookmarkDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object deleteBookmarkById(final String bookmarkId,
-      final Continuation<? super Unit> $completion) {
+  public Object deleteBookmarkById(final String bookmarkId, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -257,12 +253,12 @@ public final class BookmarkDao_Impl implements BookmarkDao {
           __preparedStmtOfDeleteBookmarkById.release(_stmt);
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
   public Object updateBookmarkNote(final String bookmarkId, final String note,
-      final Continuation<? super Unit> $completion) {
+      final Continuation<? super Unit> arg2) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -293,12 +289,11 @@ public final class BookmarkDao_Impl implements BookmarkDao {
           __preparedStmtOfUpdateBookmarkNote.release(_stmt);
         }
       }
-    }, $completion);
+    }, arg2);
   }
 
   @Override
-  public Object deleteBookmarksByBook(final String bookId,
-      final Continuation<? super Unit> $completion) {
+  public Object deleteBookmarksByBook(final String bookId, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -323,7 +318,7 @@ public final class BookmarkDao_Impl implements BookmarkDao {
           __preparedStmtOfDeleteBookmarksByBook.release(_stmt);
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
@@ -404,7 +399,7 @@ public final class BookmarkDao_Impl implements BookmarkDao {
 
   @Override
   public Object getBookmarksForBook(final String bookId,
-      final Continuation<? super List<Bookmark>> $completion) {
+      final Continuation<? super List<Bookmark>> arg1) {
     final String _sql = "SELECT * FROM bookmarks WHERE bookId = ? ORDER BY createdAt DESC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
     int _argIndex = 1;
@@ -473,7 +468,7 @@ public final class BookmarkDao_Impl implements BookmarkDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
@@ -547,7 +542,7 @@ public final class BookmarkDao_Impl implements BookmarkDao {
   }
 
   @Override
-  public Object getAllBookmarksList(final Continuation<? super List<Bookmark>> $completion) {
+  public Object getAllBookmarksList(final Continuation<? super List<Bookmark>> arg0) {
     final String _sql = "SELECT * FROM bookmarks ORDER BY createdAt DESC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
@@ -610,7 +605,7 @@ public final class BookmarkDao_Impl implements BookmarkDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg0);
   }
 
   @NonNull

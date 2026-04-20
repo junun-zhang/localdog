@@ -160,8 +160,7 @@ public final class HighlightDao_Impl implements HighlightDao {
   }
 
   @Override
-  public Object insertHighlight(final Highlight highlight,
-      final Continuation<? super Long> $completion) {
+  public Object insertHighlight(final Highlight highlight, final Continuation<? super Long> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Long>() {
       @Override
       @NonNull
@@ -175,12 +174,11 @@ public final class HighlightDao_Impl implements HighlightDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object deleteHighlight(final Highlight highlight,
-      final Continuation<? super Unit> $completion) {
+  public Object deleteHighlight(final Highlight highlight, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -194,12 +192,11 @@ public final class HighlightDao_Impl implements HighlightDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object updateHighlight(final Highlight highlight,
-      final Continuation<? super Unit> $completion) {
+  public Object updateHighlight(final Highlight highlight, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -213,11 +210,11 @@ public final class HighlightDao_Impl implements HighlightDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object deleteHighlightById(final String id, final Continuation<? super Unit> $completion) {
+  public Object deleteHighlightById(final String id, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -242,12 +239,11 @@ public final class HighlightDao_Impl implements HighlightDao {
           __preparedStmtOfDeleteHighlightById.release(_stmt);
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object deleteHighlightsByBook(final String bookId,
-      final Continuation<? super Unit> $completion) {
+  public Object deleteHighlightsByBook(final String bookId, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -272,7 +268,7 @@ public final class HighlightDao_Impl implements HighlightDao {
           __preparedStmtOfDeleteHighlightsByBook.release(_stmt);
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override

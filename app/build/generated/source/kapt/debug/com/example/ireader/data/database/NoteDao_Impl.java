@@ -145,7 +145,7 @@ public final class NoteDao_Impl implements NoteDao {
   }
 
   @Override
-  public Object insertNote(final Note note, final Continuation<? super Unit> $completion) {
+  public Object insertNote(final Note note, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -159,11 +159,11 @@ public final class NoteDao_Impl implements NoteDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object deleteNote(final Note note, final Continuation<? super Unit> $completion) {
+  public Object deleteNote(final Note note, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -177,11 +177,11 @@ public final class NoteDao_Impl implements NoteDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object updateNote(final Note note, final Continuation<? super Unit> $completion) {
+  public Object updateNote(final Note note, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -195,12 +195,11 @@ public final class NoteDao_Impl implements NoteDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object deleteNotesByBook(final String bookId,
-      final Continuation<? super Unit> $completion) {
+  public Object deleteNotesByBook(final String bookId, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -225,7 +224,7 @@ public final class NoteDao_Impl implements NoteDao {
           __preparedStmtOfDeleteNotesByBook.release(_stmt);
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override

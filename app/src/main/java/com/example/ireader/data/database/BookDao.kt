@@ -120,6 +120,14 @@ interface BookDao {
     suspend fun bookExists(filePath: String): Boolean
     
     /**
+     * Check if a book exists by title
+     * @param title Book title to check
+     * @return true if exists, false otherwise
+     */
+    @Query("SELECT EXISTS(SELECT 1 FROM books WHERE title = :title)")
+    suspend fun bookExistsByTitle(title: String): Boolean
+    
+    /**
      * Get books by format
      * @param format File format (epub, pdf, txt)
      * @return List of books with specified format

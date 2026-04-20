@@ -80,12 +80,33 @@ class BookRepository private constructor(private val context: Context) : Corouti
     
     /**
      * 从 URI 添加书籍（SAF 模式）
+     * @return 添加结果：success=true 表示成功，duplicate=true 表示已存在
      */
-    suspend fun addBookFromUri(uri: Uri): Book? {
-        val book = FileScanner.createBookFromUri(context, uri) ?: return null
+    suspend fun addBookFromUri(uri: Uri): AddBookResult {
+        val book = FileScanner.createBookFromUri(context, uri) 
+            ?: return AddBookResult(success = false, duplicate = false, book = null)
+        
+        // 检查是否已存在相同标题的书籍
+        val exists = withContext(Dispatchers.IO) {
+            bookDao.bookExistsByTitle(book.title)
+        }
+        
+        if (exists) {
+            return AddBookResult(success = false, duplicate = true, book = book)
+        }
+        
         addBook(book)
-        return book
+        return AddBookResult(success = true, duplicate = false, book = book)
     }
+    
+    /**
+     * 添加书籍结果
+     */
+    data class AddBookResult(
+        val success: Boolean,
+        val duplicate: Boolean,
+        val book: Book?
+    )
     
     /**
      * 删除书籍

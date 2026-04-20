@@ -11,7 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
+import kotlinx.coroutines.launch
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.ireader.ui.bookshelf.BookShelfScreen
@@ -21,13 +23,24 @@ import com.example.ireader.ui.notes.NotesScreen
 import com.example.ireader.ui.reader.ReaderScreen
 import com.example.ireader.ui.settings.SettingsScreen
 import com.example.ireader.ui.theme.IReaderTheme
+import android.widget.Toast
 
 class MainActivity : ComponentActivity() {
     
     private val filePicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let { 
             val viewModel = ViewModelProvider(this).get(BooksViewModel::class.java)
-            viewModel.addBookFromUri(uri)
+            // 使用协程处理结果
+            lifecycleScope.launch {
+                val result = viewModel.addBookFromUri(uri)
+                if (result.duplicate) {
+                    Toast.makeText(this@MainActivity, "《${result.book?.title}》已在书架上", Toast.LENGTH_SHORT).show()
+                } else if (result.success) {
+                    Toast.makeText(this@MainActivity, "已添加《${result.book?.title}》", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@MainActivity, "导入失败", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
     

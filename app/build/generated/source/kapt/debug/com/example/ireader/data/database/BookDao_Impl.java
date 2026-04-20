@@ -811,6 +811,45 @@ public final class BookDao_Impl implements BookDao {
   }
 
   @Override
+  public Object bookExistsByTitle(final String title,
+      final Continuation<? super Boolean> $completion) {
+    final String _sql = "SELECT EXISTS(SELECT 1 FROM books WHERE title = ?)";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
+    int _argIndex = 1;
+    if (title == null) {
+      _statement.bindNull(_argIndex);
+    } else {
+      _statement.bindString(_argIndex, title);
+    }
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<Boolean>() {
+      @Override
+      @NonNull
+      public Boolean call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final Boolean _result;
+          if (_cursor.moveToFirst()) {
+            final Integer _tmp;
+            if (_cursor.isNull(0)) {
+              _tmp = null;
+            } else {
+              _tmp = _cursor.getInt(0);
+            }
+            _result = _tmp == null ? null : _tmp != 0;
+          } else {
+            _result = null;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
   public Flow<List<Book>> getBooksByFormat(final String format) {
     final String _sql = "SELECT * FROM books WHERE format = ? ORDER BY lastReadTime DESC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
