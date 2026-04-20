@@ -514,6 +514,8 @@ private fun PdfViewer(
     onPageChange: (Int) -> Unit
 ) {
     var isRendering by remember { mutableStateOf(false) }
+    val swipeThreshold = 100f
+    var dragOffset by remember { mutableStateOf(0f) }
     
     Box(Modifier.fillMaxSize().background(bgColor)) {
         // PDF 内容
@@ -530,6 +532,25 @@ private fun PdfViewer(
             Modifier
                 .fillMaxSize()
                 .background(Color(0x01000000))
+                .pointerInput(state.totalPages, state.currentPage) {
+                    // 垂直滑动翻页
+                    detectVerticalDragGestures(
+                        onDragEnd = {
+                            Log.d(TAG, "PDF drag end: offset=$dragOffset")
+                            if (dragOffset > swipeThreshold && state.currentPage < state.totalPages - 1) {
+                                onPageChange(state.currentPage + 1)
+                                isRendering = true
+                            } else if (dragOffset < -swipeThreshold && state.currentPage > 0) {
+                                onPageChange(state.currentPage - 1)
+                                isRendering = true
+                            }
+                            dragOffset = 0f
+                        },
+                        onVerticalDrag = { _, dragAmount ->
+                            dragOffset += dragAmount
+                        }
+                    )
+                }
                 .pointerInput(Unit) {
                     detectTapGestures(onTap = { offset ->
                         Log.d(TAG, "PDF tap at offset: $offset, width: ${size.width}")
@@ -555,17 +576,17 @@ private fun PdfViewer(
             Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
         }
         
-        // 页码指示
+        // 页码指示（上下箭头）
         if (state.totalPages > 0 && state.currentBitmap != null) {
             Box(Modifier.fillMaxSize().padding(bottom = 16.dp), Alignment.BottomCenter) {
                 Surface(shape = MaterialTheme.shapes.small, color = bgColor.copy(alpha = 0.9f)) {
                     Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         IconButton({ if (state.currentPage > 0) { onPageChange(state.currentPage - 1); isRendering = true } }, enabled = state.currentPage > 0) {
-                            Icon(Icons.Filled.KeyboardArrowLeft, "上一页")
+                            Icon(Icons.Filled.KeyboardArrowUp, "上一页")
                         }
                         Text("${state.currentPage + 1} / ${state.totalPages}")
                         IconButton({ if (state.currentPage < state.totalPages - 1) { onPageChange(state.currentPage + 1); isRendering = true } }, enabled = state.currentPage < state.totalPages - 1) {
-                            Icon(Icons.Filled.KeyboardArrowRight, "下一页")
+                            Icon(Icons.Filled.KeyboardArrowDown, "下一页")
                         }
                     }
                 }
@@ -586,6 +607,9 @@ private fun EpubViewer(
     onTapCenter: () -> Unit,
     onIndexChange: (Int) -> Unit
 ) {
+    val swipeThreshold = 100f
+    var dragOffset by remember { mutableStateOf(0f) }
+    
     Column(Modifier.fillMaxSize().background(bgColor)) {
         Box(Modifier.weight(1f)) {
             // WebView 内容
@@ -622,6 +646,23 @@ private fun EpubViewer(
                 Modifier
                     .fillMaxSize()
                     .background(Color(0x01000000))
+                    .pointerInput(content.size, index) {
+                        // 垂直滑动翻页
+                        detectVerticalDragGestures(
+                            onDragEnd = {
+                                Log.d(TAG, "EPUB drag end: offset=$dragOffset")
+                                if (dragOffset > swipeThreshold && index < content.size - 1) {
+                                    onIndexChange(index + 1)
+                                } else if (dragOffset < -swipeThreshold && index > 0) {
+                                    onIndexChange(index - 1)
+                                }
+                                dragOffset = 0f
+                            },
+                            onVerticalDrag = { _, dragAmount ->
+                                dragOffset += dragAmount
+                            }
+                        )
+                    }
                     .pointerInput(Unit) {
                         detectTapGestures(onTap = { offset ->
                             Log.d(TAG, "EPUB tap at offset: $offset, width: ${size.width}")
@@ -634,14 +675,14 @@ private fun EpubViewer(
             )
         }
         
-        // 翻页控制
+        // 翻页控制（上下箭头）
         Row(Modifier.fillMaxWidth().padding(8.dp), Arrangement.SpaceBetween) {
             IconButton({ if (index > 0) onIndexChange(index - 1) }, enabled = index > 0) { 
-                Icon(Icons.Filled.KeyboardArrowLeft, "上一章") 
+                Icon(Icons.Filled.KeyboardArrowUp, "上一章") 
             }
             Text("${index + 1} / ${content.size}")
             IconButton({ if (index < content.size - 1) onIndexChange(index + 1) }, enabled = index < content.size - 1) { 
-                Icon(Icons.Filled.KeyboardArrowRight, "下一章") 
+                Icon(Icons.Filled.KeyboardArrowDown, "下一章") 
             }
         }
     }
