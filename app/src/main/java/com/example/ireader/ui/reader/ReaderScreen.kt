@@ -133,7 +133,7 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                                 val pfd = ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY)
                                 val renderer = PdfRenderer(pfd)
                                 val pages = renderer.pageCount
-                                val firstPage = renderPageSync(renderer, book.lastReadPage, context)
+                                val firstPage = renderPageSync(renderer, book.lastReadPage, context, 1.0f)
                                 PdfRenderState(renderer, pfd, pages, book.lastReadPage, firstPage)
                             }
                         }
@@ -169,12 +169,13 @@ fun ReaderScreen(bookId: String, navController: NavController) {
         }
     }
     
-    LaunchedEffect(pdfState?.currentPage) {
+    // 监听页码和缩放变化，重新渲染页面
+    LaunchedEffect(pdfState?.currentPage, pdfState?.zoom) {
         val state = pdfState
         if (state != null && state.renderer != null) {
             val result = withTimeoutOrNull(15000L) {
                 withContext(Dispatchers.IO) {
-                    renderPageSync(state.renderer!!, state.currentPage, context)
+                    renderPageSync(state.renderer!!, state.currentPage, context, state.zoom)
                 }
             }
             if (result != null) {
@@ -689,12 +690,12 @@ private fun PdfViewer(
     var dragOffset by remember { mutableStateOf(0f) }
     
     Box(Modifier.fillMaxSize().background(bgColor)) {
-        // PDF 内容
+        // PDF 内容 - 使用 wrapContentSize 保持 Bitmap 原始尺寸
         if (state.currentBitmap != null && !isRendering) {
             Image(
                 bitmap = state.currentBitmap.asImageBitmap(),
                 contentDescription = "PDF 页面",
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.wrapContentSize(Alignment.Center)
             )
         }
         
@@ -915,9 +916,10 @@ data class PdfRenderState(
 data class SpineItem(val id: String, val href: String, val content: String)
 
 // 辅助函数
-private fun renderPageSync(renderer: PdfRenderer, pageIndex: Int, context: Context): Bitmap {
+private fun renderPageSync(renderer: PdfRenderer, pageIndex: Int, context: Context, zoom: Float = 1.0f): Bitmap {
     val page = renderer.openPage(pageIndex)
-    val width = context.resources.displayMetrics.widthPixels
+    val baseWidth = context.resources.displayMetrics.widthPixels
+    val width = (baseWidth * zoom).toInt()
     val height = (width * page.height / page.width)
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     bitmap.eraseColor(android.graphics.Color.WHITE)
