@@ -13,6 +13,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -27,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -292,7 +294,8 @@ fun ReaderScreen(bookId: String, navController: NavController) {
                     Log.d(TAG, "onTapCenter called")
                     showSettingsPanel = true 
                 },
-                onPageChange = { page -> pdfState = pdfState?.copy(currentPage = page) }
+                onPageChange = { page -> pdfState = pdfState?.copy(currentPage = page) },
+                onZoomChange = { newZoom -> pdfState = pdfState?.copy(zoom = newZoom) }
             )
             epubContent.isNotEmpty() -> EpubViewer(
                 content = epubContent, 
@@ -683,19 +686,28 @@ private fun PdfViewer(
     state: PdfRenderState,
     bgColor: Color,
     onTapCenter: () -> Unit,
-    onPageChange: (Int) -> Unit
+    onPageChange: (Int) -> Unit,
+    onZoomChange: (Float) -> Unit
 ) {
     var isRendering by remember { mutableStateOf(false) }
     val swipeThreshold = 100f
     var dragOffset by remember { mutableStateOf(0f) }
     
+    // 缩放状态 - 使用graphicsLayer实时缩放
+    var scale by remember { mutableStateOf(state.zoom) }
+    
     Box(Modifier.fillMaxSize().background(bgColor)) {
-        // PDF 内容 - 使用 wrapContentSize 保持 Bitmap 原始尺寸
+        // PDF 内容 - 使用 graphicsLayer 进行实时缩放变换
         if (state.currentBitmap != null && !isRendering) {
             Image(
                 bitmap = state.currentBitmap.asImageBitmap(),
                 contentDescription = "PDF 页面",
-                modifier = Modifier.wrapContentSize(Alignment.Center)
+                modifier = Modifier
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale
+                    )
+                    .wrapContentSize(Alignment.Center)
             )
         }
         
@@ -703,19 +715,21 @@ private fun PdfViewer(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Color(0x01000000))
+                .pointerInput(Unit) {
+                    // 双指缩放手势
+                    detectTransformGestures { _, pan, zoomChange, rotation ->
+                        val newScale = (scale * zoomChange).coerceIn(0.5f, 3.0f)
+                        scale = newScale
+                        onZoomChange(newScale)
+                    }
+                }
                 .pointerInput(state.totalPages, state.currentPage) {
-                    // 垂直滑动翻页（拖拽式）
                     detectVerticalDragGestures(
                         onDragEnd = {
-                            Log.d(TAG, "PDF drag end: offset=$dragOffset")
-                            // 拖拽式翻页：手指向下拖=上一页，手指向上拖=下一页
                             if (dragOffset > swipeThreshold && state.currentPage > 0) {
-                                // 向下滑动 = 上一页
                                 onPageChange(state.currentPage - 1)
                                 isRendering = true
                             } else if (dragOffset < -swipeThreshold && state.currentPage < state.totalPages - 1) {
-                                // 向上滑动 = 下一页
                                 onPageChange(state.currentPage + 1)
                                 isRendering = true
                             }
@@ -728,7 +742,6 @@ private fun PdfViewer(
                 }
                 .pointerInput(Unit) {
                     detectTapGestures(onTap = { offset ->
-                        Log.d(TAG, "PDF tap at offset: $offset, width: ${size.width}")
                         val width = size.width
                         when {
                             offset.x < width / 3 && state.currentPage > 0 -> {
@@ -751,7 +764,7 @@ private fun PdfViewer(
             Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
         }
         
-        // 页码指示（上下箭头）
+        // 页码指示（上下箭头）+ 缩放百分比
         if (state.totalPages > 0 && state.currentBitmap != null) {
             Box(Modifier.fillMaxSize().padding(bottom = 16.dp), Alignment.BottomCenter) {
                 Surface(shape = MaterialTheme.shapes.small, color = bgColor.copy(alpha = 0.9f)) {
@@ -759,7 +772,7 @@ private fun PdfViewer(
                         IconButton({ if (state.currentPage > 0) { onPageChange(state.currentPage - 1); isRendering = true } }, enabled = state.currentPage > 0) {
                             Icon(Icons.Filled.KeyboardArrowUp, "上一页")
                         }
-                        Text("${state.currentPage + 1} / ${state.totalPages}")
+                        Text("${state.currentPage + 1} / ${state.totalPages}  ${(scale * 100).toInt()}%")
                         IconButton({ if (state.currentPage < state.totalPages - 1) { onPageChange(state.currentPage + 1); isRendering = true } }, enabled = state.currentPage < state.totalPages - 1) {
                             Icon(Icons.Filled.KeyboardArrowDown, "下一页")
                         }
