@@ -1,0 +1,27 @@
+package com.example.ireader.ui.reader
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import com.example.ireader.data.repository.BookRepository
+
+data class SimpleBook(
+    val id: String = "",
+    val title: String = "",
+    val author: String = "",
+    val filePath: String = "",
+    val format: String = "",
+    val progress: Int = 0,
+    val lastReadPage: Int = 0
+)
+
+class ReaderViewModel(application: Application) : AndroidViewModel(application) {
+    
+    private val bookRepository = BookRepository.getInstance(application)
+    
+    fun getBook(bookId: String): SimpleBook? {
+        val book = bookRepository.books.value?.find { it.id == bookId }
+        return book?.let {
+            SimpleBook(it.id, it.title, it.author, it.filePath, it.format, it.progress, it.lastReadPage)
+        }
+    }
+}

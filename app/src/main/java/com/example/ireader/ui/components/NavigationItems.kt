@@ -11,8 +11,8 @@ enum class BottomNavigationItem(
     val route: String
 ) {
     Bookshelf(R.string.bookshelf_title, R.drawable.ic_book_placeholder, "bookshelf"),
-    Store(R.string.bookstore_title, R.drawable.ic_store, "store"),
-    Reader(R.string.reader_title, R.drawable.ic_reader, "reader"),
+    Store(R.string.bookstore_title, R.drawable.ic_bookstore, "store"),
+    Reader(R.string.reader_title, R.drawable.ic_book_placeholder, "reader"),
     Bookmarks(R.string.bookmarks, R.drawable.ic_bookmark, "bookmarks"),
     Notes(R.string.notes, R.drawable.ic_note, "notes"),
     Settings(R.string.settings_title, android.R.drawable.ic_menu_preferences, "settings")

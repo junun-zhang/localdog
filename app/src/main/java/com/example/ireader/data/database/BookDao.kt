@@ -18,11 +18,23 @@ interface BookDao {
     fun getAllBooks(): Flow<List<Book>>
     
     /**
+     * Get all books sorted by title
+     */
+    @Query("SELECT * FROM books ORDER BY title ASC")
+    fun getAllBooksByTitle(): Flow<List<Book>>
+    
+    /**
      * Get all books from the database (one-shot query)
      * @return List of books
      */
     @Query("SELECT * FROM books ORDER BY lastReadTime DESC")
     suspend fun getAllBooksOnce(): List<Book>
+    
+    /**
+     * Get all books sorted by title (one-shot)
+     */
+    @Query("SELECT * FROM books ORDER BY title ASC")
+    suspend fun getAllBooksOnceByTitle(): List<Book>
     
     /**
      * Get a book by its ID
@@ -64,6 +76,41 @@ interface BookDao {
     suspend fun updateBookProgress(id: String, progress: Int, lastReadPage: Int, lastReadTime: Long)
     
     /**
+     * Update book reading progress with all fields
+     * @param id Book ID
+     * @param progress Reading progress (0-100)
+     * @param lastReadPage Last read page number
+     * @param lastReadChapter Last read chapter index
+     * @param lastReadMode Reading mode
+     * @param lastScrollPosition Scroll position
+     * @param lastFontSize Font size
+     * @param lastZoom Zoom scale
+     * @param lastReadTime Last read timestamp
+     */
+    @Query("UPDATE books SET progress = :progress, lastReadPage = :lastReadPage, lastReadChapter = :lastReadChapter, lastReadMode = :lastReadMode, lastScrollPosition = :lastScrollPosition, lastFontSize = :lastFontSize, lastZoom = :lastZoom, lastReadTime = :lastReadTime WHERE id = :id")
+    suspend fun updateReadProgress(
+        id: String,
+        progress: Int,
+        lastReadPage: Int,
+        lastReadChapter: Int,
+        lastReadMode: String,
+        lastScrollPosition: Int,
+        lastFontSize: Int,
+        lastZoom: Float,
+        lastReadTime: Long
+    )
+    
+    /**
+     * Update only reading mode and font size
+     * @param id Book ID
+     * @param lastReadMode Reading mode
+     * @param lastFontSize Font size
+     * @param lastReadTime Last read timestamp
+     */
+    @Query("UPDATE books SET lastReadMode = :lastReadMode, lastFontSize = :lastFontSize, lastReadTime = :lastReadTime WHERE id = :id")
+    suspend fun updateReadingSettings(id: String, lastReadMode: String, lastFontSize: Int, lastReadTime: Long)
+    
+    /**
      * Delete a book by ID
      * @param id Book ID to delete
      */
@@ -83,6 +130,14 @@ interface BookDao {
      */
     @Query("SELECT EXISTS(SELECT 1 FROM books WHERE filePath = :filePath)")
     suspend fun bookExists(filePath: String): Boolean
+    
+    /**
+     * Check if a book exists by title
+     * @param title Book title to check
+     * @return true if exists, false otherwise
+     */
+    @Query("SELECT EXISTS(SELECT 1 FROM books WHERE title = :title)")
+    suspend fun bookExistsByTitle(title: String): Boolean
     
     /**
      * Get books by format

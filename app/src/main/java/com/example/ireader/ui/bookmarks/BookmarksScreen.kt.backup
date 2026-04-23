@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.ireader.R
 import com.example.ireader.data.model.Bookmark
@@ -30,7 +30,7 @@ fun BookmarksScreen(
     navController: NavHostController,
     bookId: String? = null
 ) {
-    val viewModel: BookmarksViewModel = hiltViewModel()
+    val viewModel: BookmarksViewModel = viewModel()
     val bookmarks = if (bookId != null) {
         viewModel.getBookmarksForBook(bookId)
     } else {
@@ -78,8 +78,8 @@ fun BookmarksScreen(
                     BookmarkItem(
                         bookmark = bookmark,
                         onClick = {
-                            // 跳转到书签位置，传递页面参数
-                            navController.navigate("reader/" + bookmark.bookId + "?page=" + bookmark.page.toString())
+                            // 跳转到书签位置
+                            navController.navigate("reader/${bookmark.bookId}?page=${bookmark.page}")
                         },
                         onDelete = {
                             viewModel.deleteBookmark(bookmark.id)
@@ -127,7 +127,7 @@ fun BookmarkItem(
                 Spacer(modifier = Modifier.height(4.dp))
                 
                 Text(
-                    text = "第 " + bookmark.page.toString() + " 页 • " + bookmark.getCreatedAtString(),
+                    text = "第 ${bookmark.page} 页 • ${bookmark.getCreatedAtString()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

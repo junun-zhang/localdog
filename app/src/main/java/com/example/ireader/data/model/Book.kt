@@ -14,6 +14,11 @@ import androidx.room.PrimaryKey
  * @property fileSize 文件大小
  * @property pageCount 总页数（用于PDF/TXT）
  * @property lastReadPage 最后阅读页码
+ * @property lastReadChapter 最后阅读章节（用于EPUB）
+ * @property lastReadMode 阅读模式
+ * @property lastScrollPosition 滚动位置
+ * @property lastFontSize 字体大小
+ * @property lastZoom PDF缩放比例
  * @property lastReadTime 最后阅读时间
  * @property progress 阅读进度 (0-100)
  * @property format 文件格式 (epub, pdf, txt)
@@ -28,8 +33,13 @@ data class Book(
     val filePath: String,
     val fileSize: Long = 0L,
     val pageCount: Int = 0,
-    val lastReadPage: Int = 0,
-    val lastReadTime: Long = System.currentTimeMillis(),
+    val lastReadPage: Int = 0,          // PDF/TXT 页码
+    val lastReadChapter: Int = 0,       // EPUB 章节索引
+    val lastReadMode: String = "PAGED", // 阅读模式
+    val lastScrollPosition: Int = 0,    // 滚动位置
+    val lastFontSize: Int = 16,         // 字体大小
+    val lastZoom: Float = 1.0f,         // PDF 缩放比例
+    val lastReadTime: Long = System.currentTimeMillis(), // 最后阅读时间
     val progress: Int = 0,
     val format: String,
     val addedTime: Long = System.currentTimeMillis()
