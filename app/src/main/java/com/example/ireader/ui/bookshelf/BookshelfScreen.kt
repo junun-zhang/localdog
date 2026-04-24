@@ -197,6 +197,7 @@ private fun BookCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .height(220.dp)
             .clip(RoundedCornerShape(8.dp))
             .combinedClickable(
                 onClick = onClick,
@@ -205,8 +206,11 @@ private fun BookCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
-        Column {
-            // 封面区域
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            // 封面区域 - 固定高度
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -271,9 +275,12 @@ private fun BookCard(
                 }
             }
 
-            // 书名作者
+            // 书名作者区域 - 占用固定剩余高度
             Column(
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(8.dp)
             ) {
                 Text(
                     text = book.title,
