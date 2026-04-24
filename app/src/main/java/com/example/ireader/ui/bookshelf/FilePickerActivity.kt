@@ -16,9 +16,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ireader.ui.theme.IReaderTheme
@@ -42,7 +47,7 @@ class FilePickerActivity : ComponentActivity() {
             // 授予持久权限
             val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             contentResolver.takePersistableUriPermission(uri, flags)
-            viewModel.importFile(uri)
+            viewModel.addFileFromUri(uri, this@FilePickerActivity)
         }
     }
 
@@ -109,49 +114,34 @@ fun FilePickerScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // 操作按钮区
-            Card(
+            // 操作按钮区 - 两个独立按钮
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "添加书籍",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onImportClick() }
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("从文件选择器选择")
-                    }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onScanClick() }
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("扫描存储空间")
-                    }
-                }
+                ActionButton(
+                    text = "从文件选择器选择",
+                    icon = Icons.Default.FolderOpen,
+                    onClick = onImportClick,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                ActionButton(
+                    text = "扫描存储空间",
+                    icon = Icons.Default.Search,
+                    onClick = onScanClick,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             // 文件列表
             if (foundFiles.isNotEmpty()) {
                 Text(
                     text = "找到 ${foundFiles.size} 本书",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
                 LazyColumn(
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(8.dp),
@@ -171,6 +161,41 @@ fun FilePickerScreen(
 }
 
 @Composable
+private fun ActionButton(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .clickable { onClick() },
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+    }
+}
+
+@Composable
 private fun FileItem(
     file: File,
     isSelected: Boolean,
@@ -179,25 +204,37 @@ private fun FileItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onToggle(file) }
+            .clickable { onToggle(file) },
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.secondaryContainer
+            else
+                MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(text = file.name, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = file.name,
+                    style = MaterialTheme.typography.bodyLarge
+                )
                 Text(
                     text = file.absolutePath,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Checkbox(checked = isSelected, onCheckedChange = { onToggle(file) })
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onToggle(file) }
+            )
         }
     }
 }

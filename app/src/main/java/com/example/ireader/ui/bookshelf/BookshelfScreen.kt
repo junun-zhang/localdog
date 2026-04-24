@@ -36,13 +36,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import androidx.compose.ui.res.painterResource
 import com.example.ireader.R
 import com.example.ireader.data.local.entity.Book
 import com.example.ireader.ui.navigation.Screen
@@ -171,10 +171,13 @@ private fun BookCard(
                         color = MaterialTheme.colorScheme.primaryContainer,
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        Text(
-                            text = book.title.take(1),
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_default_book_cover),
+                            contentDescription = book.title,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .fillMaxSize(0.6f),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
