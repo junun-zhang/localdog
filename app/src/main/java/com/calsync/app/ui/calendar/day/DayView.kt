@@ -5,25 +5,52 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.calsync.app.ui.event.EventViewModel
+import com.calsync.app.ui.common.EventCard
 import java.util.*
 
 @Composable
 fun DayScreen(
-    viewModel: DayViewModel = hiltViewModel()
+    selectedDate: Long = System.currentTimeMillis(),
+    viewModel: EventViewModel = hiltViewModel()
 ) {
+    val state by viewModel.state.collectAsState()
+
+    LaunchedEffect(selectedDate) {
+        viewModel.loadEventsForDate(selectedDate)
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
-        DayHeader()
-        DayTimeline()
+        DayHeader(selectedDate = selectedDate)
+        if (state.events.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("今日暂无事件", fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(state.events.size) { i ->
+                    EventCard(
+                        event = state.events[i],
+                        onClick = { /* TODO: 导航到详情 */ }
+                    )
+                }
+            }
+        }
     }
 }
 
 @Composable
-fun DayHeader() {
+fun DayHeader(selectedDate: Long) {
     val cal = Calendar.getInstance()
+    cal.timeInMillis = selectedDate
     val dayNames = listOf("周日", "周一", "周二", "周三", "周四", "周五", "周六")
     val dayName = dayNames[cal.get(Calendar.DAY_OF_WEEK) - 1]
 
@@ -47,35 +74,6 @@ fun DayHeader() {
                     text = dayName,
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun DayTimeline() {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(24) { hour ->
-            Row(
-                modifier = Modifier.fillMaxWidth()
-                    .height(60.dp)
-            ) {
-                // 时间标签
-                Text(
-                    text = String.format("%02d:00", hour),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.width(50.dp)
-                        .padding(end = 8.dp)
-                        .align(Alignment.Top)
-                )
-
-                // 时间槽
-                Box(
-                    modifier = Modifier.weight(1f)
-                        .fillMaxHeight()
-                        .padding(end = 8.dp)
                 )
             }
         }
