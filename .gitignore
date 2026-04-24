@@ -1,0 +1,28 @@
+# Gradle files
+.gradle/
+build/
+*/build/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.local/
+
+# Android
+local.properties
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Keystore
+*.jks
+*.keystore
+
+# Logs
+*.log
+
+# APK (optional - keep debug APKs for testing)
+# *.apk
