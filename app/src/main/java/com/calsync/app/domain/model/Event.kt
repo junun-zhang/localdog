@@ -1,5 +1,8 @@
 package com.calsync.app.domain.model
+
+import com.calsync.app.domain.util.RecurrenceRule
 import java.util.UUID
+
 data class Event(
     val id: String = UUID.randomUUID().toString(),
     val calendarId: String,
@@ -18,6 +21,7 @@ data class Event(
     val version: Int = 1
 ) {
     data class Reminder(val minutesBefore: Int, val enabled: Boolean = true)
+
     fun getEventColor(): androidx.compose.ui.graphics.Color {
         val colors = listOf(
             com.calsync.app.ui.theme.EventBlue,
