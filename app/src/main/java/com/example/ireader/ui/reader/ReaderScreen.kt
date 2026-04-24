@@ -67,6 +67,7 @@ fun ReaderScreen(
                                     }
                                 }
                             }
+                            viewModel.toggleMenu()
                         }
                     )
                 }
@@ -109,7 +110,6 @@ fun ReaderScreen(
 }
 
 @Composable
-@Composable
 private fun ChapterContent(content: String) {
     val paragraphStyle = TextStyle.Default.copy(
         fontSize = 16.sp,
@@ -120,7 +120,7 @@ private fun ChapterContent(content: String) {
 
     val paragraphs = content.split("\n\n", "\r\n\r\n").filter { it.isNotBlank() }
     Column {
-        itemsIndexed(paragraphs) { _, paragraph ->
+        paragraphs.forEach { paragraph ->
             Text(
                 text = paragraph.trim(),
                 style = paragraphStyle,

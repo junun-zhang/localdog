@@ -19,7 +19,7 @@ class ReaderViewModel @Inject constructor(
     private val txtParser: TxtParser
 ) : ViewModel() {
 
-    private val bookId: String? = savedStateHandle.get<String>(bookId)
+    private val bookId: String        get() = savedStateHandle[bookId]!!
 
     private val _book = MutableStateFlow<Book?>(null)
     val book: StateFlow<Book?> = _book
