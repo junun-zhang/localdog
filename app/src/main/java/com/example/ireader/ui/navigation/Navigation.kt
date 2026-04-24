@@ -25,10 +25,10 @@ fun AppNavigation(
             BookshelfScreen(navController = navController, onAddBookClick = onAddBookClick)
         }
         composable(Screen.Store.route) {
-            StoreScreen()
+            StoreScreen(navController = navController)
         }
         composable(Screen.Profile.route) {
-            ProfileScreen()
+            ProfileScreen(navController = navController)
         }
         composable(Screen.Reader.route) {
             ReaderScreen()

@@ -1,6 +1,7 @@
 package com.example.ireader.di
 
 import android.content.Context
+import android.app.Application
 import com.example.ireader.IReaderApplication
 import dagger.Module
 import dagger.Provides
@@ -14,7 +15,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideContext(application: IReaderApplication): Context {
-        return application.applicationContext
+    fun provideContext(app: Application): Context {
+        return app.applicationContext
     }
 }

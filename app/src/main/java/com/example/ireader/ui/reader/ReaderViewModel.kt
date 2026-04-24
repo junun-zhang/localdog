@@ -39,7 +39,7 @@ class ReaderViewModel @Inject constructor(
             val loadedBook = bookRepository.getBookById(bookId)
             _book.value = loadedBook
             loadedBook?.let { book ->
-                when (book.format.lowercase()) {
+                when (book.format?.lowercase()) {
                     "txt" -> parseTxt(book)
                     // TODO: epub pdf 后续支持
                     else -> _chapters.value = emptyList()

@@ -24,13 +24,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ireader.ui.theme.IReaderTheme
+import androidx.activity.viewModels
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 
@@ -46,11 +46,10 @@ class FilePickerActivity : ComponentActivity() {
         }
     }
 
-    private lateinit var viewModel: FilePickerViewModel
+    private val viewModel: FilePickerViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = getViewModel()
         setContent {
             IReaderTheme {
                 FilePickerScreen(
@@ -69,10 +68,6 @@ class FilePickerActivity : ComponentActivity() {
                 )
             }
         }
-    }
-
-    private fun getViewModel(): FilePickerViewModel {
-        return dagger.hilt.android.EntryPointAccessors.fromActivity(this).get()
     }
 
     private fun openFilePicker() {
