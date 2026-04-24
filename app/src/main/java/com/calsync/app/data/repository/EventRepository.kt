@@ -1,0 +1,88 @@
+package com.calsync.app.data.repository
+import com.calsync.app.data.local.database.EventDao
+import com.calsync.app.data.local.entity.EventEntity
+import com.calsync.app.data.local.entity.EventEntity.SyncStatus
+import com.calsync.app.data.local.entity.ReminderEntity
+import com.calsync.app.data.remote.api.CalSyncApi
+import com.calsync.app.data.remote.model.CreateEventRequest
+import com.calsync.app.data.remote.model.ReminderDto
+import com.calsync.app.domain.model.Event
+import com.calsync.app.domain.util.RecurrenceRule
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class EventRepository @Inject constructor(
+    private val eventDao: EventDao,
+    private val api: CalSyncApi
+) {
+    fun getEventsInRange(calendarId: String, start: Long, end: Long): Flow<List<Event>> =
+        eventDao.getEventsInRange(calendarId, start, end).map { it.map { e -> e.toDomain() } }
+
+    fun getAllEvents(calendarId: String): Flow<List<Event>> =
+        eventDao.getAllEvents(calendarId).map { it.map { e -> e.toDomain() } }
+
+    suspend fun getEventById(id: String): Event? = eventDao.getEventById(id)?.toDomain()
+
+    fun searchEvents(query: String): Flow<List<Event>> =
+        eventDao.searchEvents(query).map { it.map { e -> e.toDomain() } }
+
+    suspend fun createEvent(event: Event): Result<Event> {
+        eventDao.insertEvent(event.toEntity().copy(syncStatus = SyncStatus.PENDING))
+        return try {
+            val response = api.createEvent(event.toCreateRequest())
+            if (response.isSuccessful) {
+                val dto = response.body()!!
+                val updated = event.copy(id = dto.id, modifiedAt = dto.updatedAt, version = dto.version)
+                eventDao.insertEvent(updated.toEntity().copy(syncStatus = SyncStatus.SYNCED))
+                Result.success(updated)
+            } else Result.failure(Exception("Create failed: \${response.code()}"))
+        } catch (e: Exception) { Result.failure(e) }
+    }
+
+    suspend fun updateEvent(event: Event): Result<Event> {
+        eventDao.insertEvent(event.toEntity().copy(syncStatus = SyncStatus.PENDING))
+        return try {
+            val response = api.updateEvent(event.id, event.toUpdateRequest())
+            if (response.isSuccessful) {
+                val dto = response.body()!!
+                val updated = event.copy(modifiedAt = dto.updatedAt, version = dto.version)
+                eventDao.insertEvent(updated.toEntity().copy(syncStatus = SyncStatus.SYNCED))
+                Result.success(updated)
+            } else Result.failure(Exception("Update failed: \${response.code()}"))
+        } catch (e: Exception) { Result.failure(e) }
+    }
+
+    suspend fun deleteEvent(event: Event): Result<Unit> {
+        eventDao.insertEvent(event.toEntity().copy(syncStatus = SyncStatus.DELETED))
+        return try {
+            val response = api.deleteEvent(event.id)
+            if (response.isSuccessful) { eventDao.deleteEventById(event.id); Result.success(Unit) }
+            else Result.failure(Exception("Delete failed: \${response.code()}"))
+        } catch (e: Exception) { Result.failure(e) }
+    }
+
+    suspend fun getUnsyncedEvents(): List<EventEntity> = eventDao.getUnsyncedEvents()
+
+    private fun Event.toEntity() = EventEntity(
+        id, calendarId, title, description, location, startTime, endTime, isAllDay, color,
+        recurrenceRule?.toRRule(), reminders.map { ReminderEntity(it.minutesBefore, it.enabled) },
+        isShared, createdBy, modifiedAt, SyncStatus.SYNCED
+    )
+    private fun EventEntity.toDomain() = Event(
+        id, calendarId, title, description, location, startTime, endTime, isAllDay, color,
+        recurrenceRule?.let { RecurrenceRule.fromRRule(it) },
+        reminders.map { Event.Reminder(it.minutesBefore, it.enabled) },
+        isShared, createdBy, modifiedAt
+    )
+    private fun Event.toCreateRequest() = CreateEventRequest(
+        calendarId, title, description, location, startTime, endTime, isAllDay, color,
+        recurrenceRule?.toRRule(), reminders.map { ReminderDto(it.minutesBefore) }
+    )
+    private fun Event.toUpdateRequest() = com.calsync.app.data.remote.model.UpdateEventRequest(
+        title, description, location, startTime, endTime, isAllDay, color,
+        recurrenceRule?.toRRule(), reminders.map { ReminderDto(it.minutesBefore) }, version
+    )
+}

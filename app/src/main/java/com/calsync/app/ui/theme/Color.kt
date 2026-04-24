@@ -1,0 +1,27 @@
+package com.calsync.app.ui.theme
+import androidx.compose.ui.graphics.Color
+val md_theme_light_primary = Color(0xFF1976D2)
+val md_theme_light_onPrimary = Color.White
+val md_theme_light_primaryContainer = Color(0xFFBBDEFB)
+val md_theme_light_secondary = Color(0xFF1565C0)
+val md_theme_light_tertiary = Color(0xFF00897B)
+val md_theme_light_background = Color(0xFFFAFAFA)
+val md_theme_light_surface = Color.White
+val md_theme_light_onBackground = Color(0xFF212121)
+val md_theme_light_onSurface = Color(0xFF212121)
+val md_theme_dark_primary = Color(0xFF90CAF9)
+val md_theme_dark_onPrimary = Color(0xFF0D47A1)
+val md_theme_dark_primaryContainer = Color(0xFF1565C0)
+val md_theme_dark_secondary = Color(0xFF90CAF9)
+val md_theme_dark_tertiary = Color(0xFF80CBC4)
+val md_theme_dark_background = Color(0xFF121212)
+val md_theme_dark_surface = Color(0xFF1E1E1E)
+val md_theme_dark_onBackground = Color(0xFFEEEEEE)
+val md_theme_dark_onSurface = Color(0xFFEEEEEE)
+val EventRed = Color(0xFFC62828)
+val EventOrange = Color(0xFFEF6C00)
+val EventYellow = Color(0xFFF9A825)
+val EventGreen = Color(0xFF2E7D32)
+val EventBlue = Color(0xFF1565C0)
+val EventPurple = Color(0xFF7B1FA2)
+val eventColors = listOf(EventRed, EventOrange, EventYellow, EventGreen, EventBlue, EventPurple)
