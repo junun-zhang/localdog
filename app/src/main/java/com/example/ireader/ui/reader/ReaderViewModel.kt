@@ -19,7 +19,7 @@ class ReaderViewModel @Inject constructor(
     private val txtParser: TxtParser
 ) : ViewModel() {
 
-    private val bookId: String = savedStateHandle.get<String>("bookId")!!
+    private val bookId: String? = savedStateHandle.get<String>(bookId)
 
     private val _book = MutableStateFlow<Book?>(null)
     val book: StateFlow<Book?> = _book
@@ -35,12 +35,13 @@ class ReaderViewModel @Inject constructor(
     }
 
     private fun loadBook() {
+        val id = bookId ?: return
         viewModelScope.launch {
-            val loadedBook = bookRepository.getBookById(bookId)
+            val loadedBook = bookRepository.getBookById(id)
             _book.value = loadedBook
             loadedBook?.let { book ->
                 when (book.format?.lowercase()) {
-                    "txt" -> parseTxt(book)
+                    txt -> parseTxt(book)
                     // TODO: epub pdf 后续支持
                     else -> _chapters.value = emptyList()
                 }
@@ -84,5 +85,9 @@ class ReaderViewModel @Inject constructor(
             return true
         }
         return false
+    }
+
+    fun toggleMenu() {
+        // TODO: Implement menu toggle
     }
 }

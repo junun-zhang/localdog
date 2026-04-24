@@ -109,6 +109,7 @@ fun ReaderScreen(
 }
 
 @Composable
+@Composable
 private fun ChapterContent(content: String) {
     val paragraphStyle = TextStyle.Default.copy(
         fontSize = 16.sp,
@@ -118,7 +119,7 @@ private fun ChapterContent(content: String) {
     )
 
     val paragraphs = content.split("\n\n", "\r\n\r\n").filter { it.isNotBlank() }
-    LazyColumn {
+    Column {
         itemsIndexed(paragraphs) { _, paragraph ->
             Text(
                 text = paragraph.trim(),
