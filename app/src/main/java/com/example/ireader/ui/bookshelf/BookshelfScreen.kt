@@ -166,18 +166,38 @@ private fun BookCard(
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
+                    // 根据格式选择不同的默认封面图标
+                    val defaultIcon = when (book.format?.lowercase()) {
+                        "txt" -> R.drawable.ic_txt_cover
+                        "pdf" -> R.drawable.ic_pdf_cover
+                        "epub" -> R.drawable.ic_epub_cover
+                        else -> R.drawable.ic_default_book_cover
+                    }
+                    // 根据格式选择不同的容器颜色以便区分
+                    val containerColor = when (book.format?.lowercase()) {
+                        "txt" -> MaterialTheme.colorScheme.primaryContainer
+                        "pdf" -> MaterialTheme.colorScheme.secondaryContainer
+                        "epub" -> MaterialTheme.colorScheme.tertiaryContainer
+                        else -> MaterialTheme.colorScheme.primaryContainer
+                    }
+                    val contentColor = when (book.format?.lowercase()) {
+                        "txt" -> MaterialTheme.colorScheme.onPrimaryContainer
+                        "pdf" -> MaterialTheme.colorScheme.onSecondaryContainer
+                        "epub" -> MaterialTheme.colorScheme.onTertiaryContainer
+                        else -> MaterialTheme.colorScheme.onPrimaryContainer
+                    }
                     // 默认封面
                     androidx.compose.material3.Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
+                        color = containerColor,
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_default_book_cover),
+                            painter = painterResource(id = defaultIcon),
                             contentDescription = book.title,
                             modifier = Modifier
                                 .align(Alignment.Center)
                                 .fillMaxSize(0.6f),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            tint = contentColor
                         )
                     }
                 }

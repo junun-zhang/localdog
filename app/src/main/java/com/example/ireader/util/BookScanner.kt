@@ -2,8 +2,10 @@ package com.example.ireader.util
 
 import android.content.Context
 import android.net.Uri
+import android.widget.Toast
 import com.example.ireader.data.local.entity.Book
 import com.example.ireader.data.repository.BookRepository
+import com.example.ireader.ui.bookshelf.FilePickerViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -26,7 +28,7 @@ class BookScanner @Inject constructor(
     }
 
     /**
-     * 将扫描到的文件导入到数据库
+     * 将扫描到的文件导入到数据库（从本地扫描，文件名就是原始名）
      */
     suspend fun importBooks(files: List<File>): Int {
         var imported = 0
@@ -43,15 +45,46 @@ class BookScanner @Inject constructor(
                     fileSize = file.length()
                 )
                 imported++
+            } else {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "$title 已存在，跳过导入", Toast.LENGTH_SHORT).show()
+                }
             }
         }
         return imported
     }
 
     /**
+     * 导入从文件选择器选择的文件，保留原始文件名
+     */
+    suspend fun importFilesWithOriginalNames(files: List<FilePickerViewModel.SelectableFile>): Int {
+        var imported = 0
+        return withContext(Dispatchers.IO) {
+            files.forEach { selectableFile ->
+                val exists = checkBookExists(selectableFile.file.absolutePath)
+                if (!exists) {
+                    bookRepository.addLocalBook(
+                        filePath = selectableFile.file.absolutePath,
+                        title = selectableFile.originalName,
+                        author = null,
+                        format = selectableFile.extension,
+                        fileSize = selectableFile.file.length()
+                    )
+                    imported++
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "${selectableFile.originalName} 已存在，跳过导入", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            imported
+        }
+    }
+
+    /**
      * 检查书籍是否已经导入
      */
-    private suspend fun checkBookExists(filePath: String): Boolean {
+    suspend fun checkBookExists(filePath: String): Boolean {
         // 简单检查：根据文件路径判断是否已存在
         val books = bookRepository.getAllBooks().first()
         return books.any { it.filePath == filePath }
@@ -91,6 +124,14 @@ class BookScanner @Inject constructor(
                     ?: return@withContext null
 
                 val title = displayName.substringBeforeLast('.')
+
+                // 检查重复
+                if (checkBookExists(copiedFile.absolutePath)) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "$title 已存在，跳过导入", Toast.LENGTH_SHORT).show()
+                    }
+                    return@withContext null
+                }
 
                 return@withContext bookRepository.addLocalBook(
                     filePath = copiedFile.absolutePath,

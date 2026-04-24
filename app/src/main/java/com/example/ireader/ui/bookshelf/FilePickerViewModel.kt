@@ -22,7 +22,8 @@ class FilePickerViewModel @Inject constructor(
 
     data class SelectableFile(
         val file: File,
-        val originalName: String
+        val originalName: String,
+        val extension: String
     )
 
     private val _foundFiles = MutableStateFlow<List<SelectableFile>>(emptyList())
@@ -36,6 +37,10 @@ class FilePickerViewModel @Inject constructor(
         if (current.contains(file)) {
             current.remove(file)
         } else {
+            // 检查是否已经存在相同文件
+            if (current.any { it.file.absolutePath == file.file.absolutePath }) {
+                return
+            }
             current.add(file)
         }
         _selectedFiles.value = current
@@ -45,7 +50,9 @@ class FilePickerViewModel @Inject constructor(
         viewModelScope.launch {
             val root = Environment.getExternalStorageDirectory()
             val files = bookScanner.scanDirectory(root)
-            val selectableFiles = files.map { SelectableFile(it, it.nameWithoutExtension) }
+            val selectableFiles = files.map {
+                SelectableFile(it, it.nameWithoutExtension, it.extension.lowercase())
+            }
             _foundFiles.value = selectableFiles
             // 默认不选任何文件
             _selectedFiles.value = emptySet()
@@ -54,9 +61,8 @@ class FilePickerViewModel @Inject constructor(
 
     fun importSelectedFiles() {
         viewModelScope.launch {
-            // Convert to File list and import
-            val files = _selectedFiles.value.map { it.file }
-            bookScanner.importBooks(files)
+            // 导入选中文件，保留原始名称
+            bookScanner.importFilesWithOriginalNames(_selectedFiles.value.toList())
             // After import, clear selection
             _foundFiles.value = emptyList()
             _selectedFiles.value = emptySet()
@@ -93,7 +99,7 @@ class FilePickerViewModel @Inject constructor(
             val fileName = UUID.randomUUID().toString() + "." + extension
             val copiedFile = FileUtil.copyUriToCache(context, uri, fileName)
             copiedFile?.let {
-                val selectableFile = SelectableFile(copiedFile, originalTitle)
+                val selectableFile = SelectableFile(copiedFile, originalTitle, extension)
                 // 添加到已找到文件列表并自动选中
                 val currentList = _foundFiles.value.toMutableList()
                 if (!currentList.any { it.file.absolutePath == copiedFile.absolutePath }) {
