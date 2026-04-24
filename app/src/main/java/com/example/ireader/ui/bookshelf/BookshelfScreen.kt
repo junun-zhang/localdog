@@ -17,15 +17,16 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +41,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -54,15 +56,49 @@ fun BookshelfScreen(
     viewModel: BookshelfViewModel = hiltViewModel()
 ) {
     val books by viewModel.books.collectAsStateWithLifecycle()
-    var showDeleteDialog by remember { mutableStateOf<Book?>(null) }
+    val selectedBooks by viewModel.selectedBooks.collectAsStateWithLifecycle()
+    val isInMultiSelectMode by viewModel.isInMultiSelectMode.collectAsStateWithLifecycle()
+    var showSingleDeleteDialog by remember { mutableStateOf<Book?>(null) }
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddBookClick,
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(painterResource(id = R.drawable.ic_add_book), contentDescription = stringResource(R.string.add_book))
+            if (!isInMultiSelectMode) {
+                FloatingActionButton(
+                    onClick = onAddBookClick,
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(painterResource(id = R.drawable.ic_add_book), contentDescription = stringResource(R.string.add_book))
+                }
+            }
+        },
+        bottomBar = {
+            if (isInMultiSelectMode) {
+                BottomAppBar(
+                    actions = {
+                        TextButton(
+                            onClick = { viewModel.clearSelection() },
+                            modifier = Modifier.padding(start = 8.dp)
+                        ) {
+                            Text("取消")
+                        }
+                        Text(
+                            text = "已选中 ${selectedBooks.size} 本",
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+                    },
+                    floatingActionButton = {
+                        FloatingActionButton(
+                            onClick = { viewModel.deleteSelectedBooks() },
+                            containerColor = MaterialTheme.colorScheme.error
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "删除选中",
+                                tint = MaterialTheme.colorScheme.onError
+                            )
+                        }
+                    }
+                )
             }
         }
     ) { padding ->
@@ -76,25 +112,34 @@ fun BookshelfScreen(
             } else {
                 BooksGrid(
                     books = books,
+                    selectedIds = selectedBooks,
+                    isMultiSelectMode = isInMultiSelectMode,
                     onBookClick = { book ->
-                        // 跳转到阅读界面
-                        navController.navigate(Screen.Reader.createRoute(book.id))
+                        if (isInMultiSelectMode) {
+                            viewModel.toggleSelection(book)
+                        } else {
+                            // 跳转到阅读界面
+                            navController.navigate(Screen.Reader.createRoute(book.id))
+                        }
                     },
                     onBookLongClick = { book ->
-                        showDeleteDialog = book
+                        if (!isInMultiSelectMode) {
+                            // Long click when not in multi-select mode enters multi-select
+                            viewModel.toggleSelection(book)
+                        }
                     }
                 )
             }
         }
     }
 
-    showDeleteDialog?.let { book ->
-        DeleteDialog(
+    showSingleDeleteDialog?.let { book ->
+        SingleDeleteDialog(
             book = book,
-            onDismiss = { showDeleteDialog = null },
+            onDismiss = { showSingleDeleteDialog = null },
             onConfirm = {
                 viewModel.deleteBook(book)
-                showDeleteDialog = null
+                showSingleDeleteDialog = null
             }
         )
     }
@@ -113,6 +158,8 @@ private fun EmptyView(modifier: Modifier) {
 @Composable
 private fun BooksGrid(
     books: List<Book>,
+    selectedIds: Set<String>,
+    isMultiSelectMode: Boolean,
     onBookClick: (Book) -> Unit,
     onBookLongClick: (Book) -> Unit
 ) {
@@ -125,6 +172,7 @@ private fun BooksGrid(
         items(books) { book ->
             BookCard(
                 book = book,
+                isSelected = selectedIds.contains(book.id),
                 onClick = { onBookClick(book) },
                 onLongClick = { onBookLongClick(book) }
             )
@@ -136,9 +184,16 @@ private fun BooksGrid(
 @Composable
 private fun BookCard(
     book: Book,
+    isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val containerColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+    } else {
+        CardDefaults.cardColors().containerColor
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -147,7 +202,8 @@ private fun BookCard(
                 onClick = onClick,
                 onLongClick = onLongClick
             ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Column {
             // 封面区域
@@ -174,7 +230,7 @@ private fun BookCard(
                         else -> R.drawable.ic_default_book_cover
                     }
                     // 根据格式选择不同的容器颜色以便区分
-                    val containerColor = when (book.format?.lowercase()) {
+                    val coverContainerColor = when (book.format?.lowercase()) {
                         "txt" -> MaterialTheme.colorScheme.primaryContainer
                         "pdf" -> MaterialTheme.colorScheme.secondaryContainer
                         "epub" -> MaterialTheme.colorScheme.tertiaryContainer
@@ -187,8 +243,8 @@ private fun BookCard(
                         else -> MaterialTheme.colorScheme.onPrimaryContainer
                     }
                     // 默认封面
-                    androidx.compose.material3.Surface(
-                        color = containerColor,
+                    Surface(
+                        color = coverContainerColor,
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Icon(
@@ -199,6 +255,18 @@ private fun BookCard(
                                 .fillMaxSize(0.6f),
                             tint = contentColor
                         )
+                    }
+                }
+
+                // 选中标记 - 半透明覆盖层
+                if (isSelected) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            // Checkmark could be added here
+                        }
                     }
                 }
             }
@@ -239,12 +307,12 @@ private fun BookCard(
 }
 
 @Composable
-private fun DeleteDialog(
+private fun SingleDeleteDialog(
     book: Book,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    AlertDialog(
+    androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.book_delete)) },
         text = { Text(stringResource(R.string.book_delete_confirm)) },

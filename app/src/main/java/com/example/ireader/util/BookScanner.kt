@@ -32,26 +32,28 @@ class BookScanner @Inject constructor(
      */
     suspend fun importBooks(files: List<File>): Int {
         var imported = 0
-        files.forEach { file ->
-            val title = file.nameWithoutExtension
-            val extension = file.extension.lowercase()
-            val exists = checkBookExists(file.absolutePath)
-            if (!exists) {
-                bookRepository.addLocalBook(
-                    filePath = file.absolutePath,
-                    title = title,
-                    author = null,
-                    format = extension,
-                    fileSize = file.length()
-                )
-                imported++
-            } else {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "$title 已存在，跳过导入", Toast.LENGTH_SHORT).show()
+        return withContext(Dispatchers.IO) {
+            files.forEach { file ->
+                val title = file.nameWithoutExtension
+                val extension = file.extension.lowercase()
+                val exists = checkBookExistsByTitleAndSize(title, file.length())
+                if (!exists) {
+                    bookRepository.addLocalBook(
+                        filePath = file.absolutePath,
+                        title = title,
+                        author = null,
+                        format = extension,
+                        fileSize = file.length()
+                    )
+                    imported++
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "$title 已存在，跳过导入", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
+            imported
         }
-        return imported
     }
 
     /**
@@ -61,7 +63,7 @@ class BookScanner @Inject constructor(
         var imported = 0
         return withContext(Dispatchers.IO) {
             files.forEach { selectableFile ->
-                val exists = checkBookExists(selectableFile.file.absolutePath)
+                val exists = checkBookExistsByTitleAndSize(selectableFile.originalName, selectableFile.file.length())
                 if (!exists) {
                     bookRepository.addLocalBook(
                         filePath = selectableFile.file.absolutePath,
@@ -82,12 +84,22 @@ class BookScanner @Inject constructor(
     }
 
     /**
-     * 检查书籍是否已经导入
+     * 检查书籍是否已经导入：按书名和文件大小判断更准确，
+     * 因为同一文件每次从URI拷贝都会生成新路径，按路径检测不到
      */
     suspend fun checkBookExists(filePath: String): Boolean {
-        // 简单检查：根据文件路径判断是否已存在
+        // 保留原来的按路径检测用于扫描本地文件
         val books = bookRepository.getAllBooks().first()
         return books.any { it.filePath == filePath }
+    }
+
+    /**
+     * 按书名和文件大小检测重复，处理URI导入的情况
+     */
+    suspend fun checkBookExistsByTitleAndSize(title: String, fileSize: Long): Boolean {
+        val books = bookRepository.getAllBooks().first()
+        // 书名相同且文件大小相同判定为同一本书
+        return books.any { it.title == title && it.fileSize == fileSize }
     }
 
     /**
@@ -118,18 +130,20 @@ class BookScanner @Inject constructor(
                     return@withContext null
                 }
 
+                val title = displayName.substringBeforeLast('.')
+
                 // 拷贝文件到app目录保持持久访问
                 val fileName = "${UUID.randomUUID()}.$extension"
                 val copiedFile = FileUtil.copyUriToCache(context, uri, fileName)
                     ?: return@withContext null
 
-                val title = displayName.substringBeforeLast('.')
-
-                // 检查重复
-                if (checkBookExists(copiedFile.absolutePath)) {
+                // 检查重复：按书名和文件大小
+                if (checkBookExistsByTitleAndSize(title, copiedFile.length())) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "$title 已存在，跳过导入", Toast.LENGTH_SHORT).show()
                     }
+                    // 删除已拷贝的重复文件
+                    copiedFile.delete()
                     return@withContext null
                 }
 
