@@ -1,7 +1,10 @@
 package com.example.ireader.parser
 
+import android.util.Log
 import com.example.ireader.data.local.entity.Book
 import java.io.File
+import java.io.FileInputStream
+import java.io.InputStreamReader
 import javax.inject.Inject
 
 class TxtParser @Inject constructor() {
@@ -11,18 +14,53 @@ class TxtParser @Inject constructor() {
      * 简单规则：按空行分割，或以"第.*章"作为分隔
      */
     fun parse(book: Book): List<String> {
-        val file = File(book.filePath)
+        val filePath = book.filePath ?: return emptyList()
+        val file = File(filePath)
         if (!file.exists()) {
+            Log.e("TxtParser", "File not exists: $filePath")
             return emptyList()
         }
 
-        val content = file.readText()
-        return splitIntoChapters(content)
+        return try {
+            // 尝试多种编码读取文件
+            val content = readTextWithFallback(file)
+            splitIntoChapters(content)
+        } catch (e: Exception) {
+            Log.e("TxtParser", "Failed to parse TXT file", e)
+            emptyList()
+        }
+    }
+
+    /**
+     * 尝试多种编码读取文件，优先 UTF-8，失败尝试 GBK，再不行用默认
+     */
+    private fun readTextWithFallback(file: File): String {
+        return try {
+            // First try UTF-8
+            readFileWithEncoding(file, "UTF-8")
+        } catch (e: Exception) {
+            try {
+                // Fallback to GBK (common in Chinese txt files)
+                readFileWithEncoding(file, "GBK")
+            } catch (e2: Exception) {
+                // Last resort: use system default encoding
+                Log.w("TxtParser", "Falling back to default encoding", e2)
+                file.readText()
+            }
+        }
+    }
+
+    private fun readFileWithEncoding(file: File, encoding: String): String {
+        return FileInputStream(file).use { fis ->
+            InputStreamReader(fis, encoding).use { isr ->
+                isr.readText()
+            }
+        }
     }
 
     private fun splitIntoChapters(content: String): List<String> {
         // 先按章节标题分割
-        val chapterPattern = Regex("(第[零一二三四五六七八九十百千0-9]+[章回卷篇].*?)\n", RegexOption.MULTILINE)
+        val chapterPattern = Regex("(第[零一二三四五六七八九十百千0-9]+[章回卷篇].*?)\\n", RegexOption.MULTILINE)
         val chapters = mutableListOf<String>()
 
         // 如果找到章节标题，用它分割

@@ -20,13 +20,18 @@ class FilePickerViewModel @Inject constructor(
     private val bookScanner: BookScanner
 ) : ViewModel() {
 
-    private val _foundFiles = MutableStateFlow<List<File>>(emptyList())
-    val foundFiles: StateFlow<List<File>> = _foundFiles
+    data class SelectableFile(
+        val file: File,
+        val originalName: String
+    )
 
-    private val _selectedFiles = MutableStateFlow<Set<File>>(emptySet())
-    val selectedFiles: StateFlow<Set<File>> = _selectedFiles
+    private val _foundFiles = MutableStateFlow<List<SelectableFile>>(emptyList())
+    val foundFiles: StateFlow<List<SelectableFile>> = _foundFiles
 
-    fun toggleSelection(file: File) {
+    private val _selectedFiles = MutableStateFlow<Set<SelectableFile>>(emptySet())
+    val selectedFiles: StateFlow<Set<SelectableFile>> = _selectedFiles
+
+    fun toggleSelection(file: SelectableFile) {
         val current = _selectedFiles.value.toMutableSet()
         if (current.contains(file)) {
             current.remove(file)
@@ -40,7 +45,8 @@ class FilePickerViewModel @Inject constructor(
         viewModelScope.launch {
             val root = Environment.getExternalStorageDirectory()
             val files = bookScanner.scanDirectory(root)
-            _foundFiles.value = files
+            val selectableFiles = files.map { SelectableFile(it, it.nameWithoutExtension) }
+            _foundFiles.value = selectableFiles
             // 默认不选任何文件
             _selectedFiles.value = emptySet()
         }
@@ -48,7 +54,12 @@ class FilePickerViewModel @Inject constructor(
 
     fun importSelectedFiles() {
         viewModelScope.launch {
-            bookScanner.importBooks(_selectedFiles.value.toList())
+            // Convert to File list and import
+            val files = _selectedFiles.value.map { it.file }
+            bookScanner.importBooks(files)
+            // After import, clear selection
+            _foundFiles.value = emptyList()
+            _selectedFiles.value = emptySet()
         }
     }
 
@@ -76,17 +87,20 @@ class FilePickerViewModel @Inject constructor(
                 return@launch
             }
 
+            val originalTitle = displayName.substringBeforeLast('.')
+
             // 拷贝文件到app目录
             val fileName = UUID.randomUUID().toString() + "." + extension
             val copiedFile = FileUtil.copyUriToCache(context, uri, fileName)
             copiedFile?.let {
+                val selectableFile = SelectableFile(copiedFile, originalTitle)
                 // 添加到已找到文件列表并自动选中
                 val currentList = _foundFiles.value.toMutableList()
-                if (!currentList.any { it.absolutePath == copiedFile.absolutePath }) {
-                    currentList.add(copiedFile)
+                if (!currentList.any { it.file.absolutePath == copiedFile.absolutePath }) {
+                    currentList.add(selectableFile)
                     _foundFiles.value = currentList
                 }
-                toggleSelection(copiedFile)
+                toggleSelection(selectableFile)
             }
         }
     }

@@ -42,8 +42,8 @@ import java.io.File
 @AndroidEntryPoint
 class FilePickerActivity : ComponentActivity() {
 
-    private val getContent = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
+    private val getMultipleContent = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        uris.forEach { uri ->
             // 授予持久权限
             val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             contentResolver.takePersistableUriPermission(uri, flags)
@@ -76,7 +76,7 @@ class FilePickerActivity : ComponentActivity() {
     }
 
     private fun openFilePicker() {
-        getContent.launch(arrayOf("text/plain", "application/epub+zip", "application/pdf"))
+        getMultipleContent.launch(arrayOf("text/plain", "application/epub+zip", "application/pdf"))
     }
 }
 
@@ -102,9 +102,12 @@ fun FilePickerScreen(
                         .padding(16.dp))
                 },
                 actions = {
-                    Text("确定 (${selectedFiles.size})", modifier = Modifier
-                        .clickable(enabled = selectedFiles.isNotEmpty()) { onConfirm() }
-                        .padding(16.dp))
+                    Text(
+                        "确定 (${selectedFiles.size})",
+                        modifier = Modifier
+                            .clickable(enabled = selectedFiles.isNotEmpty()) { onConfirm() }
+                            .padding(16.dp)
+                    )
                 }
             )
         }
@@ -197,9 +200,9 @@ private fun ActionButton(
 
 @Composable
 private fun FileItem(
-    file: File,
+    file: FilePickerViewModel.SelectableFile,
     isSelected: Boolean,
-    onToggle: (File) -> Unit
+    onToggle: (FilePickerViewModel.SelectableFile) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -222,11 +225,11 @@ private fun FileItem(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = file.name,
+                    text = file.originalName,
                     style = MaterialTheme.typography.bodyLarge
                 )
                 Text(
-                    text = file.absolutePath,
+                    text = file.file.absolutePath,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
