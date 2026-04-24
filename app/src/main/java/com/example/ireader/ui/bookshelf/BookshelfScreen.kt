@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import androidx.compose.ui.res.painterResource
 import com.example.ireader.R
 import com.example.ireader.data.local.entity.Book
 import com.example.ireader.ui.navigation.Screen
@@ -49,7 +51,7 @@ import com.example.ireader.ui.navigation.Screen
 fun BookshelfScreen(
     navController: NavController,
     onAddBookClick: () -> Unit,
-    viewModel: BookshelfViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: BookshelfViewModel = hiltViewModel()
 ) {
     val books by viewModel.books.collectAsStateWithLifecycle()
     var showDeleteDialog by remember { mutableStateOf<Book?>(null) }
@@ -60,7 +62,7 @@ fun BookshelfScreen(
                 onClick = onAddBookClick,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_book))
+                Icon(painterResource(id = R.drawable.ic_add_book), contentDescription = stringResource(R.string.add_book))
             }
         }
     ) { padding ->

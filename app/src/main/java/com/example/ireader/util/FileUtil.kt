@@ -11,22 +11,23 @@ import java.io.InputStream
 object FileUtil {
 
     /**
-     * 从Uri获取文件拷贝到app缓存目录
+     * 从Uri获取文件拷贝到app内部文件目录（不会被系统清理）
      */
     fun copyUriToCache(context: Context, uri: Uri, fileName: String): File? {
         return try {
             val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
             inputStream?.let {
-                val cacheDir = context.cacheDir
-                val outputFile = File(cacheDir, fileName)
+                val filesDir = context.filesDir
+                val outputFile = File(filesDir, fileName)
                 val outputStream = FileOutputStream(outputFile)
-                val buffer = ByteArray(1024)
+                val buffer = ByteArray(4096)
                 var length: Int
                 while (inputStream.read(buffer).also { length = it } > 0) {
                     outputStream.write(buffer, 0, length)
                 }
                 outputStream.flush()
                 outputStream.close()
+                Log.d("FileUtil", "copyUriToCache success: " + outputFile.absolutePath + ", size: " + outputFile.length());
                 inputStream.close()
                 outputFile
             }
