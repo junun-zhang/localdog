@@ -31,13 +31,13 @@ fun BottomNavigationBar(navController: NavController) {
                 Screen.Bookshelf -> R.string.bookshelf
                 Screen.Store -> R.string.store
                 Screen.Profile -> R.string.profile
-                is Screen.Reader -> R.string.bookshelf
+                else -> R.string.bookshelf
             }
             val icon = when (screen) {
                 Screen.Bookshelf -> Icons.Default.Book
                 Screen.Store -> Icons.Default.Store
                 Screen.Profile -> Icons.Default.Person
-                is Screen.Reader -> Icons.Default.Book
+                else -> Icons.Default.Book
             }
             NavigationBarItem(
                 icon = { Icon(icon, contentDescription = stringResource(titleRes)) },

@@ -1,0 +1,12 @@
+
+# 2026-04-27 16:24:22.502888
++say hello
+
+# 2026-04-27 16:24:22.502922
++say hello
+
+# 2026-04-27 17:03:48.157538
++Fix splitIntoChapters in app/src/main/java/com/example/ireader/parser/TxtParser.kt: it only saves chapter titles but loses chapter body content. Change the logic so each chapter includes the title text AND all content up to the next chapter title. Currently for input with 前言 then 第一章 开始, chapters[0] is 前言 instead of 第一章 开始. The test expects the first real chapter to contain 开始.
+
+# 2026-04-27 17:03:48.157704
++Fix splitIntoChapters in app/src/main/java/com/example/ireader/parser/TxtParser.kt: it only saves chapter titles but loses chapter body content. Change the logic so each chapter includes the title text AND all content up to the next chapter title. Currently for input with 前言 then 第一章 开始, chapters[0] is 前言 instead of 第一章 开始. The test expects the first real chapter to contain 开始.

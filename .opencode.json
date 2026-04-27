@@ -1,0 +1,13 @@
+{
+  "providers": {
+    "openai": {
+      "apiKey": "sk-sp-5491c6e26c744435ba7cbc081d142def",
+      "disabled": false
+    }
+  },
+  "agents": {
+    "coder": {
+      "model": "qwen3.6-plus"
+    }
+  }
+}

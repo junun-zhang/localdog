@@ -1,0 +1,6 @@
+providers:
+  dashscope:
+    type: openai
+    base_url: https://coding.dashscope.aliyuncs.com/v1
+    api_key: sk-sp-5491c6e26c744435ba7cbc081d142def
+    default_model: qwen3.6-plus

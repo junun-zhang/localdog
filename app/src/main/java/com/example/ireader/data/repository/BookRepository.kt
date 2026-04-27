@@ -1,13 +1,19 @@
 package com.example.ireader.data.repository
 
+import com.example.ireader.data.local.dao.AnnotationDao
 import com.example.ireader.data.local.dao.BookDao
+import com.example.ireader.data.local.dao.BookmarkDao
 import com.example.ireader.data.local.entity.Book
+import com.example.ireader.data.local.entity.Bookmark
+import com.example.ireader.data.local.entity.Annotation
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 import javax.inject.Inject
 
 class BookRepository @Inject constructor(
-    private val bookDao: BookDao
+    private val bookDao: BookDao,
+    private val bookmarkDao: BookmarkDao,
+    private val annotationDao: AnnotationDao
 ) {
 
     fun getAllBooks(): Flow<List<Book>> {
@@ -38,9 +44,6 @@ class BookRepository @Inject constructor(
         bookDao.deleteBookById(bookId)
     }
 
-    /**
-     * 根据文件路径创建并插入新书
-     */
     suspend fun addLocalBook(
         filePath: String,
         title: String,
@@ -76,5 +79,72 @@ class BookRepository @Inject constructor(
             lastReadTime = System.currentTimeMillis()
         )
         book?.let { updateBook(it) }
+    }
+
+    // === Bookmark operations ===
+
+    fun getBookmarksForBook(bookId: String): Flow<List<Bookmark>> {
+        return bookmarkDao.getBookmarksForBook(bookId)
+    }
+
+    suspend fun addBookmark(bookId: String, chapterIndex: Int, position: String? = null): Bookmark {
+        val bookmark = Bookmark(
+            id = UUID.randomUUID().toString(),
+            bookId = bookId,
+            chapterIndex = chapterIndex,
+            position = position,
+            createTime = System.currentTimeMillis()
+        )
+        bookmarkDao.insertBookmark(bookmark)
+        return bookmark
+    }
+
+    suspend fun deleteBookmark(bookmark: Bookmark) {
+        bookmarkDao.deleteBookmark(bookmark)
+    }
+
+    suspend fun deleteBookmarkById(id: String) {
+        bookmarkDao.deleteBookmarkById(id)
+    }
+
+    // === Annotation operations ===
+
+    fun getAnnotationsForBook(bookId: String): Flow<List<Annotation>> {
+        return annotationDao.getAnnotationsForBook(bookId)
+    }
+
+    suspend fun addAnnotation(
+        bookId: String,
+        chapterIndex: Int,
+        highlightedText: String? = null,
+        note: String? = null,
+        color: Int = -16776961 // yellow
+    ): Annotation {
+        val now = System.currentTimeMillis()
+        val annotation = Annotation(
+            id = UUID.randomUUID().toString(),
+            bookId = bookId,
+            chapterIndex = chapterIndex,
+            startPosition = "",
+            endPosition = "",
+            highlightedText = highlightedText,
+            color = color,
+            note = note,
+            createTime = now,
+            updateTime = now
+        )
+        annotationDao.insertAnnotation(annotation)
+        return annotation
+    }
+
+    suspend fun updateAnnotationNote(annotationId: String, note: String) {
+        val annotation = annotationDao.getAnnotationById(annotationId)
+        annotation?.let {
+            annotationDao.updateAnnotation(it.copy(note = note, updateTime = System.currentTimeMillis()))
+        }
+    }
+
+    suspend fun deleteAnnotation(annotation: Annotation) {
+        annotationDao.deleteAnnotation(annotation)
     }
 }

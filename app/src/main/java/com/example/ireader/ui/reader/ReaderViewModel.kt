@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ireader.data.local.entity.Book
+import com.example.ireader.data.local.entity.Bookmark
 import com.example.ireader.data.repository.BookRepository
 import com.example.ireader.parser.TxtParser
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,6 +31,13 @@ class ReaderViewModel @Inject constructor(
     private val _currentChapter = MutableStateFlow(0)
     val currentChapter: StateFlow<Int> = _currentChapter
 
+    private val _showMenu = MutableStateFlow(false)
+    val showMenu: StateFlow<Boolean> = _showMenu
+
+    // Track bookmarks for current book
+    private val _bookmarks = MutableStateFlow<List<Bookmark>>(emptyList())
+    val bookmarks: StateFlow<List<Bookmark>> = _bookmarks
+
     init {
         loadBook()
     }
@@ -42,10 +50,14 @@ class ReaderViewModel @Inject constructor(
             loadedBook?.let { book ->
                 when (book.format?.lowercase()) {
                     "txt" -> parseTxt(book)
-                    // TODO: epub pdf 后续支持
                     else -> _chapters.value = emptyList()
                 }
                 _currentChapter.value = book.currentChapter
+
+                // Load bookmarks for this book
+                bookRepository.getBookmarksForBook(id).collect { bmList ->
+                    _bookmarks.value = bmList
+                }
             }
         }
     }
@@ -53,6 +65,23 @@ class ReaderViewModel @Inject constructor(
     private fun parseTxt(book: Book) {
         val chapters = txtParser.parse(book)
         _chapters.value = chapters
+    }
+
+    fun isChapterBookmarked(chapterIndex: Int): Boolean {
+        return _bookmarks.value.any { it.chapterIndex == chapterIndex }
+    }
+
+    fun addBookmark(bookId: String, chapterIndex: Int) {
+        viewModelScope.launch {
+            bookRepository.addBookmark(bookId, chapterIndex)
+        }
+    }
+
+    fun removeBookmark(chapterIndex: Int) {
+        viewModelScope.launch {
+            val bookmark = _bookmarks.value.find { it.chapterIndex == chapterIndex }
+            bookmark?.let { bookRepository.deleteBookmark(it) }
+        }
     }
 
     fun changeChapter(chapter: Int) {
@@ -88,6 +117,6 @@ class ReaderViewModel @Inject constructor(
     }
 
     fun toggleMenu() {
-        // TODO: Implement menu toggle
+        _showMenu.value = !_showMenu.value
     }
 }
