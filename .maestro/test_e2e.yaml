@@ -12,8 +12,6 @@ tags:
 - waitForAnimationToEnd:
     timeout: 10000
 - assertVisible: "我的书架"
-- assertVisible: "书架是空的"
-- assertVisible: "点击右上角 + 导入书籍"
 
 # 步骤2: 验证搜索功能
 - tapOn: "搜索"

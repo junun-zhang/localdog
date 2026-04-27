@@ -1,10 +1,18 @@
 package com.example.ireader.ui.reader
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
@@ -16,6 +24,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -27,6 +37,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.ireader.ui.navigation.Screen
 import kotlinx.coroutines.launch
+
+// Reader theme definitions
+data class ReaderTheme(
+    val name: String,
+    val label: String,
+    val backgroundColor: Color,
+    val textColor: Color,
+    val indicatorColor: Color
+)
+
+val readerThemes = listOf(
+    ReaderTheme("light", "日间", Color.White, Color(0xFF333333), Color(0xFF1976D2)),
+    ReaderTheme("sepia", "护眼", Color(0xFFF5F0E8), Color(0xFF5C4B37), Color(0xFF8D6E63)),
+    ReaderTheme("dark", "夜间", Color(0xFF1A1A2E), Color(0xFFCCCCCC), Color(0xFF42A5F5)),
+    ReaderTheme("green", "绿色", Color(0xFFE8F5E9), Color(0xFF33691E), Color(0xFF66BB6A))
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,21 +69,28 @@ fun ReaderScreen(
     val scope = rememberCoroutineScope()
     var showBookmarkDialog by remember { mutableStateOf(false) }
     val fontSize by viewModel.fontSize.collectAsStateWithLifecycle()
+    val lineSpacing by viewModel.lineSpacing.collectAsStateWithLifecycle()
+    val theme by viewModel.theme.collectAsStateWithLifecycle()
     var showSettingsDialog by remember { mutableStateOf(false) }
     var dialogFontSize by remember { mutableStateOf(viewModel.fontSize.value) }
+    var dialogLineSpacing by remember { mutableStateOf(viewModel.lineSpacing.value) }
+    var dialogTheme by remember { mutableStateOf(viewModel.theme.value) }
+
+    val currentTheme = readerThemes.find { it.name == theme } ?: readerThemes[0]
 
     // Check if current chapter is bookmarked
     val isBookmarked = viewModel.isChapterBookmarked(currentChapter)
 
     Scaffold(
+        containerColor = currentTheme.backgroundColor,
         topBar = {
             if (showMenu) {
                 TopAppBar(
-                    title = { Text(book?.title ?: "阅读") },
+                    title = { Text(book?.title ?: "阅读", color = currentTheme.textColor) },
                     navigationIcon = {
                         navController?.let { nc ->
                             IconButton(onClick = { nc.popBackStack() }) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                                Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = currentTheme.textColor)
                             }
                         }
                     },
@@ -72,17 +105,23 @@ fun ReaderScreen(
                         }) {
                             Icon(
                                 imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                contentDescription = if (isBookmarked) "移除书签" else "添加书签"
+                                contentDescription = if (isBookmarked) "移除书签" else "添加书签",
+                                tint = currentTheme.textColor
                             )
                         }
                         IconButton(onClick = {
                             val chaptersJson = chapters.joinToString(",", prefix = "\"", postfix = "\"") { it }
                             navController?.navigate(Screen.Bookmarks.createRoute(bookId, chaptersJson))
                         }) {
-                            Icon(imageVector = Icons.Default.Bookmark, contentDescription = "书签列表")
+                            Icon(imageVector = Icons.Default.Bookmark, contentDescription = "书签列表", tint = currentTheme.textColor)
                         }
-                        IconButton(onClick = { showSettingsDialog = true }) {
-                            Icon(Icons.Default.Settings, contentDescription = "设置")
+                        IconButton(onClick = {
+                            dialogFontSize = fontSize
+                            dialogLineSpacing = lineSpacing
+                            dialogTheme = theme
+                            showSettingsDialog = true
+                        }) {
+                            Icon(Icons.Default.Settings, contentDescription = "设置", tint = currentTheme.textColor)
                         }
                     }
                 )
@@ -92,6 +131,7 @@ fun ReaderScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(currentTheme.backgroundColor)
                 .padding(padding)
                 .pointerInput(showMenu) {
                     detectTapGestures(
@@ -126,7 +166,12 @@ fun ReaderScreen(
                         state = listState
                     ) {
                         itemsIndexed(listOf(chapters[currentChapter])) { index, content ->
-                            ChapterContent(content = content, fontSize = fontSize)
+                            ChapterContent(
+                                content = content,
+                                fontSize = fontSize,
+                                lineSpacing = lineSpacing,
+                                textColor = currentTheme.textColor
+                            )
                         }
                     }
                     Text(
@@ -134,7 +179,8 @@ fun ReaderScreen(
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
                             .padding(8.dp),
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        color = currentTheme.textColor
                     )
                 }
             } else {
@@ -142,16 +188,14 @@ fun ReaderScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("暂无内容")
+                    Text("暂无内容", color = currentTheme.textColor)
                 }
             }
         }
     }
 
-    // Bookmark success snackbar
     if (showBookmarkDialog) {
         LaunchedEffect(Unit) {
-            // Could show snackbar here
             showBookmarkDialog = false
         }
     }
@@ -162,23 +206,55 @@ fun ReaderScreen(
             onDismissRequest = { showSettingsDialog = false },
             title = { Text("阅读设置") },
             text = {
-                Column {
-                    Text("字体大小: ${fontSize.toInt()}sp")
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    // Font size
+                    Text("字体大小: ${dialogFontSize.toInt()}sp", style = MaterialTheme.typography.titleSmall)
                     Slider(
                         value = dialogFontSize,
                         onValueChange = { dialogFontSize = it },
                         valueRange = 12f..28f,
                         steps = 15
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Line spacing
+                    Text("行距: ${"%.1f".format(dialogLineSpacing)}x", style = MaterialTheme.typography.titleSmall)
+                    Slider(
+                        value = dialogLineSpacing,
+                        onValueChange = { dialogLineSpacing = it },
+                        valueRange = 1.0f..2.5f,
+                        steps = 14
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Theme selection
+                    Text("主题", style = MaterialTheme.typography.titleSmall)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(readerThemes) { rTheme ->
+                            ThemeChip(
+                                theme = rTheme,
+                                isSelected = rTheme.name == dialogTheme,
+                                onClick = { dialogTheme = rTheme.name }
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { viewModel.setFontSize(dialogFontSize); showSettingsDialog = false }) {
+                TextButton(onClick = {
+                    viewModel.setFontSize(dialogFontSize)
+                    viewModel.setLineSpacing(dialogLineSpacing)
+                    viewModel.setTheme(dialogTheme)
+                    showSettingsDialog = false
+                }) {
                     Text("确定")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.setFontSize(dialogFontSize); showSettingsDialog = false }) {
+                TextButton(onClick = { showSettingsDialog = false }) {
                     Text("取消")
                 }
             }
@@ -187,12 +263,48 @@ fun ReaderScreen(
 }
 
 @Composable
-private fun ChapterContent(content: String, fontSize: Float = 16f) {
+fun ThemeChip(
+    theme: ReaderTheme,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(theme.backgroundColor)
+                .border(
+                    width = if (isSelected) 2.dp else 0.dp,
+                    color = if (isSelected) theme.indicatorColor else Color.Transparent,
+                    shape = RoundedCornerShape(8.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Aa", color = theme.textColor, fontSize = 14.sp)
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(theme.label, style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+@Composable
+private fun ChapterContent(
+    content: String,
+    fontSize: Float = 16f,
+    lineSpacing: Float = 1.5f,
+    textColor: Color = Color(0xFF333333)
+) {
     val paragraphStyle = TextStyle.Default.copy(
         fontSize = fontSize.sp,
-        lineHeight = (fontSize * 1.5f).sp,
+        lineHeight = (fontSize * lineSpacing).sp,
         textIndent = TextIndent(firstLine = (fontSize * 2f).sp),
-        color = MaterialTheme.colorScheme.onBackground
+        color = textColor
     )
 
     val paragraphs = content.split("\n\n", "\r\n\r\n").filter { it.isNotBlank() }
@@ -201,7 +313,7 @@ private fun ChapterContent(content: String, fontSize: Float = 16f) {
             Text(
                 text = paragraph.trim(),
                 style = paragraphStyle,
-                modifier = Modifier.padding(vertical = 8.dp)
+                modifier = Modifier.padding(vertical = 4.dp)
             )
         }
     }

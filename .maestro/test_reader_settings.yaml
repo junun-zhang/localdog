@@ -1,0 +1,48 @@
+appId: com.example.ireader
+tags:
+  - ireader
+  - reader
+  - settings
+---
+# Open a book from the bookshelf
+- launchApp
+- swipe:
+    start: 50%, 95%
+    end: 50%, 5%
+    duration: 200
+- waitForAnimationToEnd:
+    timeout: 10000
+- assertVisible: "我的书架"
+
+# Tap on a book card to open the reader
+- tapOn:
+    text: "TXT"
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# Tap center of screen to show menu
+- tapOn: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Tap on settings icon (top right)
+- tapOn: "设置"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Verify settings dialog appears
+- assertVisible: "阅读设置"
+
+# Verify font size slider exists
+- assertVisible: "字体大小"
+
+# Verify line spacing slider exists
+- assertVisible: "行距"
+
+# Verify theme label exists
+- assertVisible: "主题"
+
+# Tap cancel to close
+- tapOn: "取消"
+- waitForAnimationToEnd:
+    timeout: 3000

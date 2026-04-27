@@ -34,7 +34,6 @@ class ReaderViewModel @Inject constructor(
     private val _showMenu = MutableStateFlow(false)
     val showMenu: StateFlow<Boolean> = _showMenu
 
-    // Track bookmarks for current book
     private val _bookmarks = MutableStateFlow<List<Bookmark>>(emptyList())
     val bookmarks: StateFlow<List<Bookmark>> = _bookmarks
 
@@ -42,11 +41,19 @@ class ReaderViewModel @Inject constructor(
         private const val KEY_FONT_SIZE = "reader_font_size"
         private const val DEFAULT_FONT_SIZE = 16f
         private const val KEY_LINE_SPACING = "reader_line_spacing"
+        private const val DEFAULT_LINE_SPACING = 1.5f
         private const val KEY_THEME = "reader_theme"
+        private const val DEFAULT_THEME = "light"
     }
 
     private val _fontSize = MutableStateFlow(DEFAULT_FONT_SIZE)
     val fontSize: StateFlow<Float> = _fontSize
+
+    private val _lineSpacing = MutableStateFlow(DEFAULT_LINE_SPACING)
+    val lineSpacing: StateFlow<Float> = _lineSpacing
+
+    private val _theme = MutableStateFlow(DEFAULT_THEME)
+    val theme: StateFlow<String> = _theme
 
     init {
         loadBook()
@@ -57,6 +64,10 @@ class ReaderViewModel @Inject constructor(
         viewModelScope.launch {
             val size = bookRepository.getSetting(KEY_FONT_SIZE)?.toFloatOrNull() ?: DEFAULT_FONT_SIZE
             _fontSize.value = size
+            val spacing = bookRepository.getSetting(KEY_LINE_SPACING)?.toFloatOrNull() ?: DEFAULT_LINE_SPACING
+            _lineSpacing.value = spacing
+            val themeMode = bookRepository.getSetting(KEY_THEME) ?: DEFAULT_THEME
+            _theme.value = themeMode
         }
     }
 
@@ -64,6 +75,20 @@ class ReaderViewModel @Inject constructor(
         _fontSize.value = size
         viewModelScope.launch {
             bookRepository.saveSetting(KEY_FONT_SIZE, size.toString())
+        }
+    }
+
+    fun setLineSpacing(spacing: Float) {
+        _lineSpacing.value = spacing
+        viewModelScope.launch {
+            bookRepository.saveSetting(KEY_LINE_SPACING, spacing.toString())
+        }
+    }
+
+    fun setTheme(themeMode: String) {
+        _theme.value = themeMode
+        viewModelScope.launch {
+            bookRepository.saveSetting(KEY_THEME, themeMode)
         }
     }
 
@@ -79,7 +104,6 @@ class ReaderViewModel @Inject constructor(
                 }
                 _currentChapter.value = book.currentChapter
 
-                // Load bookmarks for this book
                 bookRepository.getBookmarksForBook(id).collect { bmList ->
                     _bookmarks.value = bmList
                 }
