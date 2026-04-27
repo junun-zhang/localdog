@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReaderScreen(
+    bookId: String,
     viewModel: ReaderViewModel = hiltViewModel()
 ) {
     val book by viewModel.book.collectAsStateWithLifecycle()

@@ -14,12 +14,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ReaderViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
     private val bookRepository: BookRepository,
     private val txtParser: TxtParser
 ) : ViewModel() {
 
-    private val bookId: String        get() = savedStateHandle[bookId]!!
+    private val bookId: String? get() = savedStateHandle.get<String>("bookId")
 
     private val _book = MutableStateFlow<Book?>(null)
     val book: StateFlow<Book?> = _book
@@ -41,7 +41,7 @@ class ReaderViewModel @Inject constructor(
             _book.value = loadedBook
             loadedBook?.let { book ->
                 when (book.format?.lowercase()) {
-                    txt -> parseTxt(book)
+                    "txt" -> parseTxt(book)
                     // TODO: epub pdf 后续支持
                     else -> _chapters.value = emptyList()
                 }

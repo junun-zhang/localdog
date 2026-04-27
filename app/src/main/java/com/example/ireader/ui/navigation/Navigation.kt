@@ -3,8 +3,10 @@ package com.example.ireader.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.ireader.ui.bookshelf.BookshelfScreen
 import com.example.ireader.ui.profile.ProfileScreen
 import com.example.ireader.ui.reader.ReaderScreen
@@ -30,8 +32,12 @@ fun AppNavigation(
         composable(Screen.Profile.route) {
             ProfileScreen(navController = navController)
         }
-        composable(Screen.Reader.route) {
-            ReaderScreen()
+        composable(
+            route = Screen.Reader.route,
+            arguments = listOf(navArgument("bookId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val bookId = backStackEntry.arguments?.getString("bookId") ?: ""
+            ReaderScreen(bookId = bookId)
         }
     }
 }
