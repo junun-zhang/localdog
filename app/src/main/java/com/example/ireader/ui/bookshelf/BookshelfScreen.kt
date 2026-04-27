@@ -1,54 +1,31 @@
 package com.example.ireader.ui.bookshelf
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.ExperimentalFoundationApi
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
-import com.example.ireader.R
 import com.example.ireader.data.local.entity.Book
 import com.example.ireader.ui.navigation.Screen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookshelfScreen(
     navController: NavController,
@@ -58,280 +35,171 @@ fun BookshelfScreen(
     val books by viewModel.books.collectAsStateWithLifecycle()
     val selectedBooks by viewModel.selectedBooks.collectAsStateWithLifecycle()
     val isInMultiSelectMode by viewModel.isInMultiSelectMode.collectAsStateWithLifecycle()
-    var showSingleDeleteDialog by remember { mutableStateOf<Book?>(null) }
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    var showSearch by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenMultipleDocuments(),
+        onResult = { uris: List<Uri>? ->
+            uris?.forEach { uri ->
+                onAddBookClick()
+            }
+        }
+    )
 
     Scaffold(
-        floatingActionButton = {
-            if (!isInMultiSelectMode) {
-                FloatingActionButton(
-                    onClick = onAddBookClick,
-                    containerColor = MaterialTheme.colorScheme.primary
-                ) {
-                    Icon(painterResource(id = R.drawable.ic_add_book), contentDescription = stringResource(R.string.add_book))
-                }
-            }
-        },
-        bottomBar = {
+        topBar = {
             if (isInMultiSelectMode) {
-                BottomAppBar(
-                    actions = {
-                        TextButton(
-                            onClick = { viewModel.clearSelection() },
-                            modifier = Modifier.padding(start = 8.dp)
-                        ) {
-                            Text("取消")
+                TopAppBar(
+                    title = { Text("${selectedBooks.size} 已选择") },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.clearSelection() }) {
+                            Text("<", style = MaterialTheme.typography.titleLarge)
                         }
-                        Text(
-                            text = "已选中 ${selectedBooks.size} 本",
-                            modifier = Modifier.padding(start = 16.dp)
-                        )
                     },
-                    floatingActionButton = {
-                        FloatingActionButton(
-                            onClick = { viewModel.deleteSelectedBooks() },
-                            containerColor = MaterialTheme.colorScheme.error
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "删除选中",
-                                tint = MaterialTheme.colorScheme.onError
+                    actions = {
+                        IconButton(onClick = { showDeleteConfirm = true }) {
+                            Icon(Icons.Default.Delete, contentDescription = "删除")
+                        }
+                    }
+                )
+            } else {
+                TopAppBar(
+                    title = { Text(if (showSearch) "" else "我的书架") },
+                    actions = {
+                        if (!showSearch) {
+                            IconButton(onClick = { showSearch = true }) {
+                                Icon(Icons.Default.Search, contentDescription = "搜索")
+                            }
+                            IconButton(onClick = { filePickerLauncher.launch(arrayOf("*/*")) }) {
+                                Icon(Icons.Default.Add, contentDescription = "导入书籍")
+                            }
+                        } else {
+                            TextField(
+                                value = searchQuery,
+                                onValueChange = { viewModel.updateSearchQuery(it) },
+                                placeholder = { Text("搜索书名...") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                singleLine = true,
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        showSearch = false
+                                        viewModel.updateSearchQuery("")
+                                    }) {
+                                        Text("X")
+                                    }
+                                }
                             )
                         }
                     }
                 )
             }
         }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            if (books.isEmpty()) {
-                EmptyView(Modifier.align(Alignment.Center))
-            } else {
-                BooksGrid(
-                    books = books,
-                    selectedIds = selectedBooks,
-                    isMultiSelectMode = isInMultiSelectMode,
-                    onBookClick = { book ->
-                        if (isInMultiSelectMode) {
-                            viewModel.toggleSelection(book)
-                        } else {
-                            // 跳转到阅读界面
-                            navController.navigate(Screen.Reader.createRoute(book.id))
-                        }
-                    },
-                    onBookLongClick = { book ->
-                        if (!isInMultiSelectMode) {
-                            // Long click when not in multi-select mode enters multi-select
-                            viewModel.toggleSelection(book)
-                        }
-                    }
-                )
+    ) { paddingValues ->
+        if (books.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("书架是空的", style = MaterialTheme.typography.titleMedium)
+                    Text("点击右上角 + 导入书籍", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 8.dp),
+                contentPadding = PaddingValues(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(books, key = { it.id }) { book ->
+                    BookCard(
+                        book = book,
+                        isSelected = selectedBooks.contains(book.id),
+                        onClick = { navController.navigate(Screen.Reader.createRoute(book.id)) },
+                        onLongClick = { viewModel.toggleSelection(book) }
+                    )
+                }
             }
         }
     }
 
-    showSingleDeleteDialog?.let { book ->
-        SingleDeleteDialog(
-            book = book,
-            onDismiss = { showSingleDeleteDialog = null },
-            onConfirm = {
-                viewModel.deleteBook(book)
-                showSingleDeleteDialog = null
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("确认删除") },
+            text = { Text("确定要删除选中的 ${selectedBooks.size} 本书吗？这将从书架和设备中同时删除。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteSelectedBooks()
+                    showDeleteConfirm = false
+                }) {
+                    Text("删除", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("取消")
+                }
             }
         )
     }
 }
 
-@Composable
-private fun EmptyView(modifier: Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = stringResource(id = R.string.empty_bookshelf))
-    }
-}
-
-@Composable
-private fun BooksGrid(
-    books: List<Book>,
-    selectedIds: Set<String>,
-    isMultiSelectMode: Boolean,
-    onBookClick: (Book) -> Unit,
-    onBookLongClick: (Book) -> Unit
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        contentPadding = PaddingValues(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(books) { book ->
-            BookCard(
-                book = book,
-                isSelected = selectedIds.contains(book.id),
-                onClick = { onBookClick(book) },
-                onLongClick = { onBookLongClick(book) }
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BookCard(
+fun BookCard(
     book: Book,
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
-    val containerColor = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
-    } else {
-        CardDefaults.cardColors().containerColor
-    }
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .padding(12.dp)
         ) {
-            // 封面区域 - 固定高度
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(140.dp)
-                    .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)),
+                    .height(120.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (!book.coverPath.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = book.coverPath,
-                        contentDescription = book.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    // 根据格式选择不同的默认封面图标
-                    val defaultIcon = when (book.format?.lowercase()) {
-                        "txt" -> R.drawable.ic_txt_cover
-                        "pdf" -> R.drawable.ic_pdf_cover
-                        "epub" -> R.drawable.ic_epub_cover
-                        else -> R.drawable.ic_default_book_cover
-                    }
-                    // 根据格式选择不同的容器颜色以便区分
-                    val coverContainerColor = when (book.format?.lowercase()) {
-                        "txt" -> MaterialTheme.colorScheme.primaryContainer
-                        "pdf" -> MaterialTheme.colorScheme.secondaryContainer
-                        "epub" -> MaterialTheme.colorScheme.tertiaryContainer
-                        else -> MaterialTheme.colorScheme.primaryContainer
-                    }
-                    val contentColor = when (book.format?.lowercase()) {
-                        "txt" -> MaterialTheme.colorScheme.onPrimaryContainer
-                        "pdf" -> MaterialTheme.colorScheme.onSecondaryContainer
-                        "epub" -> MaterialTheme.colorScheme.onTertiaryContainer
-                        else -> MaterialTheme.colorScheme.onPrimaryContainer
-                    }
-                    // 默认封面
-                    Surface(
-                        color = coverContainerColor,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            painter = painterResource(id = defaultIcon),
-                            contentDescription = book.title,
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .fillMaxSize(0.6f),
-                            tint = contentColor
-                        )
-                    }
-                }
-
-                // 选中标记 - 半透明覆盖层
-                if (isSelected) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            // Checkmark could be added here
-                        }
-                    }
-                }
-            }
-
-            // 书名作者区域 - 占用固定剩余高度
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(8.dp)
-            ) {
                 Text(
-                    text = book.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    text = book.format?.uppercase() ?: "TXT",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
                 )
-                if (!book.author.isNullOrEmpty()) {
-                    Text(
-                        text = book.author,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                // 进度条
-                if (book.progress > 0f) {
-                    androidx.compose.material3.LinearProgressIndicator(
-                        progress = { book.progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp)
-                            .height(3.dp)
-                            .clip(RoundedCornerShape(1.5.dp)),
-                    )
-                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = book.title ?: "未知书名",
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (book.progress > 0) {
+                Text(
+                    text = "阅读进度 ${(book.progress * 100).toInt()}%",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
-}
-
-@Composable
-private fun SingleDeleteDialog(
-    book: Book,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.book_delete)) },
-        text = { Text(stringResource(R.string.book_delete_confirm)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
-    )
 }

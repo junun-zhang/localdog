@@ -16,6 +16,10 @@ class BookRepository @Inject constructor(
     private val annotationDao: AnnotationDao
 ) {
 
+    fun searchBooks(query: String): Flow<List<Book>> {
+        return bookDao.searchBooks(query)
+    }
+
     fun getAllBooks(): Flow<List<Book>> {
         return bookDao.getAllBooks()
     }

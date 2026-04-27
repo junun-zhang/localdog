@@ -29,4 +29,7 @@ interface BookDao {
 
     @Query("SELECT COUNT(*) FROM books")
     suspend fun getBookCount(): Int
+
+    @Query("SELECT * FROM books WHERE title LIKE '%' || :query || '%' ORDER BY lastReadTime DESC")
+    fun searchBooks(query: String): kotlinx.coroutines.flow.Flow<List<Book>>
 }
