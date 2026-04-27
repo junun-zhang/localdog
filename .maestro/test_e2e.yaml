@@ -1,0 +1,46 @@
+appId: com.example.ireader
+tags:
+  - ireader
+  - core
+---
+# 步骤1: 启动并验证书架页
+- launchApp
+- swipe:
+    start: 50%, 95%
+    end: 50%, 5%
+    duration: 200
+- waitForAnimationToEnd:
+    timeout: 10000
+- assertVisible: "我的书架"
+- assertVisible: "书架是空的"
+- assertVisible: "点击右上角 + 导入书籍"
+
+# 步骤2: 验证搜索功能
+- tapOn: "搜索"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "搜索书名..."
+- tapOn: "X"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "我的书架"
+
+# 步骤3: 验证底部导航栏
+- tapOn: "书库"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "书店 - 待开发"
+- tapOn: "书架"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "我的书架"
+- tapOn: "我的"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "我的"
+
+# 步骤4: 返回书架
+- tapOn: "书架"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "我的书架"
