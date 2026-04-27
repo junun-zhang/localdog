@@ -3,9 +3,11 @@ package com.example.ireader.data.repository
 import com.example.ireader.data.local.dao.AnnotationDao
 import com.example.ireader.data.local.dao.BookDao
 import com.example.ireader.data.local.dao.BookmarkDao
+import com.example.ireader.data.local.dao.UserSettingsDao
 import com.example.ireader.data.local.entity.Book
 import com.example.ireader.data.local.entity.Bookmark
 import com.example.ireader.data.local.entity.Annotation
+import com.example.ireader.data.local.entity.UserSettings
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 import javax.inject.Inject
@@ -13,7 +15,8 @@ import javax.inject.Inject
 class BookRepository @Inject constructor(
     private val bookDao: BookDao,
     private val bookmarkDao: BookmarkDao,
-    private val annotationDao: AnnotationDao
+    private val annotationDao: AnnotationDao,
+    private val userSettingsDao: UserSettingsDao
 ) {
 
     fun searchBooks(query: String): Flow<List<Book>> {
@@ -150,5 +153,15 @@ class BookRepository @Inject constructor(
 
     suspend fun deleteAnnotation(annotation: Annotation) {
         annotationDao.deleteAnnotation(annotation)
+    }
+
+    // === User Settings operations ===
+
+    suspend fun getSetting(key: String): String? {
+        return userSettingsDao.getSettingSync(key)?.value
+    }
+
+    suspend fun saveSetting(key: String, value: String) {
+        userSettingsDao.insertSetting(UserSettings(key = key, value = value))
     }
 }

@@ -32,4 +32,7 @@ object DatabaseModule {
 
     @Provides
     fun provideAnnotationDao(db: AppDatabase) = db.annotationDao()
+
+    @Provides
+    fun provideUserSettingsDao(db: AppDatabase) = db.userSettingsDao()
 }

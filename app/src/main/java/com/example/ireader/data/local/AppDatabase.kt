@@ -3,6 +3,7 @@ package com.example.ireader.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.example.ireader.data.local.dao.AnnotationDao
+import com.example.ireader.data.local.dao.UserSettingsDao
 import com.example.ireader.data.local.dao.BookDao
 import com.example.ireader.data.local.dao.BookmarkDao
 import com.example.ireader.data.local.entity.Annotation
@@ -26,4 +27,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun bookDao(): BookDao
     abstract fun bookmarkDao(): BookmarkDao
     abstract fun annotationDao(): AnnotationDao
+    abstract fun userSettingsDao(): UserSettingsDao
 }

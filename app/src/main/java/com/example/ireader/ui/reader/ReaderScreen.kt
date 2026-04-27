@@ -42,8 +42,9 @@ fun ReaderScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var showBookmarkDialog by remember { mutableStateOf(false) }
-    var fontSize by remember { mutableStateOf(16f) }
+    val fontSize by viewModel.fontSize.collectAsStateWithLifecycle()
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var dialogFontSize by remember { mutableStateOf(viewModel.fontSize.value) }
 
     // Check if current chapter is bookmarked
     val isBookmarked = viewModel.isChapterBookmarked(currentChapter)
@@ -164,20 +165,20 @@ fun ReaderScreen(
                 Column {
                     Text("字体大小: ${fontSize.toInt()}sp")
                     Slider(
-                        value = fontSize,
-                        onValueChange = { fontSize = it },
+                        value = dialogFontSize,
+                        onValueChange = { dialogFontSize = it },
                         valueRange = 12f..28f,
                         steps = 15
                     )
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showSettingsDialog = false }) {
+                TextButton(onClick = { viewModel.setFontSize(dialogFontSize); showSettingsDialog = false }) {
                     Text("确定")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showSettingsDialog = false }) {
+                TextButton(onClick = { viewModel.setFontSize(dialogFontSize); showSettingsDialog = false }) {
                     Text("取消")
                 }
             }

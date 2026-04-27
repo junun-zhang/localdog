@@ -38,8 +38,33 @@ class ReaderViewModel @Inject constructor(
     private val _bookmarks = MutableStateFlow<List<Bookmark>>(emptyList())
     val bookmarks: StateFlow<List<Bookmark>> = _bookmarks
 
+    companion object {
+        private const val KEY_FONT_SIZE = "reader_font_size"
+        private const val DEFAULT_FONT_SIZE = 16f
+        private const val KEY_LINE_SPACING = "reader_line_spacing"
+        private const val KEY_THEME = "reader_theme"
+    }
+
+    private val _fontSize = MutableStateFlow(DEFAULT_FONT_SIZE)
+    val fontSize: StateFlow<Float> = _fontSize
+
     init {
         loadBook()
+        loadSettings()
+    }
+
+    private fun loadSettings() {
+        viewModelScope.launch {
+            val size = bookRepository.getSetting(KEY_FONT_SIZE)?.toFloatOrNull() ?: DEFAULT_FONT_SIZE
+            _fontSize.value = size
+        }
+    }
+
+    fun setFontSize(size: Float) {
+        _fontSize.value = size
+        viewModelScope.launch {
+            bookRepository.saveSetting(KEY_FONT_SIZE, size.toString())
+        }
     }
 
     private fun loadBook() {
