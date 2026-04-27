@@ -59,32 +59,30 @@ class TxtParser @Inject constructor() {
     }
 
     private fun splitIntoChapters(content: String): List<String> {
-        // 先按章节标题分割
-        val chapterPattern = Regex("(第[零一二三四五六七八九十百千0-9]+[章回卷篇].*?)\\n", RegexOption.MULTILINE)
+        // 先按章节标题分割（锚定到行首，避免匹配正文中的章节关键词）
+        val chapterPattern = Regex("^\\s*(第[零一二三四五六七八九十百千0-9]+[章回卷篇].*)$", RegexOption.MULTILINE)
         val chapters = mutableListOf<String>()
 
         // 如果找到章节标题，用它分割
         if (chapterPattern.containsMatchIn(content)) {
-            var lastIndex = 0
-            chapterPattern.findAll(content).forEach { match ->
-                val start = match.range.first
-                if (start > lastIndex) {
-                    val preface = content.substring(lastIndex, start).trim()
-                    if (preface.isNotEmpty()) {
-                        chapters.add(preface)
-                    }
+            val matches = chapterPattern.findAll(content).toList()
+            val matchStarts = matches.map { it.range.first }
+
+            for (i in matchStarts.indices) {
+                val chapterStart = matchStarts[i]
+                val chapterEnd = if (i + 1 < matchStarts.size) {
+                    matchStarts[i + 1]
+                } else {
+                    content.length
                 }
-                val chapterTitle = match.groupValues[1].trim()
-                lastIndex = match.range.last + 1
-            }
-            // 处理最后一部分
-            val last = content.substring(lastIndex).trim()
-            if (last.isNotEmpty()) {
-                chapters.add(last)
+                val chapterContent = content.substring(chapterStart, chapterEnd).trim()
+                if (chapterContent.isNotEmpty()) {
+                    chapters.add(chapterContent)
+                }
             }
         } else {
             // 没有明显章节标题，按大约5000字符分页
-            return splitByLength(content, 5000)
+            return splitByLength(content, 1000)
         }
 
         return if (chapters.isEmpty()) {
@@ -100,11 +98,25 @@ class TxtParser @Inject constructor() {
         val current = StringBuilder()
 
         lines.forEach { line ->
-            if (current.length + line.length > maxLength && current.isNotEmpty()) {
+            if (line.length > maxLength) {
+                // Long line: flush current buffer first, then split the line
+                if (current.isNotEmpty()) {
+                    result.add(current.toString().trim())
+                    current.clear()
+                }
+                var start = 0
+                while (start < line.length) {
+                    val end = minOf(start + maxLength, line.length)
+                    result.add(line.substring(start, end).trim())
+                    start = end
+                }
+            } else if (current.length + line.length > maxLength && current.isNotEmpty()) {
                 result.add(current.toString().trim())
                 current.clear()
+                current.append(line).append('\n')
+            } else {
+                current.append(line).append('\n')
             }
-            current.append(line).append('\n')
         }
 
         if (current.isNotEmpty()) {
