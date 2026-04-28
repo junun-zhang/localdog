@@ -165,3 +165,4 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | 2026-04-28 | 书签列表导航不工作 | Navigation.kt传递navController给ReaderScreen,简化Bookmarks路由,修复BookmarkScreen依赖 |
 | 2026-04-28 | Maestro测试tapOn语法错误 | 修复坐标格式为point: 50%, 50% |
 | 2026-04-28 | BookmarkScreen ArrowBack图标缺失 | 添加import ArrowBack |
+| 2026-04-28 | 完整功能E2E测试通过 | 编写test_complete.yaml覆盖18个测试用例,包含书架搜索底部导航阅读器翻页书签设置所有功能

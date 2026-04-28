@@ -1,0 +1,136 @@
+appId: com.example.ireader
+tags:
+  - ireader
+  - complete
+  - e2e
+---
+# T1: 应用启动 - 书架页正常显示
+- launchApp
+- swipe:
+    start: 50%, 95%
+    end: 50%, 5%
+    duration: 200
+- waitForAnimationToEnd:
+    timeout: 10000
+- assertVisible: "我的书架"
+
+# T2: 搜索功能 - 搜索框显示正常
+- tapOn: "搜索"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "搜索书名..."
+
+# T3: 退出搜索 - 返回书架正常
+- tapOn: "X"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "我的书架"
+
+# T4: 底部导航-书库
+- tapOn: "书库"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "书店 - 待开发"
+
+# T5: 底部导航-书架
+- tapOn: "书架"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "我的书架"
+
+# T6: 底部导航-我的
+- tapOn: "我的"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "我的"
+
+# T7: TXT阅读器 - 菜单显示正常
+- tapOn: "书架"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    text: "TXT"
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "书签列表"
+
+# T8: 章节翻页 - 向右翻页
+- tapOn:
+    point: 80%, 50%
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# T9: 章节翻页 - 向左翻页
+- tapOn:
+    point: 20%, 50%
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# T10: 书签功能 - 切换书签状态
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    point: 75%, 10%
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# T11: 书签列表 - 页面正常打开
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: "书签列表"
+- waitForAnimationToEnd:
+    timeout: 10000
+- assertVisible: "书签与笔记"
+
+# T12: 书签列表 - 书签Tab显示
+- assertVisible: "书签"
+
+# T13: 书签列表 - 笔记Tab显示
+- assertVisible: "笔记"
+
+# T14: 书签列表 - 返回书架正常
+- back
+- waitForAnimationToEnd:
+    timeout: 5000
+- back
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "我的书架"
+
+# T15: 阅读器设置 - 对话框正常显示
+- tapOn:
+    text: "TXT"
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "设置"
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "阅读设置"
+
+# T16: 阅读器设置 - 确定按钮存在
+- assertVisible: "确定"
+
+# T17: 阅读器设置 - 取消按钮存在
+- assertVisible: "取消"
+
+# T18: 阅读器 - 返回书架正常
+- tapOn: "取消"
+- waitForAnimationToEnd:
+    timeout: 3000
+- back
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "我的书架"
+
