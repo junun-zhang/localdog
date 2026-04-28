@@ -87,6 +87,7 @@ fun ReaderScreen(
         isEpub && epubInfo != null -> {
             EpubReaderScreen(
                 filePath = book?.filePath,
+                bookId = bookId,
                 title = book?.title ?: "EPUB阅读",
                 onNavigateBack = { navController?.popBackStack() }
             )
