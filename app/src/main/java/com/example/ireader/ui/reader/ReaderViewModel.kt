@@ -3,6 +3,7 @@ package com.example.ireader.ui.reader
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ireader.data.local.entity.Annotation
 import com.example.ireader.data.local.entity.Book
 import com.example.ireader.data.local.entity.Bookmark
 import com.example.ireader.data.repository.BookRepository
@@ -39,6 +40,9 @@ class ReaderViewModel @Inject constructor(
 
     private val _bookmarks = MutableStateFlow<List<Bookmark>>(emptyList())
     val bookmarks: StateFlow<List<Bookmark>> = _bookmarks
+
+    private val _annotations = MutableStateFlow<List<Annotation>>(emptyList())
+    val annotations: StateFlow<List<Annotation>> = _annotations
 
     private val _isPdf = MutableStateFlow(false)
     val isPdf: StateFlow<Boolean> = _isPdf
@@ -121,6 +125,9 @@ class ReaderViewModel @Inject constructor(
                 bookRepository.getBookmarksForBook(id).collect { bmList ->
                     _bookmarks.value = bmList
                 }
+                bookRepository.getAnnotationsForBook(id).collect { annList ->
+                    _annotations.value = annList
+                }
             }
         }
     }
@@ -166,6 +173,18 @@ class ReaderViewModel @Inject constructor(
         viewModelScope.launch {
             val bookmark = _bookmarks.value.find { it.chapterIndex == chapterIndex }
             bookmark?.let { bookRepository.deleteBookmark(it) }
+        }
+    }
+
+    fun addAnnotation(bookId: String, chapterIndex: Int, text: String, note: String?, color: Int) {
+        viewModelScope.launch {
+            bookRepository.addAnnotation(
+                bookId = bookId,
+                chapterIndex = chapterIndex,
+                highlightedText = text,
+                note = note,
+                color = color
+            )
         }
     }
 

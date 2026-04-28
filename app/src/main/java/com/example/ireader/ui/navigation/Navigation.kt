@@ -48,7 +48,11 @@ fun AppNavigation(
             val bookId = backStackEntry.arguments?.getString("bookId") ?: ""
             BookmarkScreen(
                 bookId = bookId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onAnnotationClick = { _, _ ->
+                    // Pop back to reader - the reader will still have its state
+                    navController.popBackStack()
+                }
             )
         }
     }

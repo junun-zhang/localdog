@@ -40,3 +40,4 @@ build/
 .externalNativeBuild/                                                                                                            
 captured/ 
 app/build/
+.aider*

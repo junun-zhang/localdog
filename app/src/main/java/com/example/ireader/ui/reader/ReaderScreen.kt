@@ -12,12 +12,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -51,6 +53,14 @@ val readerThemes = listOf(
     ReaderTheme("sepia", "护眼", Color(0xFFF5F0E8), Color(0xFF5C4B37), Color(0xFF8D6E63)),
     ReaderTheme("dark", "夜间", Color(0xFF1A1A2E), Color(0xFFCCCCCC), Color(0xFF42A5F5)),
     ReaderTheme("green", "绿色", Color(0xFFE8F5E9), Color(0xFF33691E), Color(0xFF66BB6A))
+)
+
+// Highlight colors for annotations
+val highlightColors = listOf(
+    Color(0xFFFFF176) to "黄色",
+    Color(0xFF81C784) to "绿色",
+    Color(0xFF64B5F6) to "蓝色",
+    Color(0xFFFF8A65) to "橙色"
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,6 +124,13 @@ private fun TxtReaderContent(
     var dialogLineSpacing by remember { mutableStateOf(viewModel.lineSpacing.value) }
     var dialogTheme by remember { mutableStateOf(viewModel.theme.value) }
 
+    // Annotation dialog state
+    var showAnnotationDialog by remember { mutableStateOf(false) }
+    var annotationText by remember { mutableStateOf("") }
+    var annotationNote by remember { mutableStateOf("") }
+    var annotationColor by remember { mutableIntStateOf(0) }
+    val context = LocalContext.current
+
     val currentTheme = readerThemes.find { it.name == theme } ?: readerThemes[0]
 
     val isBookmarked = viewModel.isChapterBookmarked(currentChapter)
@@ -127,7 +144,7 @@ private fun TxtReaderContent(
                     navigationIcon = {
                         navController?.let { nc ->
                             IconButton(onClick = { nc.popBackStack() }) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = currentTheme.textColor)
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = currentTheme.textColor)
                             }
                         }
                     },
@@ -143,6 +160,18 @@ private fun TxtReaderContent(
                             Icon(
                                 imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                 contentDescription = if (isBookmarked) "移除书签" else "添加书签",
+                                tint = currentTheme.textColor
+                            )
+                        }
+                        IconButton(onClick = {
+                            annotationText = ""
+                            annotationNote = ""
+                            annotationColor = 0
+                            showAnnotationDialog = true
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "添加笔记",
                                 tint = currentTheme.textColor
                             )
                         }
@@ -201,7 +230,7 @@ private fun TxtReaderContent(
                             .padding(16.dp),
                         state = listState
                     ) {
-                        itemsIndexed(listOf(chapters[currentChapter])) { index, content ->
+                        itemsIndexed(listOf(chapters[currentChapter])) { _, content ->
                             ChapterContent(
                                 content = content,
                                 fontSize = fontSize,
@@ -234,6 +263,82 @@ private fun TxtReaderContent(
         LaunchedEffect(Unit) {
             showBookmarkDialog = false
         }
+    }
+
+    // Annotation dialog
+    if (showAnnotationDialog) {
+        AlertDialog(
+            onDismissRequest = { showAnnotationDialog = false },
+            title = { Text("添加笔记") },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    OutlinedTextField(
+                        value = annotationText,
+                        onValueChange = { annotationText = it },
+                        label = { Text("高亮文字") },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = annotationNote,
+                        onValueChange = { annotationNote = it },
+                        label = { Text("批注 (可选)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("颜色", style = MaterialTheme.typography.titleSmall)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        itemsIndexed(highlightColors) { index, (color, label) ->
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.clickable { annotationColor = index }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(color)
+                                        .border(
+                                            width = if (annotationColor == index) 3.dp else 0.dp,
+                                            color = if (annotationColor == index) Color.Black else Color.Transparent,
+                                            shape = CircleShape
+                                        )
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(label, style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (annotationText.isNotBlank()) {
+                        val colorValue = highlightColors[annotationColor].first
+                        val colorInt = colorValue.value.toLong().toInt()
+                        viewModel.addAnnotation(
+                            bookId = bookId,
+                            chapterIndex = currentChapter,
+                            text = annotationText,
+                            note = annotationNote.ifBlank { null },
+                            color = colorInt
+                        )
+                        android.widget.Toast.makeText(context, "笔记已保存", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                    showAnnotationDialog = false
+                }) {
+                    Text("保存")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAnnotationDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
     }
 
     if (showSettingsDialog) {
