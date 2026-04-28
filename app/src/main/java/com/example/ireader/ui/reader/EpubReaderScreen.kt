@@ -7,16 +7,13 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.ireader.parser.EpubChapter
 import com.example.ireader.parser.EpubParser
 import timber.log.Timber
 import java.io.File
@@ -28,12 +25,11 @@ fun EpubReaderScreen(
     title: String,
     onNavigateBack: () -> Unit
 ) {
-    val context = LocalContext.current
-    var chapters by remember { mutableStateOf<List<EpubChapter>>(emptyList()) }
-    var currentChapterIndex by remember { mutableStateOf(0) }
+    var allHtmlContent by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var epubTitle by remember { mutableStateOf(title) }
+    var chapterCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(filePath) {
         if (filePath == null) {
@@ -51,20 +47,29 @@ fun EpubReaderScreen(
             val parser = EpubParser()
             val epubInfo = parser.parse(file)
             if (epubInfo != null) {
-                chapters = epubInfo.chapters
                 epubTitle = epubInfo.title
+                chapterCount = epubInfo.chapters.size
+                // 将所有章节拼接为一个完整的HTML，支持连续下滑阅读
+                val chaptersHtml = epubInfo.chapters.joinToString(separator = "\n\n") { chapter ->
+                    """
+                    <div class="chapter-divider" id="chapter-${chapter.title.hashCode()}">
+                        <h2 style="text-align: center; margin: 2em 0 1em 0; color: #666; border-bottom: 1px solid #eee; padding-bottom: 0.5em;">
+                            ${chapter.title}
+                        </h2>
+                    </div>
+                    ${chapter.content}
+                    """.trimIndent()
+                }
+                allHtmlContent = chaptersHtml
             } else {
                 errorMessage = "EPUB解析失败"
             }
         } catch (e: Exception) {
             errorMessage = "解析错误: ${e.message}"
+            Timber.e(e, "EPUB解析失败")
         }
         isLoading = false
     }
-
-    val currentChapter = if (chapters.isNotEmpty() && currentChapterIndex < chapters.size) {
-        chapters[currentChapterIndex]
-    } else null
 
     Scaffold(
         topBar = {
@@ -72,19 +77,7 @@ fun EpubReaderScreen(
                 title = { Text(epubTitle) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
-                    }
-                },
-                actions = {
-                    if (currentChapterIndex > 0) {
-                        IconButton(onClick = { currentChapterIndex-- }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "上一章")
-                        }
-                    }
-                    if (currentChapterIndex < chapters.size - 1) {
-                        IconButton(onClick = { currentChapterIndex++ }) {
-                            Icon(Icons.Default.ArrowForward, contentDescription = "下一章")
-                        }
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 }
             )
@@ -109,16 +102,15 @@ fun EpubReaderScreen(
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center)
                 )
-            } else if (currentChapter != null) {
+            } else if (allHtmlContent != null) {
                 EpubWebView(
-                    chapter = currentChapter,
+                    htmlContent = allHtmlContent!!,
                     modifier = Modifier.fillMaxSize()
                 )
-            }
-
-            if (!isLoading && errorMessage == null && chapters.isNotEmpty()) {
+                
+                // 底部章节信息
                 Text(
-                    text = "${currentChapterIndex + 1} / ${chapters.size}",
+                    text = "共 $chapterCount 章，下滑阅读全部内容",
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(16.dp),
@@ -133,11 +125,9 @@ fun EpubReaderScreen(
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun EpubWebView(
-    chapter: EpubChapter,
+    htmlContent: String,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-
     AndroidView(
         factory = { ctx ->
             WebView(ctx).apply {
@@ -152,14 +142,19 @@ fun EpubWebView(
                 settings.setSupportZoom(true)
                 settings.builtInZoomControls = false
                 settings.displayZoomControls = false
+                // 启用垂直滚动
+                isVerticalScrollBarEnabled = true
+                isHorizontalScrollBarEnabled = false
+                // 确保内容宽度适配
+                settings.layoutAlgorithm = android.webkit.WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING
             }
         },
         modifier = modifier,
         update = { webView ->
-            val htmlContent = wrapHtmlContent(chapter.content)
+            val fullHtml = wrapHtmlContent(htmlContent)
             webView.loadDataWithBaseURL(
                 "file:///android_asset/",
-                htmlContent,
+                fullHtml,
                 "text/html",
                 "UTF-8",
                 null
@@ -168,7 +163,7 @@ fun EpubWebView(
     )
 }
 
-private fun wrapHtmlContent(content: String): String {
+private fun wrapHtmlContent(bodyContent: String): String {
     return """
         <!DOCTYPE html>
         <html>
@@ -178,7 +173,7 @@ private fun wrapHtmlContent(content: String): String {
             <style>
                 body {
                     font-family: sans-serif;
-                    line-height: 1.6;
+                    line-height: 1.8;
                     padding: 16px;
                     margin: 0;
                     font-size: 16px;
@@ -194,16 +189,26 @@ private fun wrapHtmlContent(content: String): String {
                     margin-bottom: 0.5em;
                 }
                 p {
-                    margin-bottom: 0.5em;
+                    margin-bottom: 0.8em;
                     text-indent: 2em;
+                    line-height: 1.8;
                 }
                 a {
                     color: #1976D2;
                 }
+                .chapter-divider {
+                    margin: 2em 0;
+                    page-break-before: always;
+                }
+                /* 确保章节之间有足够间距 */
+                h2 {
+                    margin-top: 3em;
+                    margin-bottom: 1em;
+                }
             </style>
         </head>
         <body>
-            $content
+            $bodyContent
         </body>
         </html>
     """.trimIndent()
