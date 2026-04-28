@@ -14,6 +14,12 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.SizeTransform
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
@@ -55,7 +61,6 @@ val readerThemes = listOf(
     ReaderTheme("green", "绿色", Color(0xFFE8F5E9), Color(0xFF33691E), Color(0xFF66BB6A))
 )
 
-// Highlight colors for annotations
 val highlightColors = listOf(
     Color(0xFFFFF176) to "黄色",
     Color(0xFF81C784) to "绿色",
@@ -75,7 +80,6 @@ fun ReaderScreen(
     val isEpub by viewModel.isEpub.collectAsStateWithLifecycle()
     val epubInfo by viewModel.epubInfo.collectAsStateWithLifecycle()
 
-    // Route to different readers based on format
     when {
         isPdf -> {
             PdfReaderScreen(
@@ -114,6 +118,7 @@ private fun TxtReaderContent(
     val chapters by viewModel.chapters.collectAsStateWithLifecycle()
     val currentChapter by viewModel.currentChapter.collectAsStateWithLifecycle()
     val showMenu by viewModel.showMenu.collectAsStateWithLifecycle()
+    val flipDirection by viewModel.flipDirection.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var showBookmarkDialog by remember { mutableStateOf(false) }
@@ -125,7 +130,17 @@ private fun TxtReaderContent(
     var dialogLineSpacing by remember { mutableStateOf(viewModel.lineSpacing.value) }
     var dialogTheme by remember { mutableStateOf(viewModel.theme.value) }
 
-    // Annotation dialog state
+    var animatedChapterIndex by remember { mutableStateOf(0) }
+    var animateDirection by remember { mutableStateOf(0) }
+
+    LaunchedEffect(currentChapter, flipDirection) {
+        if (flipDirection != 0) {
+            animateDirection = flipDirection
+            animatedChapterIndex = currentChapter
+            viewModel.resetFlipDirection()
+        }
+    }
+
     var showAnnotationDialog by remember { mutableStateOf(false) }
     var annotationText by remember { mutableStateOf("") }
     var annotationNote by remember { mutableStateOf("") }
@@ -133,7 +148,6 @@ private fun TxtReaderContent(
     val context = LocalContext.current
 
     val currentTheme = readerThemes.find { it.name == theme } ?: readerThemes[0]
-
     val isBookmarked = viewModel.isChapterBookmarked(currentChapter)
 
     Scaffold(
@@ -223,31 +237,49 @@ private fun TxtReaderContent(
                 }
         ) {
             if (chapters.isNotEmpty() && currentChapter < chapters.size) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .padding(16.dp),
-                        state = listState
-                    ) {
-                        itemsIndexed(listOf(chapters[currentChapter])) { _, content ->
-                            ChapterContent(
-                                content = content,
-                                fontSize = fontSize,
-                                lineSpacing = lineSpacing,
-                                textColor = currentTheme.textColor
-                            )
+                AnimatedContent(
+                    targetState = animatedChapterIndex,
+                    transitionSpec = {
+                        slideInHorizontally(
+                            initialOffsetX = { fullWidth ->
+                                if (animateDirection > 0) fullWidth else -fullWidth
+                            },
+                            animationSpec = tween(durationMillis = 300)
+                        ) togetherWith slideOutHorizontally(
+                            targetOffsetX = { fullWidth ->
+                                if (animateDirection > 0) -fullWidth else fullWidth
+                            },
+                            animationSpec = tween(durationMillis = 300)
+                        ) using SizeTransform(clip = false)
+                    },
+                    label = "pageFlip"
+                ) { chapterIndex ->
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .padding(16.dp),
+                            state = listState
+                        ) {
+                            itemsIndexed(listOf(chapters[chapterIndex])) { _, content ->
+                                ChapterContent(
+                                    content = content,
+                                    fontSize = fontSize,
+                                    lineSpacing = lineSpacing,
+                                    textColor = currentTheme.textColor
+                                )
+                            }
                         }
+                        Text(
+                            text = "${chapterIndex + 1}/${chapters.size}",
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .padding(8.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = currentTheme.textColor
+                        )
                     }
-                    Text(
-                        text = "${currentChapter + 1}/${chapters.size}",
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(8.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = currentTheme.textColor
-                    )
                 }
             } else {
                 Box(
@@ -266,7 +298,6 @@ private fun TxtReaderContent(
         }
     }
 
-    // Annotation dialog
     if (showAnnotationDialog) {
         AlertDialog(
             onDismissRequest = { showAnnotationDialog = false },
@@ -355,9 +386,7 @@ private fun TxtReaderContent(
                         valueRange = 12f..28f,
                         steps = 15
                     )
-
                     Spacer(modifier = Modifier.height(16.dp))
-
                     Text("行距: ${"%.1f".format(dialogLineSpacing)}x", style = MaterialTheme.typography.titleSmall)
                     Slider(
                         value = dialogLineSpacing,
@@ -365,9 +394,7 @@ private fun TxtReaderContent(
                         valueRange = 1.0f..2.5f,
                         steps = 14
                     )
-
                     Spacer(modifier = Modifier.height(16.dp))
-
                     Text("主题", style = MaterialTheme.typography.titleSmall)
                     Spacer(modifier = Modifier.height(8.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
