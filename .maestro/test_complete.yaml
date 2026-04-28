@@ -134,3 +134,83 @@ tags:
     timeout: 5000
 - assertVisible: "我的书架"
 
+# ========================================
+# EPUB Reader Tests
+# ========================================
+
+# T19: EPUB阅读器 - 打开EPUB书籍
+- tapOn:
+    text: "EPUB"
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# T20: EPUB阅读器 - 点击屏幕显示控制栏
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# T21: EPUB阅读器 - 设置按钮存在
+- assertVisible: "设置"
+
+# T22: EPUB阅读器 - EPUB设置对话框正常打开
+- tapOn: "设置"
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "阅读设置"
+
+# T23: EPUB阅读器 - 设置对话框 - 确定按钮存在
+- assertVisible: "确定"
+
+# T24: EPUB阅读器 - 设置对话框 - 取消按钮存在
+- assertVisible: "取消"
+
+# T25: EPUB阅读器 - 关闭设置对话框
+- tapOn: "取消"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# T26: EPUB阅读器 - 目录按钮存在
+- assertVisible: "目录"
+
+# T27: EPUB阅读器 - 目录面板正常打开
+- tapOn: "目录"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# T28: EPUB阅读器 - 关闭目录面板
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# T29: EPUB阅读器 - 返回书架正常
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 2000
+- back
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "我的书架"
+
+# ========================================
+# PDF Reader Tests
+# ========================================
+
+# T30: PDF阅读器 - 打开PDF书籍
+- tapOn:
+    text: "PDF"
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# T31: PDF阅读器 - PDF阅读界面正常加载
+- assertVisible: "PDF阅读"
+
+# T32: PDF阅读器 - 返回按钮存在
+- assertVisible: "返回"
+
+# T33: PDF阅读器 - 返回书架正常
+- back
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "我的书架"
