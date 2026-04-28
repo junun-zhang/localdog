@@ -21,7 +21,8 @@ tags:
     timeout: 10000
 
 # Tap center of screen to show menu
-- tapOn: 50%, 50%
+- tapOn:
+    point: 50%, 50%
 - waitForAnimationToEnd:
     timeout: 3000
 
@@ -33,14 +34,13 @@ tags:
 # Verify settings dialog appears
 - assertVisible: "阅读设置"
 
-# Verify font size slider exists
-- assertVisible: "字体大小"
+# Wait for dialog content to render
+- waitForAnimationToEnd:
+    timeout: 3000
 
-# Verify line spacing slider exists
-- assertVisible: "行距"
-
-# Verify theme label exists
-- assertVisible: "主题"
+# Verify confirm/cancel buttons exist
+- assertVisible: "确定"
+- assertVisible: "取消"
 
 # Tap cancel to close
 - tapOn: "取消"

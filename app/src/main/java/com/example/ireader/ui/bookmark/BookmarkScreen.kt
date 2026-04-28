@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Note
@@ -23,13 +24,11 @@ import java.util.*
 @Composable
 fun BookmarkScreen(
     bookId: String,
-    chapterNames: List<String>,
-    onBookmarkClick: (chapterIndex: Int) -> Unit,
     onNavigateBack: () -> Unit
 ) {
     val viewModel: BookmarkViewModel = hiltViewModel()
-    val bookmarks by viewModel.getBookmarks(bookId).collectAsState()
-    val annotations by viewModel.getAnnotations(bookId).collectAsState()
+    val bookmarks by viewModel.getBookmarks(bookId).collectAsState(initial = emptyList())
+    val annotations by viewModel.getAnnotations(bookId).collectAsState(initial = emptyList())
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("书签", "笔记")
 
@@ -39,7 +38,7 @@ fun BookmarkScreen(
                 title = { Text("书签与笔记") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Text("<", style = MaterialTheme.typography.titleLarge)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
                     }
                 }
             )
@@ -69,17 +68,13 @@ fun BookmarkScreen(
             when (selectedTab) {
                 0 -> BookmarkList(
                     bookmarks = bookmarks,
-                    chapterNames = chapterNames,
-                    onBookmarkClick = { bookmark ->
-                        onBookmarkClick(bookmark.chapterIndex)
-                    },
+                    onBookmarkClick = { /* could navigate to chapter */ },
                     onDeleteBookmark = { bookmark ->
                         viewModel.deleteBookmark(bookmark)
                     }
                 )
                 1 -> AnnotationList(
                     annotations = annotations,
-                    chapterNames = chapterNames,
                     onDeleteAnnotation = { annotation ->
                         viewModel.deleteAnnotation(annotation)
                     }
@@ -92,7 +87,6 @@ fun BookmarkScreen(
 @Composable
 fun BookmarkList(
     bookmarks: List<Bookmark>,
-    chapterNames: List<String>,
     onBookmarkClick: (Bookmark) -> Unit,
     onDeleteBookmark: (Bookmark) -> Unit
 ) {
@@ -108,7 +102,6 @@ fun BookmarkList(
             items(bookmarks, key = { it.id }) { bookmark ->
                 BookmarkItem(
                     bookmark = bookmark,
-                    chapterName = chapterNames.getOrNull(bookmark.chapterIndex) ?: "第${bookmark.chapterIndex + 1}章",
                     onClick = { onBookmarkClick(bookmark) },
                     onDelete = { onDeleteBookmark(bookmark) }
                 )
@@ -120,7 +113,6 @@ fun BookmarkList(
 @Composable
 fun BookmarkItem(
     bookmark: Bookmark,
-    chapterName: String,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -141,7 +133,7 @@ fun BookmarkItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = chapterName, style = MaterialTheme.typography.titleMedium)
+                Text(text = "第${bookmark.chapterIndex + 1}章", style = MaterialTheme.typography.titleMedium)
                 Text(text = timeStr, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = onDelete) {
@@ -154,7 +146,6 @@ fun BookmarkItem(
 @Composable
 fun AnnotationList(
     annotations: List<Annotation>,
-    chapterNames: List<String>,
     onDeleteAnnotation: (Annotation) -> Unit
 ) {
     if (annotations.isEmpty()) {
@@ -169,7 +160,6 @@ fun AnnotationList(
             items(annotations, key = { it.id }) { annotation ->
                 AnnotationItem(
                     annotation = annotation,
-                    chapterName = chapterNames.getOrNull(annotation.chapterIndex) ?: "第${annotation.chapterIndex + 1}章",
                     onDelete = { onDeleteAnnotation(annotation) }
                 )
             }
@@ -180,7 +170,6 @@ fun AnnotationList(
 @Composable
 fun AnnotationItem(
     annotation: Annotation,
-    chapterName: String,
     onDelete: () -> Unit
 ) {
     val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
@@ -201,7 +190,7 @@ fun AnnotationItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = chapterName, style = MaterialTheme.typography.titleSmall)
+                Text(text = "第${annotation.chapterIndex + 1}章", style = MaterialTheme.typography.titleSmall)
                 IconButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, contentDescription = "删除笔记")
                 }

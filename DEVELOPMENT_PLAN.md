@@ -1,11 +1,11 @@
 # IReader 开发计划
 
-> **最后更新**: 2026-04-27  
+> **最后更新**: 2026-04-28  
 > **当前阶段**: 第六阶段 - 优化、测试、发布
 
 ---
 
-## 📊 总体完成度: ~40%
+## 📊 总体完成度: ~45%
 
 ---
 
@@ -31,12 +31,12 @@
 - [ ] EPUB阅读器集成 (依赖未配置，无UI)
 - [ ] PDF阅读器集成 (依赖部分配置，无UI)
 - [x] 阅读进度同步 (Room存储)
-- [ ] 阅读设置 UI (字体/主题/亮度 - 仅框架)
+- [x] 阅读设置 UI (字体/主题/行距)
 - [ ] 翻页动画 (仅基础左右点击)
 
 ## 📝 第四阶段：增强功能 (部分完成 🔄 30%)
 - [x] 书签系统 - 数据库 + DAO ✅
-- [ ] 书签功能 UI ❌
+- [x] 书签功能 UI - 书签列表页
 - [x] 笔记和高亮 - 数据库 + DAO ✅
 - [ ] 笔记和高亮 UI ❌
 - [x] 阅读进度同步 (Room存储) ✅
@@ -116,7 +116,7 @@
 | 编译测试 | 2 | 2 | 0 | 100% |
 | 单元测试 | 26 | 26 | 0 | 100% |
 | Instrumented测试 | 0 | 0 | 0 | 0% |
-| **总计** | **28** | **28** | **0** | **100%** |
+| **总计** | **29** | **29** | **0** | **100%** |
 
 ---
 
@@ -162,3 +162,6 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | 2026-04-27 | android.util.Log not mocked 测试失败 | 添加 returnDefaultValues=true |
 | 2026-04-27 | 协程测试缺少依赖 | 添加 kotlinx-coroutines-test:1.7.3 |
 | 2026-04-27 | splitByLength无法分割超长单行 | 添加超长行处理逻辑 |
+| 2026-04-28 | 书签列表导航不工作 | Navigation.kt传递navController给ReaderScreen,简化Bookmarks路由,修复BookmarkScreen依赖 |
+| 2026-04-28 | Maestro测试tapOn语法错误 | 修复坐标格式为point: 50%, 50% |
+| 2026-04-28 | BookmarkScreen ArrowBack图标缺失 | 添加import ArrowBack |

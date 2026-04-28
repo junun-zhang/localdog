@@ -1,0 +1,42 @@
+appId: com.example.ireader
+tags:
+  - ireader
+  - bookmark
+  - core
+---
+# Test bookmark navigation workflow
+# Step 1: Launch and verify bookshelf
+- launchApp
+- swipe:
+    start: 50%, 95%
+    end: 50%, 5%
+    duration: 200
+- waitForAnimationToEnd:
+    timeout: 10000
+- assertVisible: "我的书架"
+
+# Step 2: Open a book
+- tapOn:
+    text: "TXT"
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# Step 3: Tap center to show menu
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Step 4: Tap bookmark list icon
+- tapOn: "书签列表"
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# Step 5: Navigate back twice to return to bookshelf
+- back
+- waitForAnimationToEnd:
+    timeout: 5000
+- back
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "我的书架"

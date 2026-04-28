@@ -39,34 +39,16 @@ fun AppNavigation(
             arguments = listOf(navArgument("bookId") { type = NavType.StringType })
         ) { backStackEntry ->
             val bookId = backStackEntry.arguments?.getString("bookId") ?: ""
-            ReaderScreen(bookId = bookId)
+            ReaderScreen(bookId = bookId, navController = navController)
         }
         composable(
             route = Screen.Bookmarks.route,
-            arguments = listOf(
-                navArgument("bookId") { type = NavType.StringType },
-                navArgument("chapters") { type = NavType.StringType }
-            )
+            arguments = listOf(navArgument("bookId") { type = NavType.StringType })
         ) { backStackEntry ->
             val bookId = backStackEntry.arguments?.getString("bookId") ?: ""
-            val chaptersJson = backStackEntry.arguments?.getString("chapters") ?: "[]"
-            // Simple JSON array parsing: ["Chapter1","Chapter2"]
-            val chapterNames = chaptersJson
-                .removePrefix("[")
-                .removeSuffix("]")
-                .split(",")
-                .map { it.trim().removeSurrounding("\"") }
-                .filter { it.isNotEmpty() }
             BookmarkScreen(
                 bookId = bookId,
-                chapterNames = chapterNames,
-                onBookmarkClick = { chapterIndex ->
-                    // Navigate back to reader at specific chapter
-                    navController.popBackStack()
-                },
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }
@@ -77,13 +59,9 @@ sealed class Screen(val route: String) {
     object Store : Screen("store")
     object Profile : Screen("profile")
     object Reader : Screen("reader/{bookId}") {
-        fun createRoute(bookId: String): String {
-            return "reader/$bookId"
-        }
+        fun createRoute(bookId: String): String = "reader/$bookId"
     }
-    object Bookmarks : Screen("bookmarks/{bookId}/{chapters}") {
-        fun createRoute(bookId: String, chaptersJson: String): String {
-            return "bookmarks/$bookId/$chaptersJson"
-        }
+    object Bookmarks : Screen("bookmarks/{bookId}") {
+        fun createRoute(bookId: String): String = "bookmarks/$bookId"
     }
 }

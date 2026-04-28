@@ -110,8 +110,8 @@ fun ReaderScreen(
                             )
                         }
                         IconButton(onClick = {
-                            val chaptersJson = chapters.joinToString(",", prefix = "\"", postfix = "\"") { it }
-                            navController?.navigate(Screen.Bookmarks.createRoute(bookId, chaptersJson))
+                            
+                            navController?.navigate(Screen.Bookmarks.createRoute(bookId))
                         }) {
                             Icon(imageVector = Icons.Default.Bookmark, contentDescription = "书签列表", tint = currentTheme.textColor)
                         }
