@@ -156,8 +156,22 @@ class EpubParser {
 
     private fun extractTitleFromHtml(htmlContent: String): String? {
         return try {
-            val titleMatch = Regex("<title[^>]*>([^<]+)</title>").find(htmlContent)
-            titleMatch?.groupValues?.get(1)?.trim()
+            val meaninglessTitles = listOf("未知", "Cover", "cover", "Untitled")
+            var title = Regex("<title[^>]*>([^<]+)</title>").find(htmlContent)?.groupValues?.get(1)?.trim()
+            if (title.isNullOrBlank() || title in meaninglessTitles) {
+                title = Regex("<h1[^>]*>([^<]*)</h1>").find(htmlContent)?.groupValues?.get(1)?.trim()
+            }
+            if (title.isNullOrBlank() || title in meaninglessTitles) {
+                title = Regex("<h2[^>]*>([^<]*)</h2>").find(htmlContent)?.groupValues?.get(1)?.trim()
+            }
+            if (title.isNullOrBlank() || title in meaninglessTitles) {
+                title = Regex("title=\"([^\"]+)\"").find(htmlContent)?.groupValues?.get(1)?.trim()
+            }
+            if (title.isNullOrBlank() || title in meaninglessTitles) {
+                val divMatch = Regex("<div[^>]*class=\"[^\"]*calibre2[^\"]*\"[^>]*>([^<]+)</div>").find(htmlContent)
+                title = divMatch?.groupValues?.get(1)?.trim()
+            }
+            if (title.isNullOrBlank() || title in meaninglessTitles) null else title
         } catch (e: Exception) {
             null
         }
