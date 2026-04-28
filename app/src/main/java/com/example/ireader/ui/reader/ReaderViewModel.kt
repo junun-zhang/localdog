@@ -6,11 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.example.ireader.data.local.entity.Book
 import com.example.ireader.data.local.entity.Bookmark
 import com.example.ireader.data.repository.BookRepository
+import com.example.ireader.parser.EpubBookInfo
+import com.example.ireader.parser.EpubParser
 import com.example.ireader.parser.TxtParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -36,6 +39,15 @@ class ReaderViewModel @Inject constructor(
 
     private val _bookmarks = MutableStateFlow<List<Bookmark>>(emptyList())
     val bookmarks: StateFlow<List<Bookmark>> = _bookmarks
+
+    private val _isPdf = MutableStateFlow(false)
+    val isPdf: StateFlow<Boolean> = _isPdf
+
+    private val _isEpub = MutableStateFlow(false)
+    val isEpub: StateFlow<Boolean> = _isEpub
+
+    private val _epubInfo = MutableStateFlow<EpubBookInfo?>(null)
+    val epubInfo: StateFlow<EpubBookInfo?> = _epubInfo
 
     companion object {
         private const val KEY_FONT_SIZE = "reader_font_size"
@@ -100,6 +112,8 @@ class ReaderViewModel @Inject constructor(
             loadedBook?.let { book ->
                 when (book.format?.lowercase()) {
                     "txt" -> parseTxt(book)
+                    "pdf" -> _isPdf.value = true
+                    "epub" -> parseEpub(book)
                     else -> _chapters.value = emptyList()
                 }
                 _currentChapter.value = book.currentChapter
@@ -114,6 +128,28 @@ class ReaderViewModel @Inject constructor(
     private fun parseTxt(book: Book) {
         val chapters = txtParser.parse(book)
         _chapters.value = chapters
+    }
+
+    private fun parseEpub(book: Book) {
+        viewModelScope.launch {
+            try {
+                book.filePath?.let { path ->
+                    val file = java.io.File(path)
+                    if (file.exists()) {
+                        val parser = EpubParser()
+                        val info = parser.parse(file)
+                        _epubInfo.value = info
+                        _isEpub.value = true
+                        info?.let { epubInfo ->
+                            _chapters.value = epubInfo.chapters.map { it.title }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "EPUB解析失败")
+                _isEpub.value = false
+            }
+        }
     }
 
     fun isChapterBookmarked(chapterIndex: Int): Boolean {

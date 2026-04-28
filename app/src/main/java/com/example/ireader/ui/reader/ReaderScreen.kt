@@ -38,7 +38,6 @@ import androidx.navigation.NavController
 import com.example.ireader.ui.navigation.Screen
 import kotlinx.coroutines.launch
 
-// Reader theme definitions
 data class ReaderTheme(
     val name: String,
     val label: String,
@@ -62,6 +61,45 @@ fun ReaderScreen(
     viewModel: ReaderViewModel = hiltViewModel()
 ) {
     val book by viewModel.book.collectAsStateWithLifecycle()
+    val isPdf by viewModel.isPdf.collectAsStateWithLifecycle()
+    val isEpub by viewModel.isEpub.collectAsStateWithLifecycle()
+    val epubInfo by viewModel.epubInfo.collectAsStateWithLifecycle()
+
+    // Route to different readers based on format
+    when {
+        isPdf -> {
+            PdfReaderScreen(
+                filePath = book?.filePath,
+                title = book?.title ?: "PDF阅读",
+                onNavigateBack = { navController?.popBackStack() }
+            )
+        }
+        isEpub && epubInfo != null -> {
+            EpubReaderScreen(
+                filePath = book?.filePath,
+                title = book?.title ?: "EPUB阅读",
+                onNavigateBack = { navController?.popBackStack() }
+            )
+        }
+        else -> {
+            TxtReaderContent(
+                bookId = bookId,
+                book = book,
+                navController = navController,
+                viewModel = viewModel
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TxtReaderContent(
+    bookId: String,
+    book: com.example.ireader.data.local.entity.Book?,
+    navController: NavController?,
+    viewModel: ReaderViewModel
+) {
     val chapters by viewModel.chapters.collectAsStateWithLifecycle()
     val currentChapter by viewModel.currentChapter.collectAsStateWithLifecycle()
     val showMenu by viewModel.showMenu.collectAsStateWithLifecycle()
@@ -78,7 +116,6 @@ fun ReaderScreen(
 
     val currentTheme = readerThemes.find { it.name == theme } ?: readerThemes[0]
 
-    // Check if current chapter is bookmarked
     val isBookmarked = viewModel.isChapterBookmarked(currentChapter)
 
     Scaffold(
@@ -110,7 +147,6 @@ fun ReaderScreen(
                             )
                         }
                         IconButton(onClick = {
-                            
                             navController?.navigate(Screen.Bookmarks.createRoute(bookId))
                         }) {
                             Icon(imageVector = Icons.Default.Bookmark, contentDescription = "书签列表", tint = currentTheme.textColor)
@@ -200,14 +236,12 @@ fun ReaderScreen(
         }
     }
 
-    // Settings dialog
     if (showSettingsDialog) {
         AlertDialog(
             onDismissRequest = { showSettingsDialog = false },
             title = { Text("阅读设置") },
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    // Font size
                     Text("字体大小: ${dialogFontSize.toInt()}sp", style = MaterialTheme.typography.titleSmall)
                     Slider(
                         value = dialogFontSize,
@@ -218,7 +252,6 @@ fun ReaderScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Line spacing
                     Text("行距: ${"%.1f".format(dialogLineSpacing)}x", style = MaterialTheme.typography.titleSmall)
                     Slider(
                         value = dialogLineSpacing,
@@ -229,7 +262,6 @@ fun ReaderScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Theme selection
                     Text("主题", style = MaterialTheme.typography.titleSmall)
                     Spacer(modifier = Modifier.height(8.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
