@@ -93,6 +93,7 @@ fun ReaderScreen(
                 filePath = book?.filePath,
                 bookId = bookId,
                 title = book?.title ?: "EPUB阅读",
+                epubInfo = epubInfo,
                 onNavigateBack = { navController?.popBackStack() }
             )
         }

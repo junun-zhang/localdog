@@ -1,6 +1,6 @@
 # IReader 开发计划
 
-> **最后更新**: 2026-04-28 (笔记高亮UI完成)  
+> **最后更新**: 2026-04-29 (EPUB阅读器掌阅风格优化)  
 > **当前阶段**: 第六阶段 - 优化、测试、发布
 
 ---
@@ -167,4 +167,6 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | 2026-04-28 | BookmarkScreen ArrowBack图标缺失 | 添加import ArrowBack |
 | 2026-04-28 | 完整功能E2E测试通过 | 编写test_complete.yaml覆盖18个测试用例,包含书架搜索底部导航阅读器翻页书签设置所有功能
 | 2026-04-28 | EPUB/PDF阅读器集成 | 实现EpubParser解析EPUB,PdfReaderScreen显示PDF,EpubReaderScreen显示EPUB,ReaderScreen根据格式自动路由 | 代码完成,18个E2E测试用例全部通过
-| 2026-04-29 | EPUB目录超链接失效 | 实现EpubWebViewClient拦截链接点击,通过锚点ID搜索/标题匹配/章节号模式识别三种策略将EPUB目录链接映射到章节导航,注入JavaScript确保所有<a>点击触发shouldOverrideUrlLoading |
+|| 2026-04-28 | EPUB/PDF阅读器集成 | 实现EpubParser解析EPUB... | 代码完成,18个E2E测试用例全部通过
+|| 2026-04-29 | EPUB目录超链接失效 | 实现EpubWebViewClient拦截链接点击... |
+|| 2026-04-29 | EPUB阅读器掌阅风格优化 | 页面级翻页、底部设置面板(ModalBottomSheet)、亮度调节、页面进度显示、封面覆盖层 | E2E测试T1-T23通过 |

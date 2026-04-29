@@ -1,5 +1,6 @@
 package com.example.ireader.ui.reader
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,6 +12,7 @@ import com.example.ireader.parser.EpubBookInfo
 import com.example.ireader.parser.EpubParser
 import com.example.ireader.parser.TxtParser
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -21,7 +23,8 @@ import javax.inject.Inject
 class ReaderViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val bookRepository: BookRepository,
-    private val txtParser: TxtParser
+    private val txtParser: TxtParser,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val bookId: String? get() = savedStateHandle.get<String>("bookId")
@@ -146,7 +149,7 @@ class ReaderViewModel @Inject constructor(
                 book.filePath?.let { path ->
                     val file = java.io.File(path)
                     if (file.exists()) {
-                        val parser = EpubParser()
+                        val parser = EpubParser(context)
                         val info = parser.parse(file)
                         _epubInfo.value = info
                         _isEpub.value = true
