@@ -1,9 +1,9 @@
 package com.example.ireader.ui.reader
 
 import android.annotation.SuppressLint
-import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.animation.AnimatedVisibility
@@ -35,7 +35,6 @@ import com.example.ireader.parser.EpubChapter
 import com.example.ireader.parser.EpubParser
 import timber.log.Timber
 import java.io.File
-import kotlin.math.sqrt
 
 // Reader theme definitions (same as TXT reader)
 data class EpubReaderTheme(
@@ -453,13 +452,18 @@ fun EpubReaderScreen(
     }
 }
 
-@SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun EpubWebView(
     htmlContent: String,
     onScreenTap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Stable JS interface - survives recomposition
+    val tapHandler = remember { TapJsHandler() }
+    // Update the callback on each recomposition
+    tapHandler.onTap = onScreenTap
+
     AndroidView(
         factory = { ctx ->
             WebView(ctx).apply {
@@ -467,7 +471,6 @@ fun EpubWebView(
                     LayoutParams.MATCH_PARENT,
                     LayoutParams.MATCH_PARENT
                 )
-                webViewClient = WebViewClient()
                 settings.javaScriptEnabled = true
                 settings.loadWithOverviewMode = true
                 settings.useWideViewPort = true
@@ -477,38 +480,15 @@ fun EpubWebView(
                 isVerticalScrollBarEnabled = true
                 isHorizontalScrollBarEnabled = false
                 settings.layoutAlgorithm = android.webkit.WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING
+                
+                // Register JS interface for tap callback
+                addJavascriptInterface(tapHandler, "TapBridge")
+                
+                webViewClient = WebViewClient()
             }
         },
         modifier = modifier,
         update = { webView ->
-            // Set touch listener to detect taps for menu toggle
-            // This intercepts touch events at the View level before WebView consumes them
-            var downX = 0f
-            var downY = 0f
-            webView.setOnTouchListener { _, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        downX = event.x
-                        downY = event.y
-                    }
-                    MotionEvent.ACTION_UP -> {
-                        val dx = event.x - downX
-                        val dy = event.y - downY
-                        val distance = sqrt(dx * dx + dy * dy)
-                        // If movement is small (< 15px), treat as tap
-                        if (distance < 15f) {
-                            val width = webView.width.toFloat()
-
-                            // Check if tap is in center area (30%-70% width, any height)
-                            if (event.x > width * 0.3f && event.x < width * 0.7f) {
-                                onScreenTap()
-                            }
-                        }
-                    }
-                }
-                // Return false to let WebView also handle the touch event
-                false
-            }
             webView.loadDataWithBaseURL(
                 "file:///android_asset/",
                 htmlContent,
@@ -518,6 +498,17 @@ fun EpubWebView(
             )
         }
     )
+}
+
+/** JS interface class for tap callback - must be top-level and non-inner class */
+class TapJsHandler {
+    @Volatile
+    var onTap: (() -> Unit)? = null
+
+    @JavascriptInterface
+    fun onTap() {
+        onTap?.invoke()
+    }
 }
 
 private fun buildEpubHtml(
@@ -588,6 +579,19 @@ private fun buildEpubHtml(
         </head>
         <body>
             $content
+            <script>
+                // Detect taps (click events only fire for actual taps, not scrolls/swipes)
+                document.body.addEventListener('click', function(e) {
+                    var rect = document.body.getBoundingClientRect();
+                    var x = e.clientX - rect.left;
+                    // Only trigger menu toggle for center 30%-70% area
+                    if (x > rect.width * 0.3 && x < rect.width * 0.7) {
+                        if (typeof TapBridge !== 'undefined') {
+                            TapBridge.onTap();
+                        }
+                    }
+                });
+            </script>
         </body>
         </html>
     """.trimIndent()
