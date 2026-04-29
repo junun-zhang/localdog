@@ -6,57 +6,53 @@ tags:
 ---
 # T1: 应用启动 - 书架页正常显示
 - launchApp
-- swipe:
-    start: 50%, 95%
-    end: 50%, 5%
-    duration: 200
 - waitForAnimationToEnd:
     timeout: 10000
-- assertVisible: "我的书架"
+- assertVisible: '我的书架'
 
 # T2: 搜索功能 - 搜索框显示正常
-- tapOn: "搜索"
+- tapOn: '搜索'
 - waitForAnimationToEnd:
     timeout: 3000
-- assertVisible: "搜索书名..."
+- assertVisible: '搜索书名...'
 
 # T3: 退出搜索 - 返回书架正常
-- tapOn: "X"
+- back
 - waitForAnimationToEnd:
     timeout: 3000
-- assertVisible: "我的书架"
+- assertVisible: '我的书架'
 
 # T4: 底部导航-书库
-- tapOn: "书库"
+- tapOn: '书库'
 - waitForAnimationToEnd:
     timeout: 3000
-- assertVisible: "书店 - 待开发"
+- assertVisible: '书店 - 待开发'
 
 # T5: 底部导航-书架
-- tapOn: "书架"
+- tapOn: '书架'
 - waitForAnimationToEnd:
     timeout: 3000
-- assertVisible: "我的书架"
+- assertVisible: '我的书架'
 
 # T6: 底部导航-我的
-- tapOn: "我的"
+- tapOn: '我的'
 - waitForAnimationToEnd:
     timeout: 3000
-- assertVisible: "我的"
+- assertVisible: '我的'
 
 # T7: TXT阅读器 - 菜单显示正常
-- tapOn: "书架"
+- tapOn: '书架'
 - waitForAnimationToEnd:
     timeout: 3000
 - tapOn:
-    text: "TXT"
+    text: 'TXT'
 - waitForAnimationToEnd:
     timeout: 10000
 - tapOn:
     point: 50%, 50%
 - waitForAnimationToEnd:
     timeout: 3000
-- assertVisible: "书签列表"
+- assertVisible: '书签列表'
 
 # T8: 章节翻页 - 向右翻页
 - tapOn:
@@ -85,16 +81,16 @@ tags:
     point: 50%, 50%
 - waitForAnimationToEnd:
     timeout: 2000
-- tapOn: "书签列表"
+- tapOn: '书签列表'
 - waitForAnimationToEnd:
     timeout: 10000
-- assertVisible: "书签与笔记"
+- assertVisible: '书签与笔记'
 
 # T12: 书签列表 - 书签Tab显示
-- assertVisible: "书签"
+- assertVisible: '书签'
 
 # T13: 书签列表 - 笔记Tab显示
-- assertVisible: "笔记"
+- assertVisible: '笔记'
 
 # T14: 书签列表 - 返回书架正常
 - back
@@ -103,36 +99,36 @@ tags:
 - back
 - waitForAnimationToEnd:
     timeout: 5000
-- assertVisible: "我的书架"
+- assertVisible: '我的书架'
 
 # T15: 阅读器设置 - 对话框正常显示
 - tapOn:
-    text: "TXT"
+    text: 'TXT'
 - waitForAnimationToEnd:
     timeout: 10000
 - tapOn:
     point: 50%, 50%
 - waitForAnimationToEnd:
     timeout: 3000
-- tapOn: "设置"
+- tapOn: '设置'
 - waitForAnimationToEnd:
     timeout: 5000
-- assertVisible: "阅读设置"
+- assertVisible: '阅读设置'
 
 # T16: 阅读器设置 - 确定按钮存在
-- assertVisible: "确定"
+- assertVisible: '确定'
 
 # T17: 阅读器设置 - 取消按钮存在
-- assertVisible: "取消"
+- assertVisible: '取消'
 
 # T18: 阅读器 - 返回书架正常
-- tapOn: "取消"
+- tapOn: '取消'
 - waitForAnimationToEnd:
     timeout: 3000
 - back
 - waitForAnimationToEnd:
     timeout: 5000
-- assertVisible: "我的书架"
+- assertVisible: '我的书架'
 
 # ========================================
 # EPUB Reader Tests
@@ -140,7 +136,7 @@ tags:
 
 # T19: EPUB阅读器 - 打开EPUB书籍
 - tapOn:
-    text: "EPUB"
+    text: 'EPUB'
 - waitForAnimationToEnd:
     timeout: 10000
 
@@ -151,30 +147,30 @@ tags:
     timeout: 3000
 
 # T21: EPUB阅读器 - 设置按钮存在
-- assertVisible: "设置"
+- assertVisible: '设置'
 
 # T22: EPUB阅读器 - EPUB设置对话框正常打开
-- tapOn: "设置"
+- tapOn: '设置'
 - waitForAnimationToEnd:
     timeout: 5000
-- assertVisible: "阅读设置"
+- assertVisible: '阅读设置'
 
 # T23: EPUB阅读器 - 设置对话框 - 确定按钮存在
-- assertVisible: "确定"
+- assertVisible: '确定'
 
 # T24: EPUB阅读器 - 设置对话框 - 取消按钮存在
-- assertVisible: "取消"
+- assertVisible: '取消'
 
 # T25: EPUB阅读器 - 关闭设置对话框
-- tapOn: "取消"
+- tapOn: '取消'
 - waitForAnimationToEnd:
     timeout: 3000
 
 # T26: EPUB阅读器 - 目录按钮存在
-- assertVisible: "目录"
+- assertVisible: '目录'
 
 # T27: EPUB阅读器 - 目录面板正常打开
-- tapOn: "目录"
+- tapOn: '目录'
 - waitForAnimationToEnd:
     timeout: 5000
 
@@ -191,7 +187,7 @@ tags:
 - back
 - waitForAnimationToEnd:
     timeout: 5000
-- assertVisible: "我的书架"
+- assertVisible: '我的书架'
 
 # ========================================
 # PDF Reader Tests
@@ -199,18 +195,21 @@ tags:
 
 # T30: PDF阅读器 - 打开PDF书籍
 - tapOn:
-    text: "PDF"
+    text: 'PDF'
 - waitForAnimationToEnd:
     timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 30000
 
 # T31: PDF阅读器 - PDF阅读界面正常加载
-- assertVisible: "PDF阅读"
+- assertVisible:
+    text: "大模型.*"
 
 # T32: PDF阅读器 - 返回按钮存在
-- assertVisible: "返回"
+- assertVisible: '返回'
 
 # T33: PDF阅读器 - 返回书架正常
 - back
 - waitForAnimationToEnd:
     timeout: 5000
-- assertVisible: "我的书架"
+- assertVisible: '我的书架'

@@ -1,18 +1,17 @@
 package com.example.ireader.ui.reader
 
 import android.annotation.SuppressLint
+import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.webkit.JavascriptInterface
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -22,13 +21,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -36,7 +35,7 @@ import com.example.ireader.parser.EpubChapter
 import com.example.ireader.parser.EpubParser
 import timber.log.Timber
 import java.io.File
-import java.util.UUID
+import kotlin.math.sqrt
 
 // Reader theme definitions (same as TXT reader)
 data class EpubReaderTheme(
@@ -87,10 +86,6 @@ fun EpubReaderScreen(
     var dialogPageMargin by remember { mutableIntStateOf(16) }
     var textJustify by remember { mutableStateOf(true) }
     var dialogTextJustify by remember { mutableStateOf(true) }
-    
-    // Reading progress
-    // Progress is calculated from chapter position
-    
 
     // Load EPUB file
     LaunchedEffect(filePath) {
@@ -145,7 +140,7 @@ fun EpubReaderScreen(
                     },
                     actions = {
                         IconButton(onClick = { showTocDialog = true }) {
-                            Icon(Icons.Default.List, contentDescription = "目录", tint = currentTheme.textColorCompose)
+                            Icon(Icons.AutoMirrored.Filled.List, contentDescription = "目录", tint = currentTheme.textColorCompose)
                         }
                         IconButton(onClick = {
                             dialogFontSize = fontSize
@@ -205,21 +200,6 @@ fun EpubReaderScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(currentTheme.barColor)
-                .pointerInput(showMenu) {
-                    detectTapGestures(
-                        onTap = { offset ->
-                            if (offset.x > size.width * 0.3f && offset.x < size.width * 0.7f) {
-                                showMenu = !showMenu
-                            } else if (offset.x <= size.width * 0.3f) {
-                                // Left side - scroll up / prev chapter
-                                // Handled by WebView scroll
-                            } else {
-                                // Right side - scroll down / next chapter
-                                // Handled by WebView scroll
-                            }
-                        }
-                    )
-                }
         ) {
             if (errorMessage != null) {
                 Column(
@@ -246,6 +226,7 @@ fun EpubReaderScreen(
                 
                 EpubWebView(
                     htmlContent = htmlContent ?: buildEpubHtml(chapter.content, fontSize, lineSpacing, fontFamily, pageMargin, textJustify, theme),
+                    onScreenTap = { showMenu = !showMenu },
                     modifier = Modifier.fillMaxSize()
                 )
                 
@@ -472,10 +453,11 @@ fun EpubReaderScreen(
     }
 }
 
-@SuppressLint("SetJavaScriptEnabled")
+@SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
 @Composable
 fun EpubWebView(
     htmlContent: String,
+    onScreenTap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     AndroidView(
@@ -499,6 +481,34 @@ fun EpubWebView(
         },
         modifier = modifier,
         update = { webView ->
+            // Set touch listener to detect taps for menu toggle
+            // This intercepts touch events at the View level before WebView consumes them
+            var downX = 0f
+            var downY = 0f
+            webView.setOnTouchListener { _, event ->
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        downX = event.x
+                        downY = event.y
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        val dx = event.x - downX
+                        val dy = event.y - downY
+                        val distance = sqrt(dx * dx + dy * dy)
+                        // If movement is small (< 15px), treat as tap
+                        if (distance < 15f) {
+                            val width = webView.width.toFloat()
+
+                            // Check if tap is in center area (30%-70% width, any height)
+                            if (event.x > width * 0.3f && event.x < width * 0.7f) {
+                                onScreenTap()
+                            }
+                        }
+                    }
+                }
+                // Return false to let WebView also handle the touch event
+                false
+            }
             webView.loadDataWithBaseURL(
                 "file:///android_asset/",
                 htmlContent,

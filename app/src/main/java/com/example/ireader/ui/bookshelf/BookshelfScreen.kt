@@ -1,6 +1,7 @@
 package com.example.ireader.ui.bookshelf
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.combinedClickable
@@ -37,6 +38,17 @@ fun BookshelfScreen(
     val isInMultiSelectMode by viewModel.isInMultiSelectMode.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     var showSearch by remember { mutableStateOf(false) }
+
+    // Handle back button for search view
+    BackHandler(enabled = showSearch) {
+        showSearch = false
+        viewModel.updateSearchQuery("")
+    }
+
+    // Handle back button for multi-select mode
+    BackHandler(enabled = selectedBooks.isNotEmpty()) {
+        viewModel.clearSelection()
+    }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
