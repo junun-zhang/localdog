@@ -7,7 +7,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -16,8 +15,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.barteksc.pdfviewer.PDFView
@@ -29,7 +34,7 @@ import timber.log.Timber
 import java.io.File
 import kotlin.math.sqrt
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun PdfReaderScreen(
     filePath: String?,
@@ -44,6 +49,10 @@ fun PdfReaderScreen(
     // UI state - tap to show/hide
     var showMenu by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    
+    // Track view width for tap position calculation
+    var viewWidth by remember { mutableIntStateOf(0) }
+    var pdfViewRef by remember { mutableStateOf<PDFView?>(null) }
 
     Scaffold(
         topBar = {
@@ -108,6 +117,10 @@ fun PdfReaderScreen(
                     }
                 }
             } else {
+                // Track touch positions - use mutable state to survive recomposition
+                var downX by remember { mutableFloatStateOf(0f) }
+                var downY by remember { mutableFloatStateOf(0f) }
+                
                 AndroidView(
                     factory = { ctx ->
                         PDFView(ctx, null).apply {
@@ -115,35 +128,34 @@ fun PdfReaderScreen(
                                 LayoutParams.MATCH_PARENT,
                                 LayoutParams.MATCH_PARENT
                             )
-                            // Set touch listener to detect taps for menu toggle
-                            var downX = 0f
-                            var downY = 0f
-                            setOnTouchListener { _, event ->
-                                when (event.action) {
-                                    MotionEvent.ACTION_DOWN -> {
-                                        downX = event.x
-                                        downY = event.y
-                                    }
-                                    MotionEvent.ACTION_UP -> {
-                                        val dx = event.x - downX
-                                        val dy = event.y - downY
-                                        val distance = sqrt(dx * dx + dy * dy)
-                                        // If movement is small (< 15px), treat as tap
-                                        if (distance < 15f) {
-                                            val w = width.toFloat()
-                                            // Check if tap is in center area
-                                            if (event.x > w * 0.3f && event.x < w * 0.7f) {
-                                                showMenu = !showMenu
-                                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInteropFilter { event ->
+                            when (event.action) {
+                                MotionEvent.ACTION_DOWN -> {
+                                    downX = event.x
+                                    downY = event.y
+                                }
+                                MotionEvent.ACTION_UP -> {
+                                    val dx = event.x - downX
+                                    val dy = event.y - downY
+                                    val distance = sqrt(dx * dx + dy * dy)
+                                    if (distance < 15f && viewWidth > 0) {
+                                        // Check if tap is in center third
+                                        if (event.x > viewWidth * 0.3f && event.x < viewWidth * 0.7f) {
+                                            showMenu = !showMenu
                                         }
                                     }
                                 }
-                                // Return false to let PDFView also handle the touch event
-                                false
                             }
-                        }
-                    },
+                            // Return false to let PDFView also handle the touch event
+                            false
+                        },
                     update = { pdfView ->
+                        pdfViewRef = pdfView
+                        viewWidth = pdfView.width
                         if (filePath == null) {
                             errorMessage = "文件路径为空"
                             return@AndroidView
