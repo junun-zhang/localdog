@@ -582,6 +582,8 @@ private fun buildEpubHtml(
             <script>
                 // Detect taps (click events only fire for actual taps, not scrolls/swipes)
                 document.body.addEventListener('click', function(e) {
+                    // Don't intercept link clicks - let them navigate normally
+                    if (e.target.closest('a')) return;
                     var rect = document.body.getBoundingClientRect();
                     var x = e.clientX - rect.left;
                     // Only trigger menu toggle for center 30%-70% area
