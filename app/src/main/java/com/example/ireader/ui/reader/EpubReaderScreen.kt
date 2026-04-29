@@ -3,15 +3,17 @@ package com.example.ireader.ui.reader
 import android.annotation.SuppressLint
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
-import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebResourceRequest
+import android.webkit.JavascriptInterface
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -21,13 +23,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -35,6 +37,7 @@ import com.example.ireader.parser.EpubChapter
 import com.example.ireader.parser.EpubParser
 import timber.log.Timber
 import java.io.File
+import java.util.UUID
 
 // Reader theme definitions (same as TXT reader)
 data class EpubReaderTheme(
@@ -85,6 +88,10 @@ fun EpubReaderScreen(
     var dialogPageMargin by remember { mutableIntStateOf(16) }
     var textJustify by remember { mutableStateOf(true) }
     var dialogTextJustify by remember { mutableStateOf(true) }
+    
+    // Reading progress
+    // Progress is calculated from chapter position
+    
 
     // Load EPUB file
     LaunchedEffect(filePath) {
@@ -121,6 +128,11 @@ fun EpubReaderScreen(
     val htmlContent = remember(currentHtml, fontSize, lineSpacing, theme, fontFamily, pageMargin, textJustify) {
         currentHtml?.let { buildEpubHtml(it, fontSize, lineSpacing, fontFamily, pageMargin, textJustify, theme) }
     }
+    
+    // Update chapter contents reference for WebViewClient anchor matching
+    LaunchedEffect(chapters) {
+        EpubWebViewClient.chapterContents = chapters.map { it.content }
+    }
 
     Scaffold(
         containerColor = currentTheme.barColor,
@@ -139,7 +151,7 @@ fun EpubReaderScreen(
                     },
                     actions = {
                         IconButton(onClick = { showTocDialog = true }) {
-                            Icon(Icons.AutoMirrored.Filled.List, contentDescription = "目录", tint = currentTheme.textColorCompose)
+                            Icon(Icons.Default.List, contentDescription = "目录", tint = currentTheme.textColorCompose)
                         }
                         IconButton(onClick = {
                             dialogFontSize = fontSize
@@ -199,6 +211,21 @@ fun EpubReaderScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(currentTheme.barColor)
+                .pointerInput(showMenu) {
+                    detectTapGestures(
+                        onTap = { offset ->
+                            if (offset.x > size.width * 0.3f && offset.x < size.width * 0.7f) {
+                                showMenu = !showMenu
+                            } else if (offset.x <= size.width * 0.3f) {
+                                // Left side - scroll up / prev chapter
+                                // Handled by WebView scroll
+                            } else {
+                                // Right side - scroll down / next chapter
+                                // Handled by WebView scroll
+                            }
+                        }
+                    )
+                }
         ) {
             if (errorMessage != null) {
                 Column(
@@ -223,9 +250,19 @@ fun EpubReaderScreen(
                     }
                 }
                 
+                val currentIndexForLink = chapters.indexOfFirst { it.content == currentHtml }.coerceAtLeast(0)
+                val allChapterTitlesForLink = chapters.map { it.title }
+                
                 EpubWebView(
                     htmlContent = htmlContent ?: buildEpubHtml(chapter.content, fontSize, lineSpacing, fontFamily, pageMargin, textJustify, theme),
-                    onScreenTap = { showMenu = !showMenu },
+                    currentChapterIndex = currentIndexForLink,
+                    totalChapters = chapters.size,
+                    chapterTitles = allChapterTitlesForLink,
+                    onChapterNavigate = { targetIndex ->
+                        if (targetIndex >= 0 && targetIndex < chapters.size) {
+                            currentHtml = chapters[targetIndex].content
+                        }
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
                 
@@ -456,20 +493,24 @@ fun EpubReaderScreen(
 @Composable
 fun EpubWebView(
     htmlContent: String,
-    onScreenTap: () -> Unit,
+    currentChapterIndex: Int = 0,
+    totalChapters: Int = 0,
+    chapterTitles: List<String> = emptyList(),
+    onChapterNavigate: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Stable JS interface - survives recomposition
-    val tapHandler = remember { TapJsHandler() }
-    // Update the callback on each recomposition
-    tapHandler.onTap = onScreenTap
-
     AndroidView(
         factory = { ctx ->
             WebView(ctx).apply {
                 layoutParams = LayoutParams(
                     LayoutParams.MATCH_PARENT,
                     LayoutParams.MATCH_PARENT
+                )
+                webViewClient = EpubWebViewClient(
+                    currentChapterIndex = currentChapterIndex,
+                    totalChapters = totalChapters,
+                    chapterTitles = chapterTitles,
+                    onChapterNavigate = onChapterNavigate
                 )
                 settings.javaScriptEnabled = true
                 settings.loadWithOverviewMode = true
@@ -480,11 +521,6 @@ fun EpubWebView(
                 isVerticalScrollBarEnabled = true
                 isHorizontalScrollBarEnabled = false
                 settings.layoutAlgorithm = android.webkit.WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING
-                
-                // Register JS interface for tap callback
-                addJavascriptInterface(tapHandler, "TapBridge")
-                
-                webViewClient = WebViewClient()
             }
         },
         modifier = modifier,
@@ -500,14 +536,145 @@ fun EpubWebView(
     )
 }
 
-/** JS interface class for tap callback - must be top-level and non-inner class */
-class TapJsHandler {
-    @Volatile
-    var onTap: (() -> Unit)? = null
+/**
+ * Custom WebViewClient that intercepts hyperlink clicks in EPUB content.
+ *
+ * EPUB table of contents typically uses links like:
+ *   - <a href="#id"> (same-page anchor)
+ *   - <a href="file004.html#section"> (cross-file anchor)
+ *   - <a href="OEBPS/chapter3.xhtml"> (cross-file, no anchor)
+ *
+ * Since we load each chapter as standalone HTML via loadDataWithBaseURL,
+ * these links don't resolve to real URLs. This client intercepts them and
+ * maps them to chapter navigation within our reader.
+ */
+class EpubWebViewClient(
+    private val currentChapterIndex: Int,
+    private val totalChapters: Int,
+    private val chapterTitles: List<String>,
+    private val onChapterNavigate: (Int) -> Unit
+) : WebViewClient() {
 
-    @JavascriptInterface
-    fun onTap() {
-        onTap?.invoke()
+    override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+        return handleLinkClick(view, url)
+    }
+
+    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+        return handleLinkClick(view, request.url.toString())
+    }
+
+    private fun handleLinkClick(view: WebView, url: String): Boolean {
+        Timber.d("EPUB link clicked: $url")
+
+        val uri = try {
+            android.net.Uri.parse(url)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to parse URL: $url")
+            return true // consume invalid URLs
+        }
+
+        val scheme = uri.scheme
+        val path = uri.path ?: ""
+        val fragment = uri.fragment
+
+        // Handle external URLs (http/https) - open in browser
+        if (scheme == "http" || scheme == "https") {
+            try {
+                val context = view.context
+                val intent = android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse(url)
+                )
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to open URL: $url")
+            }
+            return true // consume the link
+        }
+
+        // Handle same-page anchor (#something)
+        if (path.isEmpty() && fragment != null) {
+            // Let WebView handle internal anchor scrolling
+            return false
+        }
+
+        // Handle cross-file links - try to match to a chapter
+        // The path might be: file004.html, OEBPS/chapter3.xhtml, Text/part004.html, etc.
+        val matchedIndex = tryMatchChapter(path, fragment)
+        if (matchedIndex >= 0) {
+            onChapterNavigate(matchedIndex)
+            return true // consume the link, we handle navigation
+        }
+
+        // If we can't match, let WebView try (will likely fail silently)
+        return false
+    }
+
+    /**
+     * Try to match a link path to a chapter index.
+     *
+     * Strategy:
+     * 1. Extract filename from path (e.g., "file004.html" from "OEBPS/file004.html")
+     * 2. Try to match filename against all chapter contents' source filenames
+     * 3. Fall back to matching against chapter titles
+     * 4. Return -1 if no match found
+     */
+    private fun tryMatchChapter(path: String, fragment: String?): Int {
+        val filename = path.substringAfterLast("/").substringBefore("#")
+
+        if (filename.isBlank()) return -1
+
+        // Strategy 1: Match filename against chapter content
+        // Since EpubParser stores the raw HTML content, we can look for
+        // the filename in the content's source reference or try to match
+        // the fragment anchor across all chapters
+
+        if (fragment != null) {
+            // Search for the anchor ID in all chapters
+            val anchorId = fragment
+            for (i in chapterContents.indices) {
+                if (i == currentChapterIndex) continue
+                val content = chapterContents[i]
+                if (content.contains("id=\"$anchorId\"") ||
+                    content.contains("id='$anchorId'") ||
+                    content.contains("name=\"$anchorId\"") ||
+                    content.contains("name='$anchorId'")) {
+                    return i
+                }
+            }
+        }
+
+        // Strategy 2: Try to match by title
+        // Some EPUBs link to chapter titles directly
+        val titleFromPath = filename
+            .removeSuffix(".html")
+            .removeSuffix(".xhtml")
+            .removeSuffix(".htm")
+
+        for (i in chapterTitles.indices) {
+            if (i == currentChapterIndex) continue
+            if (chapterTitles[i].contains(titleFromPath, ignoreCase = true) ||
+                titleFromPath.contains(chapterTitles[i], ignoreCase = true)) {
+                return i
+            }
+        }
+
+        // Strategy 3: If path contains a recognizable chapter number pattern
+        val numberPattern = Regex("(\\d+)")
+        val numberMatch = numberPattern.find(filename)
+        if (numberMatch != null) {
+            val pageNum = numberMatch.groupValues[1].toIntOrNull()
+            if (pageNum != null && pageNum > 0 && pageNum <= totalChapters) {
+                return pageNum - 1 // 1-based to 0-based
+            }
+        }
+
+        return -1
+    }
+
+    companion object {
+        // Store chapter contents for anchor matching
+        var chapterContents: List<String> = emptyList()
     }
 }
 
@@ -576,24 +743,20 @@ private fun buildEpubHtml(
                     color: inherit;
                 }
             </style>
+            <script>
+                // Intercept all link clicks to ensure they go through shouldOverrideUrlLoading
+                document.addEventListener('click', function(e) {
+                    var link = e.target.closest('a');
+                    if (link && link.href) {
+                        e.preventDefault();
+                        // Navigate to the link - this triggers shouldOverrideUrlLoading
+                        window.location = link.href;
+                    }
+                }, true);
+            </script>
         </head>
         <body>
             $content
-            <script>
-                // Detect taps (click events only fire for actual taps, not scrolls/swipes)
-                document.body.addEventListener('click', function(e) {
-                    // Don't intercept link clicks - let them navigate normally
-                    if (e.target.closest('a')) return;
-                    var rect = document.body.getBoundingClientRect();
-                    var x = e.clientX - rect.left;
-                    // Only trigger menu toggle for center 30%-70% area
-                    if (x > rect.width * 0.3 && x < rect.width * 0.7) {
-                        if (typeof TapBridge !== 'undefined') {
-                            TapBridge.onTap();
-                        }
-                    }
-                });
-            </script>
         </body>
         </html>
     """.trimIndent()
