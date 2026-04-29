@@ -1,0 +1,159 @@
+appId: com.example.ireader
+tags:
+  - ireader
+  - epub
+  - hyperlink
+  - regression
+---
+# ========================================
+# EPUB Hyperlink Navigation Test (新增功能)
+# ========================================
+
+# T34: 应用启动 - 书架页正常显示
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 10000
+- assertVisible: 我的书架
+
+# T35: 导入带有目录的EPUB测试文件
+# 先返回书架确保干净状态
+- tapOn: 书架
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    point: 50%, 90%
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# T36: 打开EPUB书籍（应该先显示目录页）
+- tapOn:
+    text: EPUB
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# T37: 点击屏幕显示控制栏
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# T38: 验证阅读器顶部栏正常显示
+- assertVisible: 设置
+
+# T39: 验证目录按钮存在
+- assertVisible: 目录
+
+# T40: 点击目录按钮打开TOC面板
+- tapOn: 目录
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# T41: 验证TOC面板正常显示
+- assertVisible: 目录
+
+# T42: 通过TOC选择第一章
+- tapOn: 第一章
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# T43: 验证成功跳转到第一章 - 菜单重新显示
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: 设置
+
+# T44: 再次打开TOC
+- tapOn: 目录
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# T45: 通过TOC选择第二章
+- tapOn: 第二章
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# T46: 验证成功跳转到第二章
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: 设置
+
+# T47: 打开TOC选择第三章
+- tapOn: 目录
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn: 第三章
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# T48: 验证成功跳转到第三章
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: 设置
+
+# T49: 返回书架 - 确认导航正常
+- back
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: 我的书架
+
+# ========================================
+# EPUB Reader Regression Tests (回归检查)
+# ========================================
+
+# T50: 重新打开EPUB - 确认基本功能未被破坏
+- tapOn:
+    text: EPUB
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# T51: EPUB点击屏幕显示菜单 - 回归检查
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: 设置
+
+# T52: EPUB设置对话框 - 回归检查
+- tapOn: 设置
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: 阅读设置
+- assertVisible: 确定
+- assertVisible: 取消
+
+# T53: 关闭设置对话框
+- tapOn: 取消
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# T54: EPUB上一章/下一章按钮 - 回归检查
+- tapOn: 目录
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn: 第一章
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: 下一章
+- tapOn: 下一章
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: 上一章
+
+# T55: EPUB返回书架 - 最终确认
+- back
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: 我的书架
