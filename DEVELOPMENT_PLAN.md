@@ -5,7 +5,7 @@
 
 ---
 
-## 📊 总体完成度: ~60%
+## 📊 总体完成度: ~65%
 
 ---
 
@@ -26,7 +26,7 @@
 - [x] 重复导入检测
 - [x] 多选批量删除
 
-## 👁️ 第三阶段：阅读器核心 (部分完成 🔄 60%)
+## 👁️ 第三阶段：阅读器核心 (部分完成 🔄 75%)
 - [x] TXT阅读器实现 (TxtParser + TxtReader + ReaderScreen)
 - [x] EPUB阅读器集成 - epublib解析+WebView显示
 - [x] PDF阅读器集成 - AndroidPdfViewer
@@ -167,3 +167,4 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | 2026-04-28 | BookmarkScreen ArrowBack图标缺失 | 添加import ArrowBack |
 | 2026-04-28 | 完整功能E2E测试通过 | 编写test_complete.yaml覆盖18个测试用例,包含书架搜索底部导航阅读器翻页书签设置所有功能
 | 2026-04-28 | EPUB/PDF阅读器集成 | 实现EpubParser解析EPUB,PdfReaderScreen显示PDF,EpubReaderScreen显示EPUB,ReaderScreen根据格式自动路由 | 代码完成,18个E2E测试用例全部通过
+| 2026-04-29 | EPUB/PDF阅读器触摸事件拦截问题 | EpubWebView添加onTouchListener检测屏幕点击切换菜单，PdfReaderScreen添加onTouchListener和始终可见的TopAppBar，设置按钮改为动画显示/隐藏，BookshelfScreen添加BackHandler支持，33个E2E测试全部通过
