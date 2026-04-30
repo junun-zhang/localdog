@@ -2,6 +2,8 @@ package com.example.ireader.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.ireader.data.local.dao.AnnotationDao
 import com.example.ireader.data.local.dao.UserSettingsDao
 import com.example.ireader.data.local.dao.BookDao
@@ -20,7 +22,7 @@ import com.example.ireader.data.local.entity.UserSettings
         ReadingHistory::class,
         UserSettings::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

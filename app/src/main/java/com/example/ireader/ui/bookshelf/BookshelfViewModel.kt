@@ -22,15 +22,21 @@ class BookshelfViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
-    val books: StateFlow<List<Book>> = _searchQuery
-        .flatMapLatest { query ->
-            if (query.isBlank()) {
-                bookRepository.getAllBooks()
-            } else {
-                bookRepository.searchBooks(query)
-            }
-        }
+    private val _selectedCategory = MutableStateFlow<String?>(null)
+    val selectedCategory: StateFlow<String?> = _selectedCategory
+
+    val categories: StateFlow<List<String>> = bookRepository.getAllCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val books: StateFlow<List<Book>> = combine(_searchQuery, _selectedCategory) { query, category ->
+        Pair(query, category)
+    }.flatMapLatest { (query, category) ->
+        when {
+            query.isNotBlank() -> bookRepository.searchBooks(query)
+            category != null -> bookRepository.getBooksByCategory(category)
+            else -> bookRepository.getAllBooks()
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _selectedBooks = MutableStateFlow<Set<String>>(emptySet())
     val selectedBooks: StateFlow<Set<String>> = _selectedBooks
@@ -51,6 +57,16 @@ class BookshelfViewModel @Inject constructor(
             current.add(book.id)
         }
         _selectedBooks.value = current
+    }
+
+    fun selectCategory(category: String?) {
+        _selectedCategory.value = category
+    }
+
+    fun updateBookCategory(bookId: String, category: String?) {
+        viewModelScope.launch {
+            bookRepository.updateBookCategory(bookId, category)
+        }
     }
 
     fun clearSelection() {

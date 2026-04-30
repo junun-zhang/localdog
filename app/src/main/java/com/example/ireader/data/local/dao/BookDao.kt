@@ -32,4 +32,13 @@ interface BookDao {
 
     @Query("SELECT * FROM books WHERE title LIKE '%' || :query || '%' ORDER BY lastReadTime DESC")
     fun searchBooks(query: String): kotlinx.coroutines.flow.Flow<List<Book>>
+
+    @Query("SELECT DISTINCT category FROM books WHERE category IS NOT NULL AND category != '' ORDER BY category")
+    fun getAllCategories(): kotlinx.coroutines.flow.Flow<List<String>>
+
+    @Query("SELECT * FROM books WHERE category = :category ORDER BY lastReadTime DESC")
+    fun getBooksByCategory(category: String): kotlinx.coroutines.flow.Flow<List<Book>>
+
+    @Query("SELECT * FROM books WHERE tags LIKE '%' || :tag || '%' ORDER BY lastReadTime DESC")
+    fun getBooksByTag(tag: String): kotlinx.coroutines.flow.Flow<List<Book>>
 }

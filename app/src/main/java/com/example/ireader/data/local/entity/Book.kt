@@ -18,5 +18,7 @@ data class Book(
     val currentChapter: Int,
     val progress: Float, // 0.0 ~ 1.0
     val isDownloaded: Boolean,
-    val bookSource: String // "local", "store"
+    val bookSource: String, // "local", "store"
+    val category: String? = null,
+    val tags: String? = null
 )

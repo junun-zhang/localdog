@@ -1,6 +1,7 @@
 package com.example.ireader.ui.bookshelf
 
 import android.net.Uri
+import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -13,7 +14,10 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,7 +38,10 @@ fun BookshelfScreen(
     val books by viewModel.books.collectAsStateWithLifecycle()
     val selectedBooks by viewModel.selectedBooks.collectAsStateWithLifecycle()
     val isInMultiSelectMode by viewModel.isInMultiSelectMode.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
     var showSearch by remember { mutableStateOf(false) }
 
     // Handle back button for search view
@@ -48,6 +55,8 @@ fun BookshelfScreen(
         viewModel.clearSelection()
     }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showCategoryDialog by remember { mutableStateOf(false) }
+    var editingCategory by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -103,7 +112,32 @@ fun BookshelfScreen(
             }
         }
     ) { paddingValues ->
-        if (books.isEmpty()) {
+        // Category filter chips
+        val categoryScrollState = rememberScrollState()
+        Column {
+            if (categories.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(categoryScrollState)
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedCategory == null,
+                        onClick = { viewModel.selectCategory(null) },
+                        label = { Text("全部") }
+                    )
+                    categories.forEach { cat ->
+                        FilterChip(
+                            selected = selectedCategory == cat,
+                            onClick = { viewModel.selectCategory(cat) },
+                            label = { Text(cat) }
+                        )
+                    }
+                }
+            }
+            if (books.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -138,6 +172,63 @@ fun BookshelfScreen(
         }
     }
 
+    val predefinedCategories = listOf(
+        "小说", "科技", "历史", "哲学", "文学",
+        "经济", "教育", "艺术", "生活", "其他"
+    )
+
+    if (showCategoryDialog) {
+        AlertDialog(
+            onDismissRequest = { showCategoryDialog = false },
+            title = { Text("设置分类") },
+            text = {
+                Column {
+                    Text("为 ${selectedBooks.size} 本书选择分类：")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(predefinedCategories) { cat ->
+                            FilterChip(
+                                selected = cat == editingCategory,
+                                onClick = { editingCategory = cat },
+                                label = { Text(cat, style = MaterialTheme.typography.bodySmall) }
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = editingCategory == "清除",
+                                onClick = { editingCategory = "清除" },
+                                label = { Text("清除", style = MaterialTheme.typography.bodySmall) }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val cat = if (editingCategory == "清除") null else editingCategory
+                    scope.launch {
+                        selectedBooks.forEach { bookId ->
+                            viewModel.updateBookCategory(bookId, cat)
+                        }
+                    }
+                    showCategoryDialog = false
+                    editingCategory = ""
+                }) { Text("确定") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showCategoryDialog = false
+                    editingCategory = ""
+                }) { Text("取消") }
+            }
+        )
+    }
+
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
@@ -160,6 +251,7 @@ fun BookshelfScreen(
     }
 }
 
+}
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BookCard(

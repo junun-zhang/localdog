@@ -27,6 +27,24 @@ class BookRepository @Inject constructor(
         return bookDao.getAllBooks()
     }
 
+    fun getAllCategories(): Flow<List<String>> {
+        return bookDao.getAllCategories()
+    }
+
+    fun getBooksByCategory(category: String): Flow<List<Book>> {
+        return bookDao.getBooksByCategory(category)
+    }
+
+    fun getBooksByTag(tag: String): Flow<List<Book>> {
+        return bookDao.getBooksByTag(tag)
+    }
+
+    suspend fun updateBookCategory(bookId: String, category: String?) {
+        val book = getBookById(bookId) ?: return
+        updateBook(book.copy(category = category))
+    }
+
+
     suspend fun getBookById(bookId: String): Book? {
         return bookDao.getBookById(bookId)
     }
