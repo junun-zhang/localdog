@@ -43,10 +43,10 @@
 - [x] 搜索功能 (阅读器内文本搜索)
 - [ ] 书籍分类和标签
 
-## 🛒 第五阶段：图书商城 (部分完成 🔄 30%)
+## 🛒 第五阶段：图书商城 (部分完成 🔄 50%)
 |- [x] 图书商城界面 - StoreScreen完整UI 分类 推荐 搜索 列表 ✅
 |- [x] 服务端API集成 - Express + Mongoose + API + REST ✅
-- [ ] 书籍同步功能
+|- [x] 书籍下载导入功能 - OkHttp下载+本地文件保存+BookRepository导入 ✅
 - [ ] 用户认证系统
 - [ ] 图片加载优化 (Coil已集成但未使用)
 - [ ] 错误处理和加载状态 (LoadingView/EmptyView组件已有)
@@ -175,3 +175,4 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | 2026-04-30 | PDF/EPUB进度保存+进度条+EPUB页数bug | 1) PDF添加进度条和页数指示器; 2) EPUB修复JS页面计算bug(始终1页/进度100%); 3) 三个阅读器统一使用onSaveProgress保存进度 |
 | 2026-04-30 | 书籍分类标签功能完成+书架卡片显示分类标签 | Book实体添加category/tags字段,Room迁移1->2,DAO查询,FilterChip筛选,AlertDialog分类选择,BookCard显示分类标签。E2E测试T1-T25+搜索+T30-T33全部通过 |
 | 2026-04-30 | 图书商城第一阶段: 服务端+Android端UI | 1) 服务端Book模型统一Mongoose,新增featured/popular/categories API,docker-compose+seed; 2) Android StoreScreen(分类标签/推荐/搜索/列表),StoreRepository,StoreViewModel; 3) E2E全部通过 |
+| 2026-04-30 | 图书商城: 书籍下载导入功能 | StoreViewModel下载API+OkHttp文件下载+app.filesDir保存+BookRepository.addLocalBook导入本地书架; StoreScreen按钮绑定下载状态显示; E2E全部通过 |

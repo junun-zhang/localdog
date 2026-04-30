@@ -39,6 +39,11 @@ class StoreRepository @Inject constructor(
         if (resp.success && resp.data != null) resp.data.book
         else throw Exception(resp.message ?: "获取详情失败")
     }
+    suspend fun downloadBook(id: String): Result<Unit> = safeCall {
+        api.downloadBook(id)
+        Unit
+    }
+
 
     suspend fun getCategories(): Result<List<String>> = safeCall {
         val resp = api.getCategories()

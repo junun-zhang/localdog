@@ -35,8 +35,16 @@ fun StoreScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showSearch by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(state.downloadMessages) {
+        state.downloadMessages.values.lastOrNull()?.let { msg ->
+            snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Short)
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(if (showSearch) "" else "图书商城") },
@@ -89,8 +97,7 @@ fun StoreScreen(
                 // Category filter chips
                 if (state.categories.isNotEmpty()) {
                     Row(
-                        Modifier
-                            .fillMaxWidth()
+                        Modifier.fillMaxWidth()
                             .horizontalScroll(rememberScrollState())
                             .padding(horizontal = 12.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -110,11 +117,10 @@ fun StoreScreen(
                     }
                 }
 
-                // Featured section (only at top when no filter/search)
+                // Featured section
                 if (state.selectedCategory == null && state.searchQuery.isBlank()
                     && state.featured.isNotEmpty()) {
-                    Text("推荐书籍",
-                        style = MaterialTheme.typography.titleMedium,
+                    Text("推荐书籍", style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 12.dp))
                     Spacer(Modifier.height(8.dp))
@@ -128,8 +134,7 @@ fun StoreScreen(
                         }
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text("全部书籍",
-                        style = MaterialTheme.typography.titleMedium,
+                    Text("全部书籍", style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 12.dp))
                     Spacer(Modifier.height(4.dp))
@@ -144,7 +149,11 @@ fun StoreScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(state.books, key = { it.id }) { book ->
-                        StoreBookCard(book)
+                        StoreBookCard(
+                            book = book,
+                            downloadMsg = state.downloadMessages[book.id],
+                            onDownload = { viewModel.downloadBook(book) }
+                        )
                     }
 
                     if (state.loadingMore) {
@@ -165,7 +174,7 @@ fun StoreScreen(
 @Composable
 fun FeaturedBookCard(book: StoreBook, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.clickable { /* detail in future */ },
+        modifier = modifier.clickable { },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
@@ -181,15 +190,13 @@ fun FeaturedBookCard(book: StoreBook, modifier: Modifier = Modifier) {
             }
             Column(Modifier.padding(8.dp)) {
                 Text(book.title, style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.Bold)
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
                 Text(book.author, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("★ %.1f".format(book.rating),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFFFFB300))
+                    Text("\u2605 %.1f".format(book.rating),
+                        style = MaterialTheme.typography.labelSmall, color = Color(0xFFFFB300))
                     if (book.isFree) {
                         Spacer(Modifier.width(4.dp))
                         Text("免费", style = MaterialTheme.typography.labelSmall,
@@ -203,7 +210,11 @@ fun FeaturedBookCard(book: StoreBook, modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StoreBookCard(book: StoreBook) {
+fun StoreBookCard(
+    book: StoreBook,
+    downloadMsg: String?,
+    onDownload: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -221,16 +232,14 @@ fun StoreBookCard(book: StoreBook) {
             }
             Column(Modifier.padding(8.dp)) {
                 Text(book.title, style = MaterialTheme.typography.titleSmall,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.Bold)
+                    maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
                 Text(book.author, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("★ %.1f".format(book.rating),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFFFFB300))
+                    Text("\u2605 %.1f".format(book.rating),
+                        style = MaterialTheme.typography.labelSmall, color = Color(0xFFFFB300))
                     Spacer(Modifier.width(8.dp))
                     Text("${book.downloadCount}次下载",
                         style = MaterialTheme.typography.labelSmall,
@@ -238,13 +247,23 @@ fun StoreBookCard(book: StoreBook) {
                 }
                 Spacer(Modifier.height(4.dp))
                 Button(
-                    onClick = { /* download in future */ },
+                    onClick = {
+                        if (downloadMsg == null) onDownload()
+                    },
+                    enabled = downloadMsg == null || !downloadMsg.contains("中"),
                     modifier = Modifier.fillMaxWidth().height(32.dp),
                     contentPadding = PaddingValues(0.dp),
                     shape = RoundedCornerShape(4.dp)
                 ) {
-                    Text(if (book.isFree) "免费下载" else "购买",
-                        style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        when {
+                            downloadMsg == null -> if (book.isFree) "免费下载" else "购买"
+                            downloadMsg.contains("中") -> "下载中..."
+                            downloadMsg.contains("成功") -> "已导入"
+                            else -> "重试"
+                        },
+                        style = MaterialTheme.typography.labelMedium
+                    )
                 }
             }
         }
