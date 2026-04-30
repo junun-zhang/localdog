@@ -9,6 +9,11 @@ import javax.inject.Inject
 
 class TxtParser @Inject constructor() {
 
+    companion object {
+        /** Maximum recommended file size in bytes (50MB). Larger files may cause OOM. */
+        const val MAX_FILE_SIZE = 50L * 1024 * 1024
+    }
+
     /**
      * 解析TXT文件，按章节分割
      * 简单规则：按空行分割，或以"第.*章"作为分隔
@@ -19,6 +24,13 @@ class TxtParser @Inject constructor() {
         if (!file.exists()) {
             Log.e("TxtParser", "File not exists: $filePath")
             return emptyList()
+        }
+
+        // Warn if file is too large (may cause OOM)
+        if (file.length() > MAX_FILE_SIZE) {
+            val mb = file.length() / (1024 * 1024)
+            Log.w("TxtParser", "Large TXT file: ${mb}MB - may cause OOM")
+            // Still attempt to parse - user may have sufficient RAM
         }
 
         return try {

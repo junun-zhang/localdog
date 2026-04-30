@@ -1,5 +1,6 @@
 package com.example.ireader.ui.reader
 
+import android.content.ComponentCallbacks2
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -108,6 +109,23 @@ class ReaderViewModel @Inject constructor(
     init {
         loadBook()
         loadSettings()
+        registerMemoryCallback()
+    }
+
+    // ── Memory management ──
+    private fun registerMemoryCallback() {
+        val callback = object : ComponentCallbacks2 {
+            override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {}
+            override fun onLowMemory() {
+                _chapters.value = emptyList()
+            }
+            override fun onTrimMemory(level: Int) {
+                if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+                    _chapters.value = emptyList()
+                }
+            }
+        }
+        context.registerComponentCallbacks(callback)
     }
 
     // ── Search methods ───────────────────────────────────────────────
