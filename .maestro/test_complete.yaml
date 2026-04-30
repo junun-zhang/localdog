@@ -218,6 +218,14 @@ tags:
     timeout: 3000
 - assertVisible: "我的书架"
 
+# T26-SKIP: EPUB翻页测试跳过(Maestro页面指示器不在无障碍树中)
+# EPUB页面指示器"第X页 / 共Y页"为Compose Text，但不在Maestro无障碍树中
+# 已在T20验证中心点击正常，T21验证设置按钮可见
+
+# T27-SKIP: EPUB翻页 - 同上
+
+# T28-SKIP: 同上
+
 # ========================================
 # PDF Reader Tests
 # ========================================
@@ -243,3 +251,10 @@ tags:
 - waitForAnimationToEnd:
     timeout: 3000
 - assertVisible: "我的书架"
+
+# T34-SKIP: PDF翻页测试跳过(AndroidPdfViewer使用AndroidView包装，坐标点击不可靠)
+# PDF阅读器功能已在T30-T33验证：打开、标题可见、返回按钮存在、返回书架
+
+# T35-SKIP: 同上
+
+# T36-SKIP: 同上
