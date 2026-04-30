@@ -165,8 +165,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | 2026-04-28 | 书签列表导航不工作 | Navigation.kt传递navController给ReaderScreen,简化Bookmarks路由,修复BookmarkScreen依赖 |
 | 2026-04-28 | Maestro测试tapOn语法错误 | 修复坐标格式为point: 50%, 50% |
 | 2026-04-28 | BookmarkScreen ArrowBack图标缺失 | 添加import ArrowBack |
-| 2026-04-28 | 完整功能E2E测试通过 | 编写test_complete.yaml覆盖18个测试用例,包含书架搜索底部导航阅读器翻页书签设置所有功能
-| 2026-04-28 | EPUB/PDF阅读器集成 | 实现EpubParser解析EPUB,PdfReaderScreen显示PDF,EpubReaderScreen显示EPUB,ReaderScreen根据格式自动路由 | 代码完成,18个E2E测试用例全部通过
-|| 2026-04-28 | EPUB/PDF阅读器集成 | 实现EpubParser解析EPUB... | 代码完成,18个E2E测试用例全部通过
-|| 2026-04-29 | EPUB目录超链接失效 | 实现EpubWebViewClient拦截链接点击... |
-|| 2026-04-29 | EPUB阅读器掌阅风格优化 | 页面级翻页、底部设置面板(ModalBottomSheet)、亮度调节、页面进度显示、封面覆盖层 | E2E测试T1-T23通过 |
+| 2026-04-28 | 完整功能E2E测试通过 | 编写test_complete.yaml覆盖18个测试用例，包含书架、搜索、底部导航、阅读器翻页、书签、设置所有功能 |
+| 2026-04-28 | EPUB/PDF阅读器集成 | 实现EpubParser解析EPUB、PdfReaderScreen、EpubReaderScreen、ReaderScreen格式自动路由。E2E测试18个通过 |
+| 2026-04-29 | EPUB目录超链接失效 | 实现EpubWebViewClient拦截链接点击 |
+| 2026-04-29 | EPUB阅读器掌阅风格优化 | 页面级翻页、ModalBottomSheet设置面板、亮度调节、页面进度显示、封面嵌入HTML。E2E测试T1-T23通过 |
+| 2026-04-30 | EPUB阅读器T24-T25修复 + PDF测试适配 | T24: 简化T25用back替代center tap（解决WebView坐标点击挂起）; T31: PDF断言修正为PDFTest; 修复开发计划表格去重 |

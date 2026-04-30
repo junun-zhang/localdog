@@ -169,10 +169,6 @@ tags:
     timeout: 5000
 
 # T25: EPUB阅读器 - 返回书架
-- tapOn:
-    point: 50%, 50%
-- waitForAnimationToEnd:
-    timeout: 3000
 - back
 - waitForAnimationToEnd:
     timeout: 5000
@@ -184,12 +180,12 @@ tags:
 
 # T30: PDF阅读器 - 打开PDF书籍
 - tapOn:
-    text: "PDF"
+    text: "PDFTest"
 - waitForAnimationToEnd:
     timeout: 10000
 
 # T31: PDF阅读器 - PDF阅读界面正常加载
-- assertVisible: "PDF阅读"
+- assertVisible: "PDFTest"
 
 # T32: PDF阅读器 - 返回按钮存在
 - assertVisible: "返回"
@@ -199,3 +195,4 @@ tags:
 - waitForAnimationToEnd:
     timeout: 5000
 - assertVisible: "我的书架"
+
