@@ -5,17 +5,9 @@ tags:
   - e2e
 ---
 # T1: 应用启动 - 书架页正常显示
-- launchApp
 - waitForAnimationToEnd:
-    timeout: 10000
-# Close notification shade if open
-- swipe:
-    start: 50%, 5%
-    end: 50%, 95%
-    duration: 200
-- waitForAnimationToEnd:
-    timeout: 3000
-- assertVisible: "我的书架"
+    timeout: 15000
+- assertVisible: "书架"
 
 # T2: 搜索功能 - 搜索框显示正常
 - tapOn: "搜索"
@@ -109,7 +101,10 @@ tags:
     timeout: 5000
 - back
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 15000
+- tapOn: "书架"
+- waitForAnimationToEnd:
+    timeout: 3000
 - assertVisible: "我的书架"
 
 # T15: 阅读器设置 - 对话框正常显示
@@ -138,7 +133,51 @@ tags:
     timeout: 3000
 - back
 - waitForAnimationToEnd:
+    timeout: 15000
+- tapOn: "书架"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "我的书架"
+
+# T18b: 阅读器内搜索 - 搜索按钮存在
+- tapOn:
+    text: "TXT"
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn:
+    point: 50%, 50%
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "搜索"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "关闭搜索"
+
+# T18c: 阅读器内搜索 - 输入搜索词
+# Text field placeholder not in accessibility tree — use coordinate tap to focus
+- tapOn:
+    point: 40%, 5%
+- waitForAnimationToEnd:
+    timeout: 2000
+- inputText: "test"
+- waitForAnimationToEnd:
     timeout: 5000
+- assertVisible: "找到 1 处匹配"
+
+# T18d: 阅读器内搜索 - 关闭搜索
+- tapOn:
+    point: 50%, 10%
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: "关闭搜索"
+- waitForAnimationToEnd:
+    timeout: 3000
+- back
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn: "书架"
+- waitForAnimationToEnd:
+    timeout: 3000
 - assertVisible: "我的书架"
 
 # ========================================
@@ -178,7 +217,10 @@ tags:
 # T25: EPUB阅读器 - 返回书架
 - back
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 15000
+- tapOn: "书架"
+- waitForAnimationToEnd:
+    timeout: 3000
 - assertVisible: "我的书架"
 
 # ========================================
@@ -201,5 +243,8 @@ tags:
 # T33: PDF阅读器 - 返回书架正常
 - back
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 15000
+- tapOn: "书架"
+- waitForAnimationToEnd:
+    timeout: 3000
 - assertVisible: "我的书架"

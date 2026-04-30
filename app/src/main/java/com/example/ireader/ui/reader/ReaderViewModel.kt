@@ -13,11 +13,27 @@ import com.example.ireader.parser.EpubParser
 import com.example.ireader.parser.TxtParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
+
+/**
+ * A single search result within a book.
+ */
+data class SearchResult(
+    val chapterIndex: Int,
+    val matchText: String,
+    val contextBefore: String,
+    val contextAfter: String,
+    val matchStartInParagraph: Int,
+    val matchEndInParagraph: Int
+)
 
 @HiltViewModel
 class ReaderViewModel @Inject constructor(
@@ -56,6 +72,21 @@ class ReaderViewModel @Inject constructor(
     private val _epubInfo = MutableStateFlow<EpubBookInfo?>(null)
     val epubInfo: StateFlow<EpubBookInfo?> = _epubInfo
 
+    // ── Search state ─────────────────────────────────────────────────
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    private val _searchResults = MutableStateFlow<List<SearchResult>>(emptyList())
+    val searchResults: StateFlow<List<SearchResult>> = _searchResults
+
+    private val _isSearchActive = MutableStateFlow(false)
+    val isSearchActive: StateFlow<Boolean> = _isSearchActive
+
+    private val _isSearching = MutableStateFlow(false)
+    val isSearching: StateFlow<Boolean> = _isSearching
+
+    private var searchJob: Job? = null
+
     companion object {
         private const val KEY_FONT_SIZE = "reader_font_size"
         private const val DEFAULT_FONT_SIZE = 16f
@@ -79,13 +110,84 @@ class ReaderViewModel @Inject constructor(
         loadSettings()
     }
 
-    /** Save reading progress when ViewModel is destroyed (back navigation, etc.) */
+    // ── Search methods ───────────────────────────────────────────────
+    fun startSearch() {
+        _isSearchActive.value = true
+        _searchQuery.value = ""
+        _searchResults.value = emptyList()
+        _showMenu.value = false
+    }
+
+    fun stopSearch() {
+        _isSearchActive.value = false
+        _searchQuery.value = ""
+        _searchResults.value = emptyList()
+    }
+
+    fun searchInBook(query: String) {
+        _searchQuery.value = query
+        if (query.isBlank()) {
+            _searchResults.value = emptyList()
+            return
+        }
+        // Cancel previous search job - withContext respects cancellation when ensureActive is called
+        searchJob?.cancel()
+        _isSearching.value = true
+        searchJob = viewModelScope.launch {
+            val results = withContext(Dispatchers.Default) {
+                ensureActive()  // Check if this job was cancelled before starting
+                val chapters = _chapters.value
+                // Timber.d("searchInBook: query=%s, chapters=%d ...", query, chapters.size, chapters.firstOrNull()?.take(50))
+                val q = query.lowercase()
+                val resultList = mutableListOf<SearchResult>()
+                chapters.forEachIndexed { chapterIdx, content ->
+                    ensureActive()  // Check cancellation between chapters
+                    val paragraphs = content.split("\n\n", "\r\n\r\n")
+                    paragraphs.forEach { para ->
+                        val lower = para.lowercase()
+                        var startIndex = 0
+                        while (true) {
+                            val matchIdx = lower.indexOf(q, startIndex)
+                            if (matchIdx < 0) break
+                            // Build context: up to 30 chars before/after
+                            val beforeStart = (matchIdx - 30).coerceAtLeast(0)
+                            val afterEnd = (matchIdx + query.length + 30).coerceAtMost(para.length)
+                            val contextBefore = if (beforeStart > 0) "..." else ""
+                            val contextAfter = if (afterEnd < para.length) "..." else ""
+                            resultList.add(
+                                SearchResult(
+                                    chapterIndex = chapterIdx,
+                                    matchText = para.substring(matchIdx, matchIdx + query.length),
+                                    contextBefore = contextBefore + para.substring(beforeStart, matchIdx),
+                                    contextAfter = para.substring(matchIdx + query.length, afterEnd) + contextAfter,
+                                    matchStartInParagraph = matchIdx,
+                                    matchEndInParagraph = matchIdx + query.length
+                                )
+                            )
+                            startIndex = matchIdx + query.length
+                        }
+                    }
+                }
+                resultList
+            }
+            // Only update state if this job is still the current search job
+            if (query == _searchQuery.value) {
+                _searchResults.value = results
+                _isSearching.value = false
+            }
+        }
+    }
+
+    fun goToSearchResult(result: SearchResult) {
+        changeChapter(result.chapterIndex)
+    }
+
+    // ── Existing methods ─────────────────────────────────────────────
     override fun onCleared() {
         super.onCleared()
         saveReadingProgress()
     }
 
-    /** Save current reading position to database */
     private fun saveReadingProgress() {
         val id = bookId ?: return
         val chapter = _currentChapter.value
@@ -101,7 +203,6 @@ class ReaderViewModel @Inject constructor(
         }
     }
 
-    /** Save reading progress for PDF/EPUB readers */
     fun saveReaderProgress(bookId: String, page: Int, totalPages: Int) {
         val progress = if (totalPages > 0) page.toFloat() / totalPages.toFloat() else 0f
         viewModelScope.launch {
