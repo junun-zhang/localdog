@@ -5,6 +5,8 @@ import android.graphics.BitmapFactory
 import android.view.ViewGroup.LayoutParams
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.BackHandler
 import android.webkit.WebViewClient
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -341,7 +343,8 @@ fun EpubReaderScreen(
     bookId: String?,
     title: String,
     epubInfo: EpubBookInfo?,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onSaveProgress: (page: Int, totalPages: Int) -> Unit = { _, _ -> }
 ) {
     // ── Data ──────────────────────────────────────────────────────────
     val allChapters = remember { epubInfo?.chapters ?: emptyList() }
@@ -428,6 +431,14 @@ fun EpubReaderScreen(
         bridge.onCenterTap = { showMenu = !showMenu }
         bridge.onPrevPage = { prevPage() }
         bridge.onNextPage = { nextPage() }
+
+    // Save progress on system back press
+    }
+    BackHandler(enabled = true) {
+        if (totalPages > 0) {
+            onSaveProgress(currentPage, totalPages)
+        }
+        onNavigateBack()
     }
 
     // ── Cover image bitmap ────────────────────────────────────────────
@@ -633,6 +644,7 @@ fun EpubReaderScreen(
 
                                     override fun onPageFinished(view: WebView?, url: String?) {
                                         super.onPageFinished(view, url)
+                                        view?.evaluateJavascript("setTimeout(function() { AndroidBridge.contentReady(document.body.scrollHeight, window.innerHeight); }, 300);", null)
                                         // Inject tap bridge handler for link clicks
                                         view?.evaluateJavascript("""
                                             (function() {

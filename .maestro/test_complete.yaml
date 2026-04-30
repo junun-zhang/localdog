@@ -6,12 +6,15 @@ tags:
 ---
 # T1: 应用启动 - 书架页正常显示
 - launchApp
-- swipe:
-    start: 50%, 95%
-    end: 50%, 5%
-    duration: 200
 - waitForAnimationToEnd:
     timeout: 10000
+# Close notification shade if open
+- swipe:
+    start: 50%, 5%
+    end: 50%, 95%
+    duration: 200
+- waitForAnimationToEnd:
+    timeout: 3000
 - assertVisible: "我的书架"
 
 # T2: 搜索功能 - 搜索框显示正常
@@ -193,6 +196,7 @@ tags:
 
 # T32: PDF阅读器 - 返回按钮存在
 - assertVisible: "返回"
+
 
 # T33: PDF阅读器 - 返回书架正常
 - back

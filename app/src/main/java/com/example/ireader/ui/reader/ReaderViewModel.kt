@@ -101,6 +101,19 @@ class ReaderViewModel @Inject constructor(
         }
     }
 
+    /** Save reading progress for PDF/EPUB readers */
+    fun saveReaderProgress(bookId: String, page: Int, totalPages: Int) {
+        val progress = if (totalPages > 0) page.toFloat() / totalPages.toFloat() else 0f
+        viewModelScope.launch {
+            bookRepository.updateReadingProgress(
+                bookId = bookId,
+                chapter = page - 1,
+                position = 0,
+                progress = progress
+            )
+        }
+    }
+
     private fun loadSettings() {
         viewModelScope.launch {
             val size = bookRepository.getSetting(KEY_FONT_SIZE)?.toFloatOrNull() ?: DEFAULT_FONT_SIZE

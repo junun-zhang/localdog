@@ -78,7 +78,10 @@ fun ReaderScreen(
             PdfReaderScreen(
                 filePath = book?.filePath,
                 title = book?.title ?: "PDF阅读",
-                onNavigateBack = { navController?.popBackStack() }
+                onNavigateBack = { navController?.popBackStack() },
+                onSaveProgress = { page, total ->
+                    viewModel.saveReaderProgress(bookId, page, total)
+                }
             )
         }
         isEpub && epubInfo != null -> {
@@ -87,7 +90,10 @@ fun ReaderScreen(
                 bookId = bookId,
                 title = book?.title ?: "EPUB阅读",
                 epubInfo = epubInfo,
-                onNavigateBack = { navController?.popBackStack() }
+                onNavigateBack = { navController?.popBackStack() },
+                onSaveProgress = { page, total ->
+                    viewModel.saveReaderProgress(bookId, page, total)
+                }
             )
         }
         else -> {
