@@ -283,6 +283,14 @@ fun BookCard(
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
+            if (!book.category.isNullOrBlank()) {
+                Text(
+                    text = book.category,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
             Text(
                 text = book.title ?: "\u672a\u77e5\u4e66\u540d",
                 style = MaterialTheme.typography.titleMedium,

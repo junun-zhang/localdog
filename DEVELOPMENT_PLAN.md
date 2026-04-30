@@ -1,11 +1,11 @@
 # IReader 开发计划
 
-> **最后更新**: 2026-04-30 (阅读器内文本搜索功能)  
+> **最后更新**: 2026-04-30 (书架分类标签显示、E2E全通过)
 > **当前阶段**: 第六阶段 - 优化、测试、发布
 
 ---
 
-## 📊 总体完成度: ~60%
+## 📊 总体完成度: ~65%
 
 ---
 
@@ -173,3 +173,4 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | 2026-04-30 | 性能优化：TXT文件大小检查+最大50MB警告+TxtParser边界扫描 | 添加MAX_FILE_SIZE和findBoundaries()方法。ReaderViewModel注册onTrimMemory回调，低内存时释放章节内容 |
 | 2026-04-30 | 阅读器内文本搜索功能实现 | TXT阅读器搜索按钮+搜索面板+全文搜索+结果高亮。E2E测试T18b-d通过。优化协程竞态条件(searchJob取消+ensureActive+query校验) |
 | 2026-04-30 | PDF/EPUB进度保存+进度条+EPUB页数bug | 1) PDF添加进度条和页数指示器; 2) EPUB修复JS页面计算bug(始终1页/进度100%); 3) 三个阅读器统一使用onSaveProgress保存进度 |
+| 2026-04-30 | 书籍分类标签功能完成+书架卡片显示分类标签 | Book实体添加category/tags字段,Room迁移1->2,DAO查询,FilterChip筛选,AlertDialog分类选择,BookCard显示分类标签。E2E测试T1-T25+搜索+T30-T33全部通过 |
