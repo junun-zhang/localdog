@@ -18,12 +18,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
 import com.example.ireader.data.remote.StoreBook
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -173,6 +178,10 @@ fun StoreScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeaturedBookCard(book: StoreBook, modifier: Modifier = Modifier) {
+    val SERVER_BASE = "http://10.0.2.2:3000"
+    val context = LocalContext.current
+    val fullCoverUrl = if (book.coverUrl.isNotBlank()) SERVER_BASE + book.coverUrl else ""
+
     Card(
         modifier = modifier.clickable { },
         shape = RoundedCornerShape(12.dp),
@@ -180,13 +189,26 @@ fun FeaturedBookCard(book: StoreBook, modifier: Modifier = Modifier) {
     ) {
         Column {
             Box(
-                Modifier.fillMaxWidth().height(140.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                Modifier.fillMaxWidth().height(200.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Text(book.format.uppercase(),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer)
+                if (fullCoverUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(fullCoverUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = book.title,
+                        modifier = Modifier.fillMaxSize()
+                            .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(book.format.uppercase(),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             Column(Modifier.padding(8.dp)) {
                 Text(book.title, style = MaterialTheme.typography.bodyMedium,
@@ -195,7 +217,7 @@ fun FeaturedBookCard(book: StoreBook, modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("\u2605 %.1f".format(book.rating),
+                    Text("★ %.1f".format(book.rating),
                         style = MaterialTheme.typography.labelSmall, color = Color(0xFFFFB300))
                     if (book.isFree) {
                         Spacer(Modifier.width(4.dp))
@@ -212,9 +234,13 @@ fun FeaturedBookCard(book: StoreBook, modifier: Modifier = Modifier) {
 @Composable
 fun StoreBookCard(
     book: StoreBook,
-    downloadMsg: String?,
+    downloadMsg: String?, 
     onDownload: () -> Unit
 ) {
+    val SERVER_BASE = "http://10.0.2.2:3000"
+    val context = LocalContext.current
+    val fullCoverUrl = if (book.coverUrl.isNotBlank()) SERVER_BASE + book.coverUrl else ""
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -222,13 +248,26 @@ fun StoreBookCard(
     ) {
         Column {
             Box(
-                Modifier.fillMaxWidth().height(160.dp)
+                Modifier.fillMaxWidth().height(200.dp)
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Text(book.format.uppercase(),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (fullCoverUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(fullCoverUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = book.title,
+                        modifier = Modifier.fillMaxSize()
+                            .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(book.format.uppercase(),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             Column(Modifier.padding(8.dp)) {
                 Text(book.title, style = MaterialTheme.typography.titleSmall,
@@ -238,7 +277,7 @@ fun StoreBookCard(
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("\u2605 %.1f".format(book.rating),
+                    Text("★ %.1f".format(book.rating),
                         style = MaterialTheme.typography.labelSmall, color = Color(0xFFFFB300))
                     Spacer(Modifier.width(8.dp))
                     Text("${book.downloadCount}次下载",
