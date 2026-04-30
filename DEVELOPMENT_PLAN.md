@@ -178,3 +178,4 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | 2026-04-30 | 图书商城: 书籍下载导入功能 | StoreViewModel下载API+OkHttp文件下载+app.filesDir保存+BookRepository.addLocalBook导入本地书架; StoreScreen按钮绑定下载状态显示; E2E全部通过 |
 |- [x] 封面图片加载 - Coil AsyncImage加载网络封面 ✅
 | 2026-04-30 | 图书商城Cover图片加载 | FeaturedBookCard和StoreBookCard改用Coil AsyncImage加载网络封面，保留格式文字占位作为fallback。编译通过+E2E全部通过 |
+| 2026-04-30 | 商城错误处理完善 | 1) 错误页加CloudOff图标+错误分类提示(断网/超时/404/500); 2) 添加空状态(暂无书籍); 3) Coil封面加载中显示进度指示器,加载失败fallback格式文字; 编译通过+E2E全部通过 |

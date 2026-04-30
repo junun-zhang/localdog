@@ -14,6 +14,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,7 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import com.example.ireader.data.remote.StoreBook
@@ -88,13 +90,53 @@ fun StoreScreen(
                 CircularProgressIndicator()
             }
         } else if (state.error != null && state.books.isEmpty() && state.featured.isEmpty()) {
+            // Error state with informative message
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("加载失败", style = MaterialTheme.typography.titleMedium)
-                    Text(state.error ?: "", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(
+                        Icons.Default.CloudOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Spacer(Modifier.height(16.dp))
-                    Button(onClick = { viewModel.loadInitial() }) { Text("重试") }
+                    Text("加载失败", style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        state.error?.let {
+                            when {
+                                it.contains("Unable to resolve host") -> "网络连接不可用，请检查网络设置"
+                                it.contains("timeout") || it.contains("Timeout") -> "连接超时，请稍后重试"
+                                it.contains("HTTP 404") -> "服务暂不可用"
+                                it.contains("HTTP 500") -> "服务器内部错误"
+                                else -> it
+                            }
+                        } ?: "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Button(onClick = { viewModel.loadInitial() }) { Text("重新加载") }
+                }
+            }
+        } else if (!state.loading && state.error == null && state.books.isEmpty() && state.featured.isEmpty()) {
+            // Empty state
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.MenuBook,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text("暂无书籍", style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
+                    Text("书库还没有上架任何书籍，请等待管理员添加",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
@@ -194,7 +236,7 @@ fun FeaturedBookCard(book: StoreBook, modifier: Modifier = Modifier) {
                 contentAlignment = Alignment.Center
             ) {
                 if (fullCoverUrl.isNotBlank()) {
-                    AsyncImage(
+                    SubcomposeAsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(fullCoverUrl)
                             .crossfade(true)
@@ -202,7 +244,19 @@ fun FeaturedBookCard(book: StoreBook, modifier: Modifier = Modifier) {
                         contentDescription = book.title,
                         modifier = Modifier.fillMaxSize()
                             .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(Modifier.size(24.dp))
+                            }
+                        },
+                        error = {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(book.format.uppercase(),
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     )
                 } else {
                     Text(book.format.uppercase(),
@@ -253,7 +307,7 @@ fun StoreBookCard(
                 contentAlignment = Alignment.Center
             ) {
                 if (fullCoverUrl.isNotBlank()) {
-                    AsyncImage(
+                    SubcomposeAsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(fullCoverUrl)
                             .crossfade(true)
@@ -261,7 +315,19 @@ fun StoreBookCard(
                         contentDescription = book.title,
                         modifier = Modifier.fillMaxSize()
                             .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(Modifier.size(24.dp))
+                            }
+                        },
+                        error = {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(book.format.uppercase(),
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     )
                 } else {
                     Text(book.format.uppercase(),
