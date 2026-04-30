@@ -1,5 +1,6 @@
 package com.example.ireader.di
 
+import com.example.ireader.data.remote.StoreBookApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,7 +16,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "http://localhost:8080/api/" // 替换为实际后端地址
+    private const val BASE_URL = "http://10.0.2.2:3000/api/"
 
     @Provides
     @Singleton
@@ -38,5 +39,11 @@ object NetworkModule {
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideStoreBookApi(retrofit: Retrofit): StoreBookApi {
+        return retrofit.create(StoreBookApi::class.java)
     }
 }

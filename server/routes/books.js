@@ -1,117 +1,96 @@
 const express = require('express');
 const Book = require('../models/Book');
-const fs = require('fs');
-const path = require('path');
 
 const router = express.Router();
 
-// 获取书籍列表
-router.get('/books', async (req, res) => {
+// 获取分类列表
+router.get('/categories', async (req, res) => {
+  try {
+    const categories = await Book.distinct('category');
+    res.json({ success: true, data: { categories } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
+});
+
+// 推荐书籍
+router.get('/featured', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const books = await Book.find()
+      .sort({ rating: -1, downloadCount: -1 })
+      .limit(limit);
+    res.json({ success: true, data: { books } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
+});
+
+// 热门书籍
+router.get('/popular', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const books = await Book.find()
+      .sort({ downloadCount: -1, createdAt: -1 })
+      .limit(limit);
+    res.json({ success: true, data: { books } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
+});
+
+// 获取书籍列表（带分页/搜索/分类）
+router.get('/', async (req, res) => {
   try {
     const { category, search, page = 1, limit = 20 } = req.query;
-    let query = {};
-    
-    // 分类筛选
-    if (category && category !== 'all') {
-      query.category = category;
-    }
-    
-    // 搜索功能
+    const query = {};
+    if (category && category !== 'all') query.category = category;
     if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { author: { $regex: search, $options: 'i' } }
+      query. = [
+        { title: { : search, : 'i' } },
+        { author: { : search, : 'i' } }
       ];
     }
-    
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    const books = await Book.find(query)
-      .skip(skip)
-      .limit(parseInt(limit))
-      .sort({ createdAt: -1 });
-    
-    const total = await Book.countDocuments(query);
-    
+    const [books, total] = await Promise.all([
+      Book.find(query).skip(skip).limit(parseInt(limit)).sort({ createdAt: -1 }),
+      Book.countDocuments(query)
+    ]);
     res.json({
       success: true,
-      data: {
-        books,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total,
-          pages: Math.ceil(total / parseInt(limit))
-        }
-      }
+      data: { books, pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) } }
     });
-  } catch (error) {
-    console.error('获取书籍列表失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '服务器内部错误'
-    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '服务器错误' });
   }
 });
 
 // 获取书籍详情
-router.get('/books/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const book = await Book.findById(req.params.id);
-    if (!book) {
-      return res.status(404).json({
-        success: false,
-        message: '书籍不存在'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: book
-    });
-  } catch (error) {
-    console.error('获取书籍详情失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '服务器内部错误'
-    });
+    if (!book) return res.status(404).json({ success: false, message: '书籍不存在' });
+    res.json({ success: true, data: book });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '服务器错误' });
   }
 });
 
-// 下载书籍文件
-router.get('/books/:id/download', async (req, res) => {
+// 下载书籍（增加下载计数）
+router.get('/:id/download', async (req, res) => {
   try {
-    const book = await Book.findById(req.params.id);
-    if (!book) {
-      return res.status(404).json({
-        success: false,
-        message: '书籍不存在'
-      });
-    }
-    
-    const filePath = path.join(__dirname, '..', 'uploads', book.file);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        message: '文件不存在'
-      });
-    }
-    
-    // 增加下载计数
-    await Book.findByIdAndUpdate(req.params.id, {
-      $inc: { downloadCount: 1 }
+    const book = await Book.findByIdAndUpdate(
+      req.params.id,
+      { : { downloadCount: 1 } },
+      { new: true }
+    );
+    if (!book) return res.status(404).json({ success: false, message: '书籍不存在' });
+    res.json({
+      success: true,
+      data: { downloadUrl: book.file, book }
     });
-    
-    // 发送文件
-    res.setHeader('Content-Type', book.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(book.filename)}"`);
-    res.sendFile(filePath);
-  } catch (error) {
-    console.error('下载书籍失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '服务器内部错误'
-    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '服务器错误' });
   }
 });
 

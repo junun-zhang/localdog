@@ -2,7 +2,7 @@
   "name": "ireader-server",
   "version": "1.0.0",
   "description": "IReader Book Store Server",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"

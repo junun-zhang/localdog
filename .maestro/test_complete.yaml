@@ -25,7 +25,7 @@ tags:
 - tapOn: "书库"
 - waitForAnimationToEnd:
     timeout: 3000
-- assertVisible: "书店 - 待开发"
+- assertVisible: "图书商城"
 
 # T5: 底部导航-书架
 - tapOn: "书架"
