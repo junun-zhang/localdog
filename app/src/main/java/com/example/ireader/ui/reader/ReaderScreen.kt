@@ -2,24 +2,17 @@ package com.example.ireader.ui.reader
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
-import androidx.compose.animation.SizeTransform
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
@@ -28,8 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -119,8 +112,6 @@ private fun TxtReaderContent(
     val chapters by viewModel.chapters.collectAsStateWithLifecycle()
     val currentChapter by viewModel.currentChapter.collectAsStateWithLifecycle()
     val showMenu by viewModel.showMenu.collectAsStateWithLifecycle()
-    val flipDirection by viewModel.flipDirection.collectAsStateWithLifecycle()
-    val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var showBookmarkDialog by remember { mutableStateOf(false) }
     val fontSize by viewModel.fontSize.collectAsStateWithLifecycle()
@@ -131,17 +122,6 @@ private fun TxtReaderContent(
     var dialogLineSpacing by remember { mutableStateOf(viewModel.lineSpacing.value) }
     var dialogTheme by remember { mutableStateOf(viewModel.theme.value) }
 
-    var animatedChapterIndex by remember { mutableStateOf(0) }
-    var animateDirection by remember { mutableStateOf(0) }
-
-    LaunchedEffect(currentChapter, flipDirection) {
-        if (flipDirection != 0) {
-            animateDirection = flipDirection
-            animatedChapterIndex = currentChapter
-            viewModel.resetFlipDirection()
-        }
-    }
-
     var showAnnotationDialog by remember { mutableStateOf(false) }
     var annotationText by remember { mutableStateOf("") }
     var annotationNote by remember { mutableStateOf("") }
@@ -150,6 +130,25 @@ private fun TxtReaderContent(
 
     val currentTheme = readerThemes.find { it.name == theme } ?: readerThemes[0]
     val isBookmarked = viewModel.isChapterBookmarked(currentChapter)
+
+    // Vertical scroll state for continuous scrolling
+    val scrollState = rememberScrollState()
+
+    // Track chapter detection and debounce
+    var detectedChapter by remember { mutableIntStateOf(currentChapter) }
+
+    // Detect current chapter based on scroll position
+    LaunchedEffect(scrollState.value) {
+        if (chapters.isNotEmpty() && chapters.size > 1) {
+            val maxScroll = scrollState.maxValue.coerceAtLeast(1)
+            val ratio = scrollState.value.toFloat() / maxScroll.toFloat()
+            val newChapter = (ratio * chapters.size).toInt().coerceIn(0, chapters.lastIndex)
+            if (newChapter != detectedChapter) {
+                detectedChapter = newChapter
+                viewModel.changeChapter(newChapter)
+            }
+        }
+    }
 
     Scaffold(
         containerColor = currentTheme.backgroundColor,
@@ -218,69 +217,88 @@ private fun TxtReaderContent(
                     detectTapGestures(
                         onTap = { offset ->
                             val screenWidth = this.size.width
-                            if (offset.x < screenWidth / 3) {
-                                if (!showMenu) {
-                                    if (viewModel.prevChapter()) {
-                                        scope.launch { listState.scrollToItem(0) }
-                                    }
-                                }
-                            } else if (offset.x > screenWidth * 2 / 3) {
-                                if (!showMenu) {
-                                    if (viewModel.nextChapter()) {
-                                        scope.launch { listState.scrollToItem(0) }
-                                    }
-                                }
-                            } else {
+                            // Center tap (30-70% width) toggles menu
+                            if (offset.x > screenWidth * 0.3f && offset.x < screenWidth * 0.7f) {
                                 viewModel.toggleMenu()
                             }
+                            // Left/right edge taps no longer change chapter
                         }
                     )
                 }
         ) {
-            if (chapters.isNotEmpty() && currentChapter < chapters.size) {
-                AnimatedContent(
-                    targetState = animatedChapterIndex,
-                    transitionSpec = {
-                        slideInHorizontally(
-                            initialOffsetX = { fullWidth ->
-                                if (animateDirection > 0) fullWidth else -fullWidth
-                            },
-                            animationSpec = tween(durationMillis = 300)
-                        ) togetherWith slideOutHorizontally(
-                            targetOffsetX = { fullWidth ->
-                                if (animateDirection > 0) -fullWidth else fullWidth
-                            },
-                            animationSpec = tween(durationMillis = 300)
-                        ) using SizeTransform(clip = false)
-                    },
-                    label = "pageFlip"
-                ) { chapterIndex ->
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        LazyColumn(
+            if (chapters.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                ) {
+                    // Render all chapters continuously with section headers
+                    chapters.forEachIndexed { index, content ->
+                        // Chapter title header - clickable to scroll to this chapter
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f)
-                                .padding(16.dp),
-                            state = listState
+                                .clickable {
+                                    viewModel.changeChapter(index)
+                                    scope.launch {
+                                        val target = if (chapters.size > 1) {
+                                            (scrollState.maxValue * index / chapters.size).coerceAtLeast(0)
+                                        } else 0
+                                        scrollState.animateScrollTo(target)
+                                    }
+                                },
+                            color = currentTheme.backgroundColor.copy(alpha = 0.5f)
                         ) {
-                            itemsIndexed(listOf(chapters[chapterIndex])) { _, content ->
-                                ChapterContent(
-                                    content = content,
-                                    fontSize = fontSize,
-                                    lineSpacing = lineSpacing,
-                                    textColor = currentTheme.textColor
-                                )
-                            }
+                            Text(
+                                text = "第${index + 1}章",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = currentTheme.textColor.copy(alpha = 0.7f),
+                                textAlign = TextAlign.Center
+                            )
                         }
-                        Text(
-                            text = "${chapterIndex + 1}/${chapters.size}",
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
-                                .padding(8.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = currentTheme.textColor
+                        HorizontalDivider(color = currentTheme.textColor.copy(alpha = 0.15f))
+
+                        // Chapter content
+                        ChapterContent(
+                            content = content,
+                            fontSize = fontSize,
+                            lineSpacing = lineSpacing,
+                            textColor = currentTheme.textColor
                         )
+
+                        // Divider between chapters
+                        if (index < chapters.size - 1) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider(
+                                color = currentTheme.textColor.copy(alpha = 0.3f),
+                                thickness = 1.dp,
+                                modifier = Modifier.padding(horizontal = 32.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
                     }
+
+                    // Bottom padding for scroll end
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+
+                // Page progress overlay (bottom center)
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.Black.copy(alpha = 0.3f)
+                ) {
+                    Text(
+                        text = "${currentChapter + 1} / ${chapters.size}",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
                 }
             } else {
                 Box(
@@ -474,7 +492,7 @@ private fun ChapterContent(
     )
 
     val paragraphs = content.split("\n\n", "\r\n\r\n").filter { it.isNotBlank() }
-    Column {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         paragraphs.forEach { paragraph ->
             Text(
                 text = paragraph.trim(),

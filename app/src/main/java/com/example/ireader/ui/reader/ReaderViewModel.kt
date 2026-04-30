@@ -41,9 +41,6 @@ class ReaderViewModel @Inject constructor(
     private val _showMenu = MutableStateFlow(false)
     val showMenu: StateFlow<Boolean> = _showMenu
 
-    private val _flipDirection = MutableStateFlow(0)
-    val flipDirection: StateFlow<Int> = _flipDirection
-
     private val _bookmarks = MutableStateFlow<List<Bookmark>>(emptyList())
     val bookmarks: StateFlow<List<Bookmark>> = _bookmarks
 
@@ -80,6 +77,28 @@ class ReaderViewModel @Inject constructor(
     init {
         loadBook()
         loadSettings()
+    }
+
+    /** Save reading progress when ViewModel is destroyed (back navigation, etc.) */
+    override fun onCleared() {
+        super.onCleared()
+        saveReadingProgress()
+    }
+
+    /** Save current reading position to database */
+    private fun saveReadingProgress() {
+        val id = bookId ?: return
+        val chapter = _currentChapter.value
+        val total = _chapters.value.size.coerceAtLeast(1)
+        val progress = chapter.toFloat() / total.toFloat()
+        viewModelScope.launch {
+            bookRepository.updateReadingProgress(
+                bookId = id,
+                chapter = chapter,
+                position = 0,
+                progress = progress
+            )
+        }
     }
 
     private fun loadSettings() {
@@ -197,22 +216,12 @@ class ReaderViewModel @Inject constructor(
     fun changeChapter(chapter: Int) {
         if (chapter in 0 until (_chapters.value.size)) {
             _currentChapter.value = chapter
-            _book.value?.let { book ->
-                viewModelScope.launch {
-                    bookRepository.updateReadingProgress(
-                        bookId = book.id,
-                        chapter = chapter,
-                        position = 0,
-                        progress = chapter.toFloat() / _chapters.value.size.coerceAtLeast(1)
-                    )
-                }
-            }
+            saveReadingProgress()
         }
     }
 
     fun nextChapter(): Boolean {
         if (_currentChapter.value < _chapters.value.lastIndex) {
-            _flipDirection.value = 1
             changeChapter(_currentChapter.value + 1)
             return true
         }
@@ -221,15 +230,10 @@ class ReaderViewModel @Inject constructor(
 
     fun prevChapter(): Boolean {
         if (_currentChapter.value > 0) {
-            _flipDirection.value = -1
             changeChapter(_currentChapter.value - 1)
             return true
         }
         return false
-    }
-
-    fun resetFlipDirection() {
-        _flipDirection.value = 0
     }
 
     fun toggleMenu() {

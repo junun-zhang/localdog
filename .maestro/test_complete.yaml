@@ -58,17 +58,21 @@ tags:
     timeout: 3000
 - assertVisible: "书签列表"
 
-# T8: 章节翻页 - 向右翻页
-- tapOn:
-    point: 80%, 50%
+# T8: 滑动翻页 - 向上滑动(向下滚动)
+- swipe:
+    start: 50%, 70%
+    end: 50%, 30%
+    duration: 300
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 3000
 
-# T9: 章节翻页 - 向左翻页
-- tapOn:
-    point: 20%, 50%
+# T9: 滑动翻页 - 向下滑动(向上滚动)
+- swipe:
+    start: 50%, 30%
+    end: 50%, 70%
+    duration: 300
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 3000
 
 # T10: 书签功能 - 切换书签状态
 - tapOn:
@@ -195,4 +199,3 @@ tags:
 - waitForAnimationToEnd:
     timeout: 5000
 - assertVisible: "我的书架"
-

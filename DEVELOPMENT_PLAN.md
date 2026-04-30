@@ -169,4 +169,4 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | 2026-04-28 | EPUB/PDF阅读器集成 | 实现EpubParser解析EPUB、PdfReaderScreen、EpubReaderScreen、ReaderScreen格式自动路由。E2E测试18个通过 |
 | 2026-04-29 | EPUB目录超链接失效 | 实现EpubWebViewClient拦截链接点击 |
 | 2026-04-29 | EPUB阅读器掌阅风格优化 | 页面级翻页、ModalBottomSheet设置面板、亮度调节、页面进度显示、封面嵌入HTML。E2E测试T1-T23通过 |
-| 2026-04-30 | EPUB阅读器T24-T25修复 + PDF测试适配 | T24: 简化T25用back替代center tap（解决WebView坐标点击挂起）; T31: PDF断言修正为PDFTest; 修复开发计划表格去重 |
+| 2026-04-30 | TXT阅读器连续滑动 + 导入bug + 阅读进度 | TXT改为上下滑动连续阅读+自动检测章节; 修复书架"+"首次导入失败bug; onCleared()保存进度 |

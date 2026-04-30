@@ -2,8 +2,6 @@ package com.example.ireader.ui.bookshelf
 
 import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -51,20 +49,11 @@ fun BookshelfScreen(
     }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenMultipleDocuments(),
-        onResult = { uris: List<Uri>? ->
-            uris?.forEach { uri ->
-                onAddBookClick()
-            }
-        }
-    )
-
     Scaffold(
         topBar = {
             if (isInMultiSelectMode) {
                 TopAppBar(
-                    title = { Text("${selectedBooks.size} 已选择") },
+                    title = { Text("${selectedBooks.size} \u5df2\u9009\u62e9") },
                     navigationIcon = {
                         IconButton(onClick = { viewModel.clearSelection() }) {
                             Text("<", style = MaterialTheme.typography.titleLarge)
@@ -72,26 +61,29 @@ fun BookshelfScreen(
                     },
                     actions = {
                         IconButton(onClick = { showDeleteConfirm = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = "删除")
+                            Icon(Icons.Default.Delete, contentDescription = "\u5220\u9664")
                         }
                     }
                 )
             } else {
                 TopAppBar(
-                    title = { Text(if (showSearch) "" else "我的书架") },
+                    title = { Text(if (showSearch) "" else "\u6211\u7684\u4e66\u67b6") },
                     actions = {
                         if (!showSearch) {
                             IconButton(onClick = { showSearch = true }) {
-                                Icon(Icons.Default.Search, contentDescription = "搜索")
+                                Icon(Icons.Default.Search, contentDescription = "\u641c\u7d22")
                             }
-                            IconButton(onClick = { filePickerLauncher.launch(arrayOf("*/*")) }) {
-                                Icon(Icons.Default.Add, contentDescription = "导入书籍")
+                            // FIX: Directly call onAddBookClick() instead of launching file picker
+                            // The old code used rememberLauncherForActivityResult which ignored
+                            // the selected URIs and called onAddBookClick() anyway.
+                            IconButton(onClick = { onAddBookClick() }) {
+                                Icon(Icons.Default.Add, contentDescription = "\u5bfc\u5165\u4e66\u7c4d")
                             }
                         } else {
                             TextField(
                                 value = searchQuery,
                                 onValueChange = { viewModel.updateSearchQuery(it) },
-                                placeholder = { Text("搜索书名...") },
+                                placeholder = { Text("\u641c\u7d22\u4e66\u540d...") },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp),
@@ -119,8 +111,8 @@ fun BookshelfScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("书架是空的", style = MaterialTheme.typography.titleMedium)
-                    Text("点击右上角 + 导入书籍", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("\u4e66\u67b6\u662f\u7a7a\u7684", style = MaterialTheme.typography.titleMedium)
+                    Text("\u70b9\u51fb\u53f3\u4e0a\u89d2 + \u5bfc\u5165\u4e66\u7c4d", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
@@ -149,19 +141,19 @@ fun BookshelfScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("确认删除") },
-            text = { Text("确定要删除选中的 ${selectedBooks.size} 本书吗？这将从书架和设备中同时删除。") },
+            title = { Text("\u786e\u8ba4\u5220\u9664") },
+            text = { Text("\u786e\u5b9a\u8981\u5220\u9664\u9009\u4e2d\u7684 ${selectedBooks.size} \u672c\u4e66\u5417\uff1f\u8fd9\u5c06\u4ece\u4e66\u67b6\u548c\u8bbe\u5907\u4e2d\u540c\u65f6\u5220\u9664\u3002") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteSelectedBooks()
                     showDeleteConfirm = false
                 }) {
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+                    Text("\u5220\u9664", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("取消")
+                    Text("\u53d6\u6d88")
                 }
             }
         )
@@ -200,14 +192,14 @@ fun BookCard(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = book.title ?: "未知书名",
+                text = book.title ?: "\u672a\u77e5\u4e66\u540d",
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
             if (book.progress > 0) {
                 Text(
-                    text = "阅读进度 ${(book.progress * 100).toInt()}%",
+                    text = "\u9605\u8bfb\u8fdb\u5ea6 ${(book.progress * 100).toInt()}%",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
