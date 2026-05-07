@@ -86,14 +86,19 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("week") { WeekScreen() }
                         // Day route without parameter (defaults to today)
-                        composable("day") { DayScreen() }
+                        composable("day") { DayScreen(
+                                onEventClick = { eventId -> navController.navigate("event/$eventId") }
+                            ) }
                         // Day route with date parameter
                         composable(
                             route = "day/{date}",
                             arguments = listOf(navArgument("date") { type = androidx.navigation.NavType.LongType })
                         ) { backStackEntry ->
                             val date = backStackEntry.arguments?.getLong("date") ?: System.currentTimeMillis()
-                            DayScreen(selectedDate = date)
+                            DayScreen(
+                                selectedDate = date,
+                                onEventClick = { eventId -> navController.navigate("event/$eventId") }
+                            )
                         }
                         composable("schedule") { ScheduleScreen() }
                         composable("tasks") { TasksScreen() }

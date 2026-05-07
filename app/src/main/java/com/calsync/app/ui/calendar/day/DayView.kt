@@ -30,6 +30,7 @@ private val MAX_EVENT_HEIGHT = 1200.dp
 @Composable
 fun DayScreen(
     selectedDate: Long = System.currentTimeMillis(),
+    onEventClick: ((String) -> Unit)? = null,
     dayViewModel: DayViewModel = hiltViewModel(),
     eventViewModel: EventViewModel = hiltViewModel()
 ) {
@@ -79,7 +80,7 @@ fun DayScreen(
             if (events.isEmpty()) {
                 EmptyTimeline()
             } else {
-                TimelineWithEvents(events)
+                TimelineWithEvents(events, onEventClick)
             }
         }
     }
@@ -145,7 +146,7 @@ fun EmptyTimeline() {
 }
 
 @Composable
-fun TimelineWithEvents(events: List<Event>) {
+fun TimelineWithEvents(events: List<Event>, onEventClick: ((String) -> Unit)? = null) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val totalHeight = 24 * HOUR_HEIGHT.value
         val maxH = this.maxHeight.value
@@ -178,7 +179,7 @@ fun TimelineWithEvents(events: List<Event>) {
                     ) {
                         EventCardCompact(
                             event = event,
-                            onClick = { }
+                            onClick = { onEventClick?.invoke(event.id) }
                         )
                     }
                 }
