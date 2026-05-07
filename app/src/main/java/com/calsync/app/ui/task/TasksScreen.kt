@@ -1,47 +1,189 @@
 package com.calsync.app.ui.task
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.calsync.app.domain.model.Task
+import com.calsync.app.domain.model.Task.Priority
+import com.calsync.app.domain.model.Task.TaskStatus
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun TasksScreen(
+    onCreateTask: () -> Unit = {},
+    onEditTask: ((String) -> Unit)? = null,
     viewModel: TaskViewModel = hiltViewModel()
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            tonalElevation = 2.dp
-        ) {
-            Text(
-                text = "待办事项",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(16.dp),
-                    onClick = { }
+    val state by viewModel.state.collectAsState()
+    val filteredTasks = viewModel.getFilteredTasks()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Top bar
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                tonalElevation = 2.dp
+            ) {
+                Column {
+                    Text(
+                        text = "待办事项",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp)
+                    )
+                    FilterTabs(
+                        activeFilter = state.activeFilter,
+                        onFilterChange = { viewModel.setFilter(it) }
+                    )
+                }
+            }
+
+            // Task list
+            if (filteredTasks.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("暂无待办", fontSize = 16.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("点击右下角 + 添加待办事项",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = when (state.activeFilter) {
+                            TaskFilter.ALL -> "暂无待办\n点击右下角 + 添加"
+                            TaskFilter.TODO -> "没有待办事项"
+                            TaskFilter.IN_PROGRESS -> "没有进行中的事项"
+                            TaskFilter.DONE -> "没有已完成的事项"
+                        },
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 24.sp
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    items(filteredTasks, key = { it.id }) { task ->
+                        TaskCard(
+                            task = task,
+                            onToggleStatus = { viewModel.toggleTaskStatus(task) },
+                            onClick = { onEditTask?.invoke(task.id) },
+                            onDelete = { viewModel.deleteTask(task) }
+                        )
                     }
                 }
             }
+        }
+
+        // FAB
+        FloatingActionButton(
+            onClick = onCreateTask,
+            containerColor = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "添加待办")
+        }
+    }
+}
+
+@Composable
+fun FilterTabs(activeFilter: TaskFilter, onFilterChange: (TaskFilter) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        listOf(
+            TaskFilter.ALL to "\u5168\u90e8",
+            TaskFilter.TODO to "\u5f85\u529e",
+            TaskFilter.IN_PROGRESS to "\u8fdb\u884c\u4e2d",
+            TaskFilter.DONE to "\u5df2\u5b8c\u6210"
+        ).forEach { (filter, label) ->
+            FilterChip(
+                selected = activeFilter == filter,
+                onClick = { onFilterChange(filter) },
+                label = { Text(label, fontSize = 13.sp) }
+            )
+        }
+    }
+}
+
+@Composable
+fun TaskCard(task: Task, onToggleStatus: () -> Unit, onClick: () -> Unit, onDelete: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onToggleStatus, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    imageVector = if (task.status == TaskStatus.DONE) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                    contentDescription = if (task.status == TaskStatus.DONE) "\u5df2\u5b8c\u6210" else "\u6807\u8bb0\u5b8c\u6210",
+                    tint = if (task.status == TaskStatus.DONE) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = task.title, fontSize = 15.sp, fontWeight = FontWeight.Medium,
+                        textDecoration = if (task.status == TaskStatus.DONE) TextDecoration.LineThrough else TextDecoration.None,
+                        color = if (task.status == TaskStatus.DONE) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    PriorityBadge(task.priority)
+                }
+                if (task.dueDate != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    val sdf = SimpleDateFormat("MM/dd", Locale.getDefault())
+                    val isOverdue = task.dueDate < System.currentTimeMillis() && task.status != TaskStatus.DONE
+                    Text(
+                        text = "\u622a\u6b62: " + sdf.format(task.dueDate),
+                        fontSize = 12.sp,
+                        color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(4.dp))
+            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.Delete, contentDescription = "\u5220\u9664", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+}
+
+@Composable
+fun PriorityBadge(priority: Priority) {
+    val (color, label) = when (priority) {
+        Priority.NONE -> Pair(Color.Gray, "")
+        Priority.LOW -> Pair(Color(0xFF4CAF50), "\u4f4e")
+        Priority.MEDIUM -> Pair(Color(0xFFFF9800), "\u4e2d")
+        Priority.HIGH -> Pair(Color(0xFFF44336), "\u9ad8")
+    }
+    if (priority != Priority.NONE) {
+        Surface(shape = MaterialTheme.shapes.small, color = color.copy(alpha = 0.15f)) {
+            Text(text = label, fontSize = 11.sp, color = color, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
         }
     }
 }

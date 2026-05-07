@@ -23,6 +23,7 @@ import com.calsync.app.ui.calendar.week.WeekScreen
 import com.calsync.app.ui.event.EventDetailScreen
 import com.calsync.app.ui.event.EventEditScreen
 import com.calsync.app.ui.task.TasksScreen
+import com.calsync.app.ui.task.TaskEditScreen
 import com.calsync.app.ui.theme.CalSyncTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -104,7 +105,10 @@ class MainActivity : ComponentActivity() {
                                 onEventClick = { eventId -> navController.navigate("event/$eventId") },
                                 onEditEvent = { eventId -> navController.navigate("event/edit/$eventId") }
                             ) }
-                        composable("tasks") { TasksScreen() }
+                        composable("tasks") { TasksScreen(
+                                onCreateTask = { navController.navigate("task/create") },
+                                onEditTask = { taskId -> navController.navigate("task/edit/$taskId") }
+                            ) }
                         composable("event/create") {
                             EventEditScreen(
                                 eventId = null,
@@ -132,6 +136,21 @@ class MainActivity : ComponentActivity() {
                             val eventId = backStackEntry.arguments?.getString("eventId")
                             EventEditScreen(
                                 eventId = eventId,
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable("task/create") {
+                            TaskEditScreen(
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(
+                            route = "task/edit/{taskId}",
+                            arguments = listOf(navArgument("taskId") { type = androidx.navigation.NavType.StringType })
+                        ) { backStackEntry ->
+                            val taskId = backStackEntry.arguments?.getString("taskId")
+                            TaskEditScreen(
+                                taskId = taskId,
                                 onNavigateBack = { navController.popBackStack() }
                             )
                         }
