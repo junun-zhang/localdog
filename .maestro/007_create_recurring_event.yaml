@@ -1,0 +1,28 @@
+appId: com.calsync.app
+---
+# TC-E02: 创建事件 - 带重复和提醒
+- launchApp:
+    appId: "com.calsync.app"
+    clearState: false
+# 点击FAB
+- tapOn:
+    point: "96%,92%"
+- waitForAnimationToEnd
+- assertVisible: "创建事件"
+# 输入标题
+- tapOn: "事件标题"
+- inputText: "重复测试"
+- hideKeyboard
+# 选择重复 - 每周
+- tapOn: "不重复"
+- tapOn: "每周"
+# 选择提醒 - 30分钟前
+- tapOn: "15分钟前"
+- tapOn: "30分钟前"
+# 保存
+- scrollUntilVisible:
+    element:
+      text: "保存"
+    direction: DOWN
+- tapOn: "保存"
+- waitForAnimationToEnd

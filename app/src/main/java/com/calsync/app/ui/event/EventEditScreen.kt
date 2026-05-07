@@ -33,6 +33,23 @@ fun EventEditScreen(
     var isAllDay by remember { mutableStateOf(false) }
     var selectedColor by remember { mutableIntStateOf(0) }
     
+    // Recurrence rule
+    var recurrenceFreq by remember { mutableIntStateOf(0) } // 0=none, 1=daily, 2=weekly, 3=monthly, 4=yearly
+    var recurrenceExpanded by remember { mutableStateOf(false) }
+    val recurrenceOptions = listOf("不重复", "每天", "每周", "每月", "每年")
+    
+    // Reminder
+    var reminderMinutes by remember { mutableIntStateOf(15) }
+    var reminderExpanded by remember { mutableStateOf(false) }
+    val reminderOptions = listOf(
+        0 to "不提醒",
+        5 to "5分钟前",
+        10 to "10分钟前",
+        15 to "15分钟前",
+        30 to "30分钟前",
+        60 to "1小时前"
+    )
+    
     // Initialize with current date/time
     val now = System.currentTimeMillis()
     var startTime by remember { mutableLongStateOf(now) }
@@ -150,14 +167,30 @@ fun EventEditScreen(
                     TextButton(
                         onClick = {
                             if (title.isNotBlank()) {
-                                viewModel.createEvent(
+                                val recurrenceRule = if (recurrenceFreq > 0) {
+                                com.calsync.app.domain.util.RecurrenceRule(
+                                    freq = when (recurrenceFreq) {
+                                        1 -> com.calsync.app.domain.util.RecurrenceRule.Freq.DAILY
+                                        2 -> com.calsync.app.domain.util.RecurrenceRule.Freq.WEEKLY
+                                        3 -> com.calsync.app.domain.util.RecurrenceRule.Freq.MONTHLY
+                                        else -> com.calsync.app.domain.util.RecurrenceRule.Freq.YEARLY
+                                    },
+                                    interval = 1
+                                )
+                            } else null
+                            val reminders = if (reminderMinutes > 0) {
+                                listOf(com.calsync.app.domain.model.Event.Reminder(minutesBefore = reminderMinutes, enabled = true))
+                            } else emptyList()
+                            viewModel.createEvent(
                                     title = title,
                                     startTime = startTime,
                                     endTime = endTime,
                                     isAllDay = isAllDay,
                                     description = description.ifEmpty { null },
                                     location = location.ifEmpty { null },
-                                    color = selectedColor
+                                    color = selectedColor,
+                                    recurrenceRule = recurrenceRule,
+                                    reminders = reminders
                                 ) {
                                     onNavigateBack()
                                 }
@@ -255,6 +288,70 @@ fun EventEditScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+        
+        Divider(modifier = Modifier.padding(vertical = 8.dp))
+        
+        // 重复事件选择
+        Text("重复", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+        Spacer(modifier = Modifier.height(4.dp))
+        ExposedDropdownMenuBox(
+            expanded = recurrenceExpanded,
+            onExpandedChange = { recurrenceExpanded = it }
+        ) {
+            OutlinedTextField(
+                value = recurrenceOptions[recurrenceFreq],
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = recurrenceExpanded) }
+            )
+            ExposedDropdownMenu(
+                expanded = recurrenceExpanded,
+                onDismissRequest = { recurrenceExpanded = false }
+            ) {
+                recurrenceOptions.forEachIndexed { index, option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = {
+                            recurrenceFreq = index
+                            recurrenceExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // 提醒设置
+        Text("提醒", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+        Spacer(modifier = Modifier.height(4.dp))
+        ExposedDropdownMenuBox(
+            expanded = reminderExpanded,
+            onExpandedChange = { reminderExpanded = it }
+        ) {
+            OutlinedTextField(
+                value = reminderOptions.first { it.first == reminderMinutes }.second,
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = reminderExpanded) }
+            )
+            ExposedDropdownMenu(
+                expanded = reminderExpanded,
+                onDismissRequest = { reminderExpanded = false }
+            ) {
+                reminderOptions.forEach { (minutes, label) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            reminderMinutes = minutes
+                            reminderExpanded = false
+                        }
+                    )
                 }
             }
         }

@@ -1,0 +1,21 @@
+appId: com.calsync.app
+---
+# TC-E01: 创建事件 - 基本流程
+- launchApp:
+    appId: "com.calsync.app"
+    clearState: false
+# 点击FAB创建事件
+- tapOn:
+    point: "96%,92%"
+- waitForAnimationToEnd
+- assertVisible: "创建事件"
+# 输入标题
+- tapOn: "事件标题"
+- inputText: "测试事件"
+- hideKeyboard
+# 选择颜色
+- tapOn:
+    point: "70%,65%"
+# 保存
+- tapOn: "保存"
+- waitForAnimationToEnd

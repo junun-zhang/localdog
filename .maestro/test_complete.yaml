@@ -1,15 +1,15 @@
 appId: com.calsync.app
 ---
-# CalSync Complete Test Suite v4
-# Phase 1 & 2 Feature Tests
+# CalSync Complete Test Suite v5
+# Phase 1-3 Tests
 
-# TC-001: App启动
+# --- TC-001: App启动 ---
 - launchApp:
     appId: "com.calsync.app"
     clearState: false
 - assertVisible: "月历"
 
-# TC-002: 底部导航切换
+# --- TC-002: 底部导航切换 ---
 - tapOn: "周历"
 - waitForAnimationToEnd
 - tapOn: "日历"
@@ -22,7 +22,7 @@ appId: com.calsync.app
 - waitForAnimationToEnd
 - assertVisible: "月历"
 
-# TC-G01: MonthView 滑动
+# --- TC-G01: MonthView 滑动 ---
 - swipe:
     direction: "LEFT"
     percentage: 50
@@ -32,7 +32,7 @@ appId: com.calsync.app
     percentage: 50
 - waitForAnimationToEnd
 
-# TC-G02: WeekView 滑动
+# --- TC-G02: WeekView 滑动 ---
 - tapOn: "周历"
 - waitForAnimationToEnd
 - swipe:
@@ -44,7 +44,7 @@ appId: com.calsync.app
     percentage: 50
 - waitForAnimationToEnd
 
-# TC-G03: DayView 滑动
+# --- TC-G03: DayView 滑动 ---
 - tapOn: "日历"
 - waitForAnimationToEnd
 - swipe:
@@ -54,4 +54,17 @@ appId: com.calsync.app
 - swipe:
     direction: "RIGHT"
     percentage: 50
+- waitForAnimationToEnd
+
+# --- TC-E01: 创建事件 ---
+- tapOn: "月历"
+- waitForAnimationToEnd
+- tapOn:
+    point: "96%,92%"
+- waitForAnimationToEnd
+- assertVisible: "创建事件"
+- tapOn: "事件标题"
+- inputText: "测试事件"
+- hideKeyboard
+- tapOn: "保存"
 - waitForAnimationToEnd
