@@ -21,6 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.calsync.app.domain.model.Event
 import com.calsync.app.domain.util.RecurrenceRule
@@ -214,8 +216,7 @@ fun EventEditScreen(
                 actions = {
                     TextButton(
                         onClick = {
-                            if (title.isNotBlank()) {
-                                val recurrenceRule = if (recurrenceFreq > 0) {
+                            val recurrenceRule = if (recurrenceFreq > 0) {
                                     RecurrenceRule(
                                         freq = when (recurrenceFreq) {
                                             1 -> RecurrenceRule.Freq.DAILY
@@ -234,7 +235,7 @@ fun EventEditScreen(
                                     viewModel.loadEventById(eventId!!) { result ->
                                         result.onSuccess { existing ->
                                             val updated = existing.copy(
-                                                title = title,
+                                                title = title.ifBlank { "\u65b0\u4e8b\u4ef6" },
                                                 startTime = startTime,
                                                 endTime = endTime,
                                                 isAllDay = isAllDay,
@@ -253,7 +254,7 @@ fun EventEditScreen(
                                     }
                                 } else {
                                     viewModel.createEvent(
-                                        title = title,
+                                        title = title.ifBlank { "\u65b0\u4e8b\u4ef6" },
                                         startTime = startTime,
                                         endTime = endTime,
                                         isAllDay = isAllDay,
@@ -266,9 +267,8 @@ fun EventEditScreen(
                                         onNavigateBack()
                                     }
                                 }
-                            }
                         },
-                        enabled = title.isNotBlank()
+                        enabled = true
                     ) {
                         Text("\u4fdd\u5b58", fontWeight = FontWeight.Bold)
                     }
@@ -286,7 +286,9 @@ fun EventEditScreen(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("\u4e8b\u4ef6\u6807\u9898") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().semantics {
+                    contentDescription = "\u4e8b\u4ef6\u6807\u9898\u8f93\u5165"
+                },
                 placeholder = { Text("\u8f93\u5165\u4e8b\u4ef6\u6807\u9898") }
             )
 

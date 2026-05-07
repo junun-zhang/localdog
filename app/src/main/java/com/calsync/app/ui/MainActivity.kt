@@ -111,7 +111,10 @@ class MainActivity : ComponentActivity() {
                             EventDetailScreen(
                                 eventId = eventId,
                                 onNavigateBack = { navController.popBackStack() },
-                                onEdit = { navController.navigate("event/edit/$eventId") }
+                                onEdit = { navController.navigate("event/edit/$eventId") },
+                                onEditSingleOccurrence = { newEventId ->
+                                    navController.navigate("event/edit/$newEventId")
+                                }
                             )
                         }
                         composable(

@@ -23,11 +23,13 @@ fun EventDetailScreen(
     eventId: String,
     onNavigateBack: () -> Unit,
     onEdit: () -> Unit,
+    onEditSingleOccurrence: ((String) -> Unit)? = null,
     viewModel: EventViewModel = hiltViewModel()
 ) {
     var event by remember { mutableStateOf<com.calsync.app.domain.model.Event?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    var showRecurringEditDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(eventId) {
         viewModel.loadEventById(eventId) { result ->
@@ -69,7 +71,13 @@ fun EventDetailScreen(
                             }
                         },
                         actions = {
-                            IconButton(onClick = onEdit) {
+                            IconButton(onClick = {
+                                if (currentEvent.recurrenceRule != null) {
+                                    showRecurringEditDialog = true
+                                } else {
+                                    onEdit()
+                                }
+                            }) {
                                 Icon(Icons.Default.Edit, contentDescription = "编辑")
                             }
                             IconButton(onClick = {
@@ -144,6 +152,37 @@ fun EventDetailScreen(
                 }
             }
         }
+    }
+
+    // Recurring event edit dialog
+    if (showRecurringEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showRecurringEditDialog = false },
+            title = { Text("编辑重复事件") },
+            text = { Text("此事件为重复事件，你想如何编辑？") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showRecurringEditDialog = false
+                    onEdit()
+                }) {
+                    Text("编辑全部事件")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showRecurringEditDialog = false
+                    event?.let { ev ->
+                        viewModel.splitRecurringForEdit(ev.id, ev.startTime) { result ->
+                            result.onSuccess { newEventId ->
+                                onEditSingleOccurrence?.invoke(newEventId)
+                            }
+                        }
+                    }
+                }) {
+                    Text("仅编辑此事件")
+                }
+            }
+        )
     }
 }
 

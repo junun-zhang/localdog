@@ -133,4 +133,44 @@ class EventViewModel @Inject constructor(
             onComplete(result)
         }
     }
+
+    fun splitRecurringForEdit(
+        eventId: String,
+        occurrenceDate: Long,
+        onResult: (Result<String>) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val originalEvent = eventRepository.getEventById(eventId)
+            if (originalEvent == null || originalEvent.recurrenceRule == null) {
+                onResult(Result.failure(Exception("Event not found or not recurring")))
+                return@launch
+            }
+            val cal = Calendar.getInstance()
+            cal.timeInMillis = occurrenceDate
+            cal.set(Calendar.HOUR_OF_DAY, 23)
+            cal.set(Calendar.MINUTE, 59)
+            cal.set(Calendar.SECOND, 59)
+            cal.set(Calendar.MILLISECOND, 999)
+            cal.add(Calendar.DAY_OF_MONTH, -1)
+            val updatedOriginal = originalEvent.copy(
+                recurrenceRule = originalEvent.recurrenceRule.copy(until = cal.timeInMillis)
+            )
+            val updateResult = eventRepository.updateEvent(updatedOriginal)
+            if (updateResult.isFailure) {
+                onResult(Result.failure(Exception("Failed to update original event")))
+                return@launch
+            }
+            val duration = originalEvent.endTime - originalEvent.startTime
+            val newEvent = originalEvent.copy(
+                id = java.util.UUID.randomUUID().toString(),
+                startTime = occurrenceDate,
+                endTime = occurrenceDate + duration,
+                recurrenceRule = null,
+                modifiedAt = System.currentTimeMillis()
+            )
+            val createResult = eventRepository.createEvent(newEvent)
+            onResult(createResult.map { it.id })
+        }
+    }
+
 }
