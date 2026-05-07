@@ -25,7 +25,8 @@ data class WeekDay(
 
 data class WeekViewState(
     val weekStartDate: Long = getWeekStart(Calendar.getInstance()),
-    val days: List<WeekDay> = emptyList()
+    val days: List<WeekDay> = emptyList(),
+    val events: Map<Long, List<Event>> = emptyMap()
 ) {
     companion object {
         fun getWeekStart(cal: Calendar): Long {
@@ -103,7 +104,17 @@ class WeekViewModel @Inject constructor(
                     val updatedDays = _state.value.days.map { d ->
                         d.copy(hasEvents = eventDates.contains(d.timestamp))
                     }
-                    _state.update { it.copy(days = updatedDays) }
+                    // Group events by day timestamp
+                    val eventsByDay = mutableMapOf<Long, MutableList<Event>>()
+                    _state.value.days.forEach { day -> eventsByDay[day.timestamp] = mutableListOf() }
+                    for (e in events) {
+                        val c = Calendar.getInstance().apply { timeInMillis = e.startTime }
+                        c.set(Calendar.HOUR_OF_DAY, 0); c.set(Calendar.MINUTE, 0)
+                        c.set(Calendar.SECOND, 0); c.set(Calendar.MILLISECOND, 0)
+                        val dayTs = c.timeInMillis
+                        eventsByDay.getOrPut(dayTs) { mutableListOf() }.add(e)
+                    }
+                    _state.update { it.copy(days = updatedDays, events = eventsByDay) }
                 }
         }
     }

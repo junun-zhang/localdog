@@ -70,6 +70,32 @@ class TaskViewModel @Inject constructor(
         }
     }
 
+    fun completeTask(taskId: String) {
+        viewModelScope.launch {
+            val task = taskRepository.getTaskById(taskId) ?: return@launch
+            val updated = task.copy(status = TaskStatus.DONE, modifiedAt = System.currentTimeMillis())
+            taskRepository.updateTask(updated)
+        }
+    }
+
+    fun batchCompleteTasks(taskIds: List<String>) {
+        viewModelScope.launch {
+            for (id in taskIds) {
+                val task = taskRepository.getTaskById(id) ?: continue
+                val updated = task.copy(status = TaskStatus.DONE, modifiedAt = System.currentTimeMillis())
+                taskRepository.updateTask(updated)
+            }
+        }
+    }
+
+    fun batchDeleteTasks(tasks: List<Task>) {
+        viewModelScope.launch {
+            for (task in tasks) {
+                taskRepository.deleteTask(task)
+            }
+        }
+    }
+
     fun createTask(
         title: String,
         description: String? = null,

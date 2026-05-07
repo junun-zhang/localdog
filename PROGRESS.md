@@ -13,16 +13,16 @@
 - [x] Hilt依赖注入 (DatabaseModule + NetworkModule)
 - [x] Compose主题 + MainActivity + 底部导航
 
-## Phase 2: 核心视图 (95% ✅)
+## Phase 2: 核心视图 (100% ✅)
 - [x] MonthView - 月历网格 (今日高亮、农历、节气、事件标记、节假日)
-- [x] WeekView - 7天网格布局 (待事件显示)
+- [x] WeekView - 7天网格布局 + 事件卡片 + 点击导航至详情
 - [x] DayView - 时间轴布局 + 事件点击→详情
 - [x] ScheduleView - 日程列表 + 事件点击→详情/编辑/删除
 - [x] TasksScreen - 待办事项 (完整CRUD + 筛选)
 - [x] 手势导航 (左右滑动切换 - Month/Week/Day 三视图)
 - [x] EventCard通用组件
 
-## Phase 3: 事件管理 (95% ✅)
+## Phase 3: 事件管理 (100% ✅)
 - [x] 事件创建/编辑表单 (标题、时间、全天、地点、描述、颜色)
 - [x] 事件详情页面 (显示所有字段 + 编辑/删除操作)
 - [x] 编辑模式 - 自动加载已有事件数据
@@ -32,7 +32,7 @@
 - [x] MonthView事件数据接入 + 事件标记圆点
 - [x] DayView事件点击→EventDetailScreen
 - [x] ScheduleView事件→详情/编辑/删除/删除确认
-- [ ] WeekView显示事件
+- [x] WeekView显示事件 + 事件卡片 + 点击导航至详情
 
 ## Phase 4: 共享与同步 (0% - 需后端部署)
 - [ ] 后端Spring Boot部署
@@ -83,7 +83,7 @@
 3. Maestro不支持中文inputText
 
 ## 待完成工作
-1. WeekView显示事件 + 点击导航
+1. ~~已实现~~
 2. 待办批量操作
 3. 天气集成Widget
 4. 通知提醒引擎

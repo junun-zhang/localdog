@@ -85,8 +85,9 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-                        composable("week") { WeekScreen(
-                        onDayClick = { date -> navController.navigate("day/$date") }
+composable("week") { WeekScreen(
+                        onDayClick = { date -> navController.navigate("day/$date") },
+                        onEventClick = { eventId -> navController.navigate("event/$eventId") }
                     ) }
                         // Day route without parameter (defaults to today)
                         composable("day") { DayScreen(

@@ -1,7 +1,8 @@
 package com.calsync.app.ui.calendar.week
 
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -13,16 +14,24 @@ import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.calsync.app.domain.model.Event
 import java.text.SimpleDateFormat
 import java.util.*
+
+private val HOUR_HEIGHT = 50.dp
+private val TIMELINE_WIDTH = 45.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeekScreen(
     onDayClick: ((Long) -> Unit)? = null,
+    onEventClick: ((String) -> Unit)? = null,
     viewModel: WeekViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -56,7 +65,12 @@ fun WeekScreen(
                     )
                 }
         ) {
-            WeekContent(days = state.days)
+            WeekContent(
+                days = state.days,
+                eventsByDay = state.events,
+                onEventClick = onEventClick,
+                onDayClick = onDayClick
+            )
         }
     }
 }
@@ -86,7 +100,7 @@ fun WeekTopBar(
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "${monthSdf.format(weekStartDate)}${weekStart}\u65e5-${weekEnd}\u65e5",
+                text = "${monthSdf.format(weekStartDate)}$weekStart\u65e5-$weekEnd\u65e5",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -135,42 +149,124 @@ fun WeekTopBar(
             }
         }
     }
-    Divider(modifier = Modifier.padding(horizontal = 8.dp))
+    HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
 }
 
 @Composable
-fun WeekContent(days: List<WeekDay>) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(24) { hour ->
-            Row(
-                modifier = Modifier.fillMaxWidth()
-                    .height(50.dp)
-                    .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Text(
-                    text = String.format("%02d:00", hour),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.width(45.dp)
-                        .padding(end = 4.dp)
-                        .align(Alignment.Top)
-                )
-                repeat(7) {
-                    Box(
-                        modifier = Modifier.fillMaxHeight()
-                            .weight(1f)
-                            .padding(1.dp)
+fun WeekContent(
+    days: List<WeekDay>,
+    eventsByDay: Map<Long, List<Event>> = emptyMap(),
+    onEventClick: ((String) -> Unit)? = null,
+    onDayClick: ((Long) -> Unit)? = null
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val totalHeight = 24 * HOUR_HEIGHT.value
+        val totalWidth = this.maxWidth
+
+        // Background grid with hour labels
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(24) { hour ->
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .height(HOUR_HEIGHT)
+                        .padding(end = 8.dp)
+                ) {
+                    // Hour label
+                    Text(
+                        text = String.format("%02d:00", hour),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.width(TIMELINE_WIDTH)
+                            .padding(end = 4.dp)
+                            .align(Alignment.Top)
+                    )
+                    // 7 day columns background
+                    repeat(7) { dayIdx ->
+                        Box(
+                            modifier = Modifier.fillMaxHeight()
+                                .weight(1f)
+                                .padding(start = 1.dp, end = 1.dp)
+                                .background(
+                                    color = if (days.getOrNull(dayIdx)?.isToday == true)
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.04f)
+                                    else Color.Transparent
+                                )
+                        )
+                    }
+                }
+                if (hour < 23) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
                     )
                 }
             }
-            if (hour < 23) {
-                Divider(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    thickness = 0.5.dp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-                )
+        }
+
+        // Overlay events on top of grid
+        if (eventsByDay.isNotEmpty()) {
+            val columnWidth = (totalWidth - TIMELINE_WIDTH) / 7f
+            days.forEachIndexed { dayIdx, day ->
+                val dayEvents = eventsByDay[day.timestamp] ?: emptyList()
+                dayEvents.forEach { event ->
+                    val startMin = getMinutesFromMidnight(event.startTime)
+                    val durationMs = event.endTime - event.startTime
+                    val durationMin = (durationMs / (1000 * 60)).coerceIn(30, 1440)
+
+                    val topPx = (startMin.toFloat() / 60f) * HOUR_HEIGHT.value
+                    val heightPx = (durationMin.toFloat() / 60f) * HOUR_HEIGHT.value
+
+                    val topOffset = topPx.coerceIn(0f, totalHeight).dp
+                    val eventHeight = heightPx.coerceIn(16f, HOUR_HEIGHT.value * 6).dp
+                    val leftOffset = (TIMELINE_WIDTH.value + dayIdx * columnWidth.value + 2).dp
+
+                    if (topOffset.value < totalHeight) {
+                        Box(
+                            modifier = Modifier
+                                .offset(x = leftOffset, y = topOffset)
+                                .width((columnWidth.value - 4).dp)
+                                .height(eventHeight)
+                                .clickable { onEventClick?.invoke(event.id) }
+                                .semantics {
+                                    contentDescription = "周视图事件: " + event.title
+                                }
+                                .background(
+                                    color = event.getEventColor().copy(alpha = 0.2f),
+                                    shape = MaterialTheme.shapes.extraSmall
+                                )
+                                .padding(horizontal = 2.dp, vertical = 1.dp),
+                            contentAlignment = Alignment.TopStart
+                        ) {
+                            Column {
+                                Text(
+                                    text = event.title,
+                                    fontSize = if (eventHeight.value < 24) 9.sp else 10.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = event.getEventColor(),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                if (eventHeight.value >= 36 && !event.isAllDay) {
+                                    val timeSdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+                                    Text(
+                                        text = timeSdf.format(event.startTime),
+                                        fontSize = 8.sp,
+                                        color = event.getEventColor().copy(alpha = 0.7f),
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
+}
+
+private fun getMinutesFromMidnight(timestamp: Long): Int {
+    val cal = Calendar.getInstance()
+    cal.timeInMillis = timestamp
+    return cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
 }
