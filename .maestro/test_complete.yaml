@@ -1,0 +1,57 @@
+appId: com.calsync.app
+---
+# CalSync Complete Test Suite v4
+# Phase 1 & 2 Feature Tests
+
+# TC-001: App启动
+- launchApp:
+    appId: "com.calsync.app"
+    clearState: false
+- assertVisible: "月历"
+
+# TC-002: 底部导航切换
+- tapOn: "周历"
+- waitForAnimationToEnd
+- tapOn: "日历"
+- waitForAnimationToEnd
+- tapOn: "日程"
+- waitForAnimationToEnd
+- tapOn: "待办"
+- waitForAnimationToEnd
+- tapOn: "月历"
+- waitForAnimationToEnd
+- assertVisible: "月历"
+
+# TC-G01: MonthView 滑动
+- swipe:
+    direction: "LEFT"
+    percentage: 50
+- waitForAnimationToEnd
+- swipe:
+    direction: "RIGHT"
+    percentage: 50
+- waitForAnimationToEnd
+
+# TC-G02: WeekView 滑动
+- tapOn: "周历"
+- waitForAnimationToEnd
+- swipe:
+    direction: "LEFT"
+    percentage: 50
+- waitForAnimationToEnd
+- swipe:
+    direction: "RIGHT"
+    percentage: 50
+- waitForAnimationToEnd
+
+# TC-G03: DayView 滑动
+- tapOn: "日历"
+- waitForAnimationToEnd
+- swipe:
+    direction: "LEFT"
+    percentage: 50
+- waitForAnimationToEnd
+- swipe:
+    direction: "RIGHT"
+    percentage: 50
+- waitForAnimationToEnd

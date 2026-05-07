@@ -1,0 +1,12 @@
+appId: com.calsync.app
+---
+# Swipe left on month view to go to next month
+- swipe:
+    direction: "LEFT"
+    percentage: 50
+- assertVisible: "6月"
+# Swipe right to go back
+- swipe:
+    direction: "RIGHT"
+    percentage: 50
+- assertVisible: "5月"

@@ -1,5 +1,6 @@
 package com.calsync.app.ui.event
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.calsync.app.data.repository.EventRepository
@@ -39,13 +40,28 @@ class EventViewModel @Inject constructor(
         cal.set(Calendar.HOUR_OF_DAY, 23)
         cal.set(Calendar.MINUTE, 59)
         cal.set(Calendar.SECOND, 59)
+        cal.set(Calendar.MILLISECOND, 999)
         val endOfDay = cal.timeInMillis
+
+        Log.d("EventVM", "Loading events for date: $date, range: $startOfDay - $endOfDay, calendarId: ${_state.value.calendarId}")
 
         viewModelScope.launch {
             eventRepository.getEventsInRange(_state.value.calendarId, startOfDay, endOfDay)
                 .collect { events ->
+                    Log.d("EventVM", "Loaded ${events.size} events")
                     _state.update { it.copy(events = events, selectedDate = date) }
                 }
+        }
+    }
+
+    fun loadEventById(eventId: String, onResult: (Result<Event>) -> Unit = {}) {
+        viewModelScope.launch {
+            val event = eventRepository.getEventById(eventId)
+            if (event != null) {
+                onResult(Result.success(event))
+            } else {
+                onResult(Result.failure(Exception("事件不存在")))
+            }
         }
     }
 
@@ -85,7 +101,7 @@ class EventViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             val event = Event(
-                id = "local-" + System.currentTimeMillis(),
+                id = java.util.UUID.randomUUID().toString(),
                 calendarId = _state.value.calendarId,
                 title = title,
                 startTime = startTime,
@@ -97,7 +113,9 @@ class EventViewModel @Inject constructor(
                 reminders = reminders,
                 recurrenceRule = recurrenceRule
             )
+            Log.d("EventVM", "Creating event: ${event.title}, startTime=${event.startTime}, endTime=${event.endTime}, calendarId=${event.calendarId}")
             val result = eventRepository.createEvent(event)
+            Log.d("EventVM", "Create result: ${result.isSuccess}, event id=${result.getOrNull()?.id}")
             onComplete(result)
         }
     }

@@ -1,6 +1,6 @@
-# CalSync 开发进度报告 v1.2
+# CalSync 开发进度报告 v1.3
 
-**日期**: 2026-04-24 | **分支**: cal-sync-init | **APK**: 已安装
+**日期**: 2026-05-07 | **分支**: cal-sync-init | **APK**: 已安装
 
 ---
 
@@ -13,16 +13,16 @@
 - [x] Hilt依赖注入 (DatabaseModule + NetworkModule)
 - [x] Compose主题 + MainActivity + 底部导航
 
-## Phase 2: 核心视图 (80% ✅)
+## Phase 2: 核心视图 (95% ✅)
 - [x] MonthView - 月历网格组件 (今日高亮、农历、节气、事件标记)
 - [x] WeekView - 7天网格布局
 - [x] DayView - 时间轴布局
 - [x] ScheduleView - 日程列表
 - [x] TasksScreen - 待办事项
 - [x] MonthViewModel - 月份数据管理
-- [ ] 手势导航 (左右滑动切换)
-- [ ] EventCard通用组件
-- [ ] EventViewModel + StateFlow
+- [x] 手势导航 (左右滑动切换 - Month/Week/Day 三视图)
+- [x] EventCard通用组件
+- [x] EventViewModel + StateFlow
 
 ## Phase 3: 事件管理 (0%)
 - [ ] 事件创建/编辑表单
@@ -71,12 +71,10 @@
 
 ## 已知问题
 1. 后端未部署 - Repository远程同步无法测试
-2. 手势导航未实现 - 需添加swipe手势
 3. 测试覆盖率0% - 需补充单元测试
 4. 事件数据未接入 - MonthView事件标记为静态
 
 ## 下一步
 1. 实现EventCard通用组件
 2. 实现EventViewModel + StateFlow
-3. 添加手势导航
 4. 事件创建/编辑表单

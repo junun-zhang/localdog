@@ -1,6 +1,7 @@
 package com.calsync.app.ui.calendar.month
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,9 +25,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,6 +43,8 @@ fun MonthScreen(
     onNavigateToDay: ((Long) -> Unit)? = null
 ) {
     val state by viewModel.state.collectAsState()
+    val swipeThreshold = 100f
+
     Column(modifier = Modifier.fillMaxSize()) {
         MonthHeader(
             year = state.currentYear,
@@ -49,14 +54,35 @@ fun MonthScreen(
             onToday = { viewModel.goToToday() }
         )
         WeekHeader()
-        CalendarGrid(
-            days = state.days,
-            selectedDate = state.selectedDate,
-            onDayClick = { ts ->
-                viewModel.selectDate(ts)
-                onNavigateToDay?.invoke(ts)
-            }
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    var totalDrag = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { totalDrag = 0f },
+                        onDragEnd = {
+                            if (totalDrag > swipeThreshold) {
+                                viewModel.goToPreviousMonth()
+                            } else if (totalDrag < -swipeThreshold) {
+                                viewModel.goToNextMonth()
+                            }
+                        },
+                        onHorizontalDrag = { _, dragAmount ->
+                            totalDrag += dragAmount
+                        }
+                    )
+                }
+        ) {
+            CalendarGrid(
+                days = state.days,
+                selectedDate = state.selectedDate,
+                onDayClick = { ts ->
+                    viewModel.selectDate(ts)
+                    onNavigateToDay?.invoke(ts)
+                }
+            )
+        }
     }
 }
 
@@ -78,20 +104,20 @@ fun MonthHeader(
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = year.toString() + "年" + month.toString() + "月",
+                text = year.toString() + "\u5e74" + month.toString() + "\u6708",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
-            val lm = listOf("", "正月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月")
+            val lm = listOf("", "\u6b63\u6708", "\u4e8c\u6708", "\u4e09\u6708", "\u56db\u6708", "\u4e94\u6708", "\u516d\u6708", "\u4e03\u6708", "\u516b\u6708", "\u4e5d\u6708", "\u5341\u6708", "\u5341\u4e00\u6708", "\u5341\u4e8c\u6708")
             Text(
-                text = "农历" + lm[month],
+                text = "\u519c\u5386" + lm[month],
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Row {
             IconButton(onClick = onToday) {
-                Text("今", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text("\u4eca", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
             IconButton(onClick = onNextMonth) {
                 Text("\u203A", fontSize = 28.sp, fontWeight = FontWeight.Bold)
@@ -106,7 +132,7 @@ fun WeekHeader() {
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        listOf("日", "一", "二", "三", "四", "五", "六").forEach {
+        listOf("\u65e5", "\u4e00", "\u4e8c", "\u4e09", "\u56db", "\u4e94", "\u516d").forEach {
             Text(
                 text = it,
                 fontSize = 12.sp,
@@ -150,7 +176,7 @@ fun CalendarGrid(days: List<CalendarDay>, selectedDate: Long?, onDayClick: (Long
                     val sub = when {
                         day.solarTerm != null -> day.solarTerm
                         day.holidayName != null -> day.holidayName
-                        day.lunarDay != "初一" -> day.lunarDay
+                        day.lunarDay != "\u521d\u4e00" -> day.lunarDay
                         else -> day.lunarMonth
                     }
                     if (sub.isNotEmpty() && day.isCurrentMonth) {

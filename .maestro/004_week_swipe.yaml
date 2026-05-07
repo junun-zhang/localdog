@@ -1,0 +1,17 @@
+appId: com.calsync.app
+---
+# TC-G02: WeekView 手势滑动
+- launchApp:
+    appId: "com.calsync.app"
+    clearState: true
+- tapOn: "周历"
+- waitForAnimationToEnd
+# Swipe left to go to next week
+- swipe:
+    direction: "LEFT"
+    percentage: 50
+- waitForAnimationToEnd
+# Swipe right to go back
+- swipe:
+    direction: "RIGHT"
+    percentage: 50

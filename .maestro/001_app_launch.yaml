@@ -1,0 +1,8 @@
+appId: com.calsync.app
+---
+# TC-001: App启动测试
+- launchApp:
+    appId: "com.calsync.app"
+    clearState: true
+# 月历视图默认显示当前月份
+- assertVisible: "年"

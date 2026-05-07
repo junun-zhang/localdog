@@ -138,13 +138,14 @@ class MonthViewModel @Inject constructor(
         val lunarDay = LunarCalendar.getLunarDayName(year, month, day)
         val lunarMonth = LunarCalendar.getLunarMonthName(year, month, day)
         val solarTerm = LunarCalendar.getSolarTerm(timestamp)
+        val currentMonth = _state.value.currentMonth
 
         return CalendarDay(
             dayOfMonth = day,
             month = month,
             year = year,
             isToday = isToday,
-            isCurrentMonth = true,
+            isCurrentMonth = month == currentMonth,
             lunarDay = lunarDay,
             lunarMonth = lunarMonth,
             holidayName = null, // TODO: 从API获取

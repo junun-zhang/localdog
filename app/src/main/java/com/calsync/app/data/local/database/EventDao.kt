@@ -1,11 +1,12 @@
 package com.calsync.app.data.local.database
+
 import androidx.room.*
 import com.calsync.app.data.local.entity.EventEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface EventDao {
-    @Query("SELECT * FROM events WHERE calendarId = :calendarId AND startTime BETWEEN :start AND :end ORDER BY startTime")
+    @Query("SELECT * FROM events WHERE calendarId = :calendarId AND startTime < :end AND endTime > :start ORDER BY startTime")
     fun getEventsInRange(calendarId: String, start: Long, end: Long): Flow<List<EventEntity>>
 
     @Query("SELECT * FROM events WHERE id = :id")
@@ -23,8 +24,12 @@ interface EventDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEvents(events: List<EventEntity>)
 
-    @Update suspend fun updateEvent(event: EventEntity)
-    @Delete suspend fun deleteEvent(event: EventEntity)
+    @Update
+    suspend fun updateEvent(event: EventEntity)
+
+    @Delete
+    suspend fun deleteEvent(event: EventEntity)
+
     @Query("DELETE FROM events WHERE id = :id")
     suspend fun deleteEventById(id: String)
 

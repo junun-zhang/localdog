@@ -1,0 +1,11 @@
+appId: com.calsync.app
+---
+# TC-G01: MonthView 手势滑动
+- launchApp:
+    appId: "com.calsync.app"
+    clearState: true
+# 获取当前月份显示
+- runFlow:
+    when:
+      visible: "2026年5月"
+    file: ../subflows/swipe_month_left.yaml

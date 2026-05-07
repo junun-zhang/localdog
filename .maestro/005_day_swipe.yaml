@@ -1,0 +1,17 @@
+appId: com.calsync.app
+---
+# TC-G03: DayView 手势滑动
+- launchApp:
+    appId: "com.calsync.app"
+    clearState: true
+- tapOn: "日历"
+- waitForAnimationToEnd
+# Swipe left to go to next day
+- swipe:
+    direction: "LEFT"
+    percentage: 50
+- waitForAnimationToEnd
+# Swipe right to go back
+- swipe:
+    direction: "RIGHT"
+    percentage: 50

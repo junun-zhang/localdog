@@ -1,16 +1,18 @@
 package com.calsync.app.ui.event
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,8 +32,101 @@ fun EventEditScreen(
     var location by remember { mutableStateOf("") }
     var isAllDay by remember { mutableStateOf(false) }
     var selectedColor by remember { mutableIntStateOf(0) }
-    var startTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    var endTime by remember { mutableLongStateOf(System.currentTimeMillis() + 3600000) }
+    
+    // Initialize with current date/time
+    val now = System.currentTimeMillis()
+    var startTime by remember { mutableLongStateOf(now) }
+    var endTime by remember { mutableLongStateOf(now + 3600000) }
+
+    // Picker states
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+    var showStartTimePicker by remember { mutableStateOf(false) }
+    var showEndTimePicker by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val timeSdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val dateSdf = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
+
+    // Date pickers
+    if (showStartDatePicker) {
+        val cal = Calendar.getInstance().apply { timeInMillis = startTime }
+        DatePickerDialog(
+            context,
+            { _, year, month, day ->
+                val newCal = Calendar.getInstance().apply {
+                    timeInMillis = startTime
+                    set(Calendar.YEAR, year)
+                    set(Calendar.MONTH, month)
+                    set(Calendar.DAY_OF_MONTH, day)
+                }
+                startTime = newCal.timeInMillis
+                showStartDatePicker = false
+            },
+            cal.get(Calendar.YEAR),
+            cal.get(Calendar.MONTH),
+            cal.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
+    if (showEndDatePicker) {
+        val cal = Calendar.getInstance().apply { timeInMillis = endTime }
+        DatePickerDialog(
+            context,
+            { _, year, month, day ->
+                val newCal = Calendar.getInstance().apply {
+                    timeInMillis = endTime
+                    set(Calendar.YEAR, year)
+                    set(Calendar.MONTH, month)
+                    set(Calendar.DAY_OF_MONTH, day)
+                }
+                endTime = newCal.timeInMillis
+                showEndDatePicker = false
+            },
+            cal.get(Calendar.YEAR),
+            cal.get(Calendar.MONTH),
+            cal.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
+    // Time pickers
+    if (showStartTimePicker) {
+        val cal = Calendar.getInstance().apply { timeInMillis = startTime }
+        TimePickerDialog(
+            context,
+            { _, hour, minute ->
+                val newCal = Calendar.getInstance().apply {
+                    timeInMillis = startTime
+                    set(Calendar.HOUR_OF_DAY, hour)
+                    set(Calendar.MINUTE, minute)
+                }
+                startTime = newCal.timeInMillis
+                showStartTimePicker = false
+            },
+            cal.get(Calendar.HOUR_OF_DAY),
+            cal.get(Calendar.MINUTE),
+            true
+        ).show()
+    }
+
+    if (showEndTimePicker) {
+        val cal = Calendar.getInstance().apply { timeInMillis = endTime }
+        TimePickerDialog(
+            context,
+            { _, hour, minute ->
+                val newCal = Calendar.getInstance().apply {
+                    timeInMillis = endTime
+                    set(Calendar.HOUR_OF_DAY, hour)
+                    set(Calendar.MINUTE, minute)
+                }
+                endTime = newCal.timeInMillis
+                showEndTimePicker = false
+            },
+            cal.get(Calendar.HOUR_OF_DAY),
+            cal.get(Calendar.MINUTE),
+            true
+        ).show()
+    }
 
     val colors = listOf(
         MaterialTheme.colorScheme.primary,
@@ -52,19 +147,24 @@ fun EventEditScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = {
-                        viewModel.createEvent(
-                            title = title,
-                            startTime = startTime,
-                            endTime = endTime,
-                            isAllDay = isAllDay,
-                            description = description.ifEmpty { null },
-                            location = location.ifEmpty { null },
-                            color = selectedColor
-                        ) {
-                            onNavigateBack()
-                        }
-                    }) {
+                    TextButton(
+                        onClick = {
+                            if (title.isNotBlank()) {
+                                viewModel.createEvent(
+                                    title = title,
+                                    startTime = startTime,
+                                    endTime = endTime,
+                                    isAllDay = isAllDay,
+                                    description = description.ifEmpty { null },
+                                    location = location.ifEmpty { null },
+                                    color = selectedColor
+                                ) {
+                                    onNavigateBack()
+                                }
+                            }
+                        },
+                        enabled = title.isNotBlank()
+                    ) {
                         Text("保存", fontWeight = FontWeight.Bold)
                     }
                 }
@@ -91,18 +191,30 @@ fun EventEditScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("全天事件", modifier = Modifier.weight(1f))
+                Text("全天事件", modifier = Modifier.weight(1f), fontSize = 15.sp)
                 Switch(checked = isAllDay, onCheckedChange = { isAllDay = it })
             }
 
             Divider(modifier = Modifier.padding(vertical = 8.dp))
 
             if (!isAllDay) {
-                TimePickerRow(label = "开始时间", timestamp = startTime, onTimeChange = { startTime = it })
-                Spacer(modifier = Modifier.height(8.dp))
-                TimePickerRow(label = "结束时间", timestamp = endTime, onTimeChange = { endTime = it })
+                DateTimePickerRow(
+                    label = "开始时间",
+                    dateStr = dateSdf.format(startTime),
+                    timeStr = timeSdf.format(startTime),
+                    onDateClick = { showStartDatePicker = true },
+                    onTimeClick = { showStartTimePicker = true }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                DateTimePickerRow(
+                    label = "结束时间",
+                    dateStr = dateSdf.format(endTime),
+                    timeStr = timeSdf.format(endTime),
+                    onDateClick = { showEndDatePicker = true },
+                    onTimeClick = { showEndTimePicker = true }
+                )
             } else {
-                Text("全天事件", fontSize = 16.sp)
+                Text("全天事件", fontSize = 16.sp, modifier = Modifier.padding(vertical = 8.dp))
             }
 
             Divider(modifier = Modifier.padding(vertical = 8.dp))
@@ -150,16 +262,32 @@ fun EventEditScreen(
 }
 
 @Composable
-fun TimePickerRow(label: String, timestamp: Long, onTimeChange: (Long) -> Unit) {
-    val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-    Row(
-        modifier = Modifier.fillMaxWidth()
-            .clickable { }
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, fontSize = 15.sp)
-        Text(sdf.format(timestamp), fontSize = 15.sp, color = MaterialTheme.colorScheme.primary)
+fun DateTimePickerRow(
+    label: String,
+    dateStr: String,
+    timeStr: String,
+    onDateClick: () -> Unit,
+    onTimeClick: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(
+                onClick = onDateClick,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(dateStr, fontSize = 15.sp)
+            }
+            OutlinedButton(
+                onClick = onTimeClick,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(timeStr, fontSize = 15.sp)
+            }
+        }
     }
 }

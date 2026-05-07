@@ -85,6 +85,9 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("week") { WeekScreen() }
+                        // Day route without parameter (defaults to today)
+                        composable("day") { DayScreen() }
+                        // Day route with date parameter
                         composable(
                             route = "day/{date}",
                             arguments = listOf(navArgument("date") { type = androidx.navigation.NavType.LongType })

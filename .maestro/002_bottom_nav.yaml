@@ -1,0 +1,22 @@
+appId: com.calsync.app
+---
+# TC-002: 底部导航切换
+- launchApp:
+    appId: "com.calsync.app"
+    clearState: true
+# 默认在月历视图
+- assertVisible: "月历"
+# 切换到周历
+- tapOn: "周历"
+- assertVisible: "日"
+# 切换到日历(日视图)
+- tapOn: "日历"
+- assertVisible: "日"
+# 切换到日程
+- tapOn: "日程"
+- assertVisible: "日程"
+# 切换到待办
+- tapOn: "待办"
+- assertVisible: "待办"
+# 切回月历
+- tapOn: "月历"
