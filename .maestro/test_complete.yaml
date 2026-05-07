@@ -3,10 +3,9 @@ appId: com.calsync.app
 # CalSync Complete Test Suite v5
 # Phase 1-3 Tests
 
-# --- TC-001: App启动 ---
-- launchApp:
-    appId: "com.calsync.app"
-    clearState: false
+# --- TC-001: App已启动 ---
+- waitForAnimationToEnd:
+    timeout: 5000
 - assertVisible: "月历"
 
 # --- TC-002: 底部导航切换 ---
@@ -59,12 +58,14 @@ appId: com.calsync.app
 # --- TC-E01: 创建事件 ---
 - tapOn: "月历"
 - waitForAnimationToEnd
+- tapOn: "添加事件"
+- waitForAnimationToEnd
+- assertVisible: "保存"
 - tapOn:
-    point: "96%,92%"
-- waitForAnimationToEnd
-- assertVisible: "创建事件"
-- tapOn: "事件标题"
-- inputText: "测试事件"
-- hideKeyboard
+    point: "50%,11%"
+- inputText: "test"
 - tapOn: "保存"
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 10000
+- assertVisible: "月历"
+

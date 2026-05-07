@@ -7,18 +7,27 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.calsync.app.domain.model.Event
+import com.calsync.app.domain.util.RecurrenceRule
 import java.text.SimpleDateFormat
 import java.util.*
+
+data class ReminderEntry(val minutesBefore: Int, val enabled: Boolean)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,21 +43,12 @@ fun EventEditScreen(
     var selectedColor by remember { mutableIntStateOf(0) }
     
     // Recurrence rule
-    var recurrenceFreq by remember { mutableIntStateOf(0) } // 0=none, 1=daily, 2=weekly, 3=monthly, 4=yearly
+    var recurrenceFreq by remember { mutableIntStateOf(0) }
     var recurrenceExpanded by remember { mutableStateOf(false) }
-    val recurrenceOptions = listOf("不重复", "每天", "每周", "每月", "每年")
+    val recurrenceOptions = listOf("\u4e0d\u91cd\u590d", "\u6bcf\u5929", "\u6bcf\u5468", "\u6bcf\u6708", "\u6bcf\u5e74")
     
-    // Reminder
-    var reminderMinutes by remember { mutableIntStateOf(15) }
-    var reminderExpanded by remember { mutableStateOf(false) }
-    val reminderOptions = listOf(
-        0 to "不提醒",
-        5 to "5分钟前",
-        10 to "10分钟前",
-        15 to "15分钟前",
-        30 to "30分钟前",
-        60 to "1小时前"
-    )
+    // Multiple reminders
+    var remindersList by remember { mutableStateOf<List<ReminderEntry>>(listOf(ReminderEntry(15, true))) }
     
     // Initialize with current date/time
     val now = System.currentTimeMillis()
@@ -60,12 +60,54 @@ fun EventEditScreen(
     var showEndDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
+    
+    // Loading state for edit mode
+    var isLoadingEvent by remember { mutableStateOf(eventId != null) }
+    var eventLoaded by remember { mutableStateOf(false) }
+    val isEditing = eventId != null && eventLoaded
 
     val context = LocalContext.current
     val timeSdf = SimpleDateFormat("HH:mm", Locale.getDefault())
     val dateSdf = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
 
-    // Date pickers
+    // Load existing event data in edit mode
+    LaunchedEffect(eventId) {
+        if (eventId != null) {
+            isLoadingEvent = true
+            viewModel.loadEventById(eventId) { result ->
+                result.onSuccess { event ->
+                    title = event.title
+                    description = event.description ?: ""
+                    location = event.location ?: ""
+                    isAllDay = event.isAllDay
+                    selectedColor = event.color
+                    startTime = event.startTime
+                    endTime = event.endTime
+                    
+                    recurrenceFreq = when (event.recurrenceRule?.freq) {
+                        RecurrenceRule.Freq.DAILY -> 1
+                        RecurrenceRule.Freq.WEEKLY -> 2
+                        RecurrenceRule.Freq.MONTHLY -> 3
+                        RecurrenceRule.Freq.YEARLY -> 4
+                        null -> 0
+                    }
+                    
+                    remindersList = if (event.reminders.isEmpty()) {
+                        listOf(ReminderEntry(15, true))
+                    } else {
+                        event.reminders.map { ReminderEntry(it.minutesBefore, it.enabled) }
+                    }
+                    
+                    eventLoaded = true
+                    isLoadingEvent = false
+                }.onFailure {
+                    isLoadingEvent = false
+                    eventLoaded = false
+                }
+            }
+        }
+    }
+
     if (showStartDatePicker) {
         val cal = Calendar.getInstance().apply { timeInMillis = startTime }
         DatePickerDialog(
@@ -106,7 +148,6 @@ fun EventEditScreen(
         ).show()
     }
 
-    // Time pickers
     if (showStartTimePicker) {
         val cal = Calendar.getInstance().apply { timeInMillis = startTime }
         TimePickerDialog(
@@ -154,10 +195,17 @@ fun EventEditScreen(
         Color(0xFFF9A825)
     )
 
+    if (isLoadingEvent) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (eventId == null) "创建事件" else "编辑事件") },
+                title = { Text(if (isEditing) "\u7f16\u8f91\u4e8b\u4ef6" else "\u521b\u5efa\u4e8b\u4ef6") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Text("\u2190", fontSize = 24.sp)
@@ -168,37 +216,61 @@ fun EventEditScreen(
                         onClick = {
                             if (title.isNotBlank()) {
                                 val recurrenceRule = if (recurrenceFreq > 0) {
-                                com.calsync.app.domain.util.RecurrenceRule(
-                                    freq = when (recurrenceFreq) {
-                                        1 -> com.calsync.app.domain.util.RecurrenceRule.Freq.DAILY
-                                        2 -> com.calsync.app.domain.util.RecurrenceRule.Freq.WEEKLY
-                                        3 -> com.calsync.app.domain.util.RecurrenceRule.Freq.MONTHLY
-                                        else -> com.calsync.app.domain.util.RecurrenceRule.Freq.YEARLY
-                                    },
-                                    interval = 1
-                                )
-                            } else null
-                            val reminders = if (reminderMinutes > 0) {
-                                listOf(com.calsync.app.domain.model.Event.Reminder(minutesBefore = reminderMinutes, enabled = true))
-                            } else emptyList()
-                            viewModel.createEvent(
-                                    title = title,
-                                    startTime = startTime,
-                                    endTime = endTime,
-                                    isAllDay = isAllDay,
-                                    description = description.ifEmpty { null },
-                                    location = location.ifEmpty { null },
-                                    color = selectedColor,
-                                    recurrenceRule = recurrenceRule,
-                                    reminders = reminders
-                                ) {
-                                    onNavigateBack()
+                                    RecurrenceRule(
+                                        freq = when (recurrenceFreq) {
+                                            1 -> RecurrenceRule.Freq.DAILY
+                                            2 -> RecurrenceRule.Freq.WEEKLY
+                                            3 -> RecurrenceRule.Freq.MONTHLY
+                                            else -> RecurrenceRule.Freq.YEARLY
+                                        },
+                                        interval = 1
+                                    )
+                                } else null
+                                val reminderList = remindersList
+                                    .filter { it.enabled }
+                                    .map { Event.Reminder(minutesBefore = it.minutesBefore, enabled = true) }
+                                
+                                if (isEditing) {
+                                    viewModel.loadEventById(eventId!!) { result ->
+                                        result.onSuccess { existing ->
+                                            val updated = existing.copy(
+                                                title = title,
+                                                startTime = startTime,
+                                                endTime = endTime,
+                                                isAllDay = isAllDay,
+                                                description = description.ifEmpty { null },
+                                                location = location.ifEmpty { null },
+                                                color = selectedColor,
+                                                recurrenceRule = recurrenceRule,
+                                                reminders = reminderList
+                                            )
+                                            viewModel.updateEvent(updated) {
+                                                onNavigateBack()
+                                            }
+                                        }.onFailure {
+                                            onNavigateBack()
+                                        }
+                                    }
+                                } else {
+                                    viewModel.createEvent(
+                                        title = title,
+                                        startTime = startTime,
+                                        endTime = endTime,
+                                        isAllDay = isAllDay,
+                                        description = description.ifEmpty { null },
+                                        location = location.ifEmpty { null },
+                                        color = selectedColor,
+                                        recurrenceRule = recurrenceRule,
+                                        reminders = reminderList
+                                    ) {
+                                        onNavigateBack()
+                                    }
                                 }
                             }
                         },
                         enabled = title.isNotBlank()
                     ) {
-                        Text("保存", fontWeight = FontWeight.Bold)
+                        Text("\u4fdd\u5b58", fontWeight = FontWeight.Bold)
                     }
                 }
             )
@@ -213,9 +285,9 @@ fun EventEditScreen(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("事件标题") },
+                label = { Text("\u4e8b\u4ef6\u6807\u9898") },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("输入事件标题") }
+                placeholder = { Text("\u8f93\u5165\u4e8b\u4ef6\u6807\u9898") }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -224,15 +296,15 @@ fun EventEditScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("全天事件", modifier = Modifier.weight(1f), fontSize = 15.sp)
+                Text("\u5168\u5929\u4e8b\u4ef6", modifier = Modifier.weight(1f), fontSize = 15.sp)
                 Switch(checked = isAllDay, onCheckedChange = { isAllDay = it })
             }
 
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             if (!isAllDay) {
                 DateTimePickerRow(
-                    label = "开始时间",
+                    label = "\u5f00\u59cb\u65f6\u95f4",
                     dateStr = dateSdf.format(startTime),
                     timeStr = timeSdf.format(startTime),
                     onDateClick = { showStartDatePicker = true },
@@ -240,24 +312,24 @@ fun EventEditScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 DateTimePickerRow(
-                    label = "结束时间",
+                    label = "\u7ed3\u675f\u65f6\u95f4",
                     dateStr = dateSdf.format(endTime),
                     timeStr = timeSdf.format(endTime),
                     onDateClick = { showEndDatePicker = true },
                     onTimeClick = { showEndTimePicker = true }
                 )
             } else {
-                Text("全天事件", fontSize = 16.sp, modifier = Modifier.padding(vertical = 8.dp))
+                Text("\u5168\u5929\u4e8b\u4ef6", fontSize = 16.sp, modifier = Modifier.padding(vertical = 8.dp))
             }
 
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             OutlinedTextField(
                 value = location,
                 onValueChange = { location = it },
-                label = { Text("地点") },
+                label = { Text("\u5730\u70b9") },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("输入地点") }
+                placeholder = { Text("\u8f93\u5165\u5730\u70b9") }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -265,14 +337,14 @@ fun EventEditScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("描述") },
+                label = { Text("\u63cf\u8ff0") },
                 modifier = Modifier.fillMaxWidth().height(120.dp),
-                placeholder = { Text("添加描述") }
+                placeholder = { Text("\u6dfb\u52a0\u63cf\u8ff0") }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("颜色", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            Text("\u989c\u8272", fontSize = 16.sp, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 colors.forEachIndexed { index, color ->
@@ -290,69 +362,139 @@ fun EventEditScreen(
                     }
                 }
             }
-        }
-        
-        Divider(modifier = Modifier.padding(vertical = 8.dp))
-        
-        // 重复事件选择
-        Text("重复", fontSize = 16.sp, fontWeight = FontWeight.Medium)
-        Spacer(modifier = Modifier.height(4.dp))
-        ExposedDropdownMenuBox(
-            expanded = recurrenceExpanded,
-            onExpandedChange = { recurrenceExpanded = it }
-        ) {
-            OutlinedTextField(
-                value = recurrenceOptions[recurrenceFreq],
-                onValueChange = {},
-                readOnly = true,
-                modifier = Modifier.fillMaxWidth().menuAnchor(),
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = recurrenceExpanded) }
-            )
-            ExposedDropdownMenu(
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            Text("\u91cd\u590d", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(4.dp))
+            ExposedDropdownMenuBox(
                 expanded = recurrenceExpanded,
-                onDismissRequest = { recurrenceExpanded = false }
+                onExpandedChange = { recurrenceExpanded = it }
             ) {
-                recurrenceOptions.forEachIndexed { index, option ->
-                    DropdownMenuItem(
-                        text = { Text(option) },
-                        onClick = {
-                            recurrenceFreq = index
-                            recurrenceExpanded = false
-                        }
-                    )
+                OutlinedTextField(
+                    value = recurrenceOptions[recurrenceFreq],
+                    onValueChange = {},
+                    readOnly = true,
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = recurrenceExpanded) }
+                )
+                ExposedDropdownMenu(
+                    expanded = recurrenceExpanded,
+                    onDismissRequest = { recurrenceExpanded = false }
+                ) {
+                    recurrenceOptions.forEachIndexed { index, option ->
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                recurrenceFreq = index
+                                recurrenceExpanded = false
+                            }
+                        )
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("\u63d0\u9192", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            remindersList.forEachIndexed { index, reminder ->
+                ReminderRow(
+                    reminder = reminder,
+                    onMinutesChange = { newMinutes ->
+                        val mutable = remindersList.toMutableList()
+                        mutable[index] = mutable[index].copy(minutesBefore = newMinutes)
+                        remindersList = mutable
+                    },
+                    onDelete = {
+                        val mutable = remindersList.toMutableList()
+                        mutable.removeAt(index)
+                        remindersList = if (mutable.isEmpty()) {
+                            listOf(ReminderEntry(0, false))
+                        } else mutable
+                    },
+                    showDelete = remindersList.size > 1 || (remindersList.size == 1 && remindersList[0].minutesBefore > 0)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            TextButton(
+                onClick = {
+                    remindersList = remindersList + ReminderEntry(15, true)
+                }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("\u6dfb\u52a0\u63d0\u9192")
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // 提醒设置
-        Text("提醒", fontSize = 16.sp, fontWeight = FontWeight.Medium)
-        Spacer(modifier = Modifier.height(4.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ReminderRow(
+    reminder: ReminderEntry,
+    onMinutesChange: (Int) -> Unit,
+    onDelete: () -> Unit,
+    showDelete: Boolean
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val reminderOptions = listOf(
+        0 to "\u4e0d\u63d0\u9192",
+        5 to "5\u5206\u949f\u524d",
+        10 to "10\u5206\u949f\u524d",
+        15 to "15\u5206\u949f\u524d",
+        30 to "30\u5206\u949f\u524d",
+        60 to "1\u5c0f\u65f6\u524d"
+    )
+    val selectedLabel = reminderOptions.first { it.first == reminder.minutesBefore }.second
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         ExposedDropdownMenuBox(
-            expanded = reminderExpanded,
-            onExpandedChange = { reminderExpanded = it }
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+            modifier = Modifier.weight(1f)
         ) {
             OutlinedTextField(
-                value = reminderOptions.first { it.first == reminderMinutes }.second,
+                value = selectedLabel,
                 onValueChange = {},
                 readOnly = true,
                 modifier = Modifier.fillMaxWidth().menuAnchor(),
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = reminderExpanded) }
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
             )
             ExposedDropdownMenu(
-                expanded = reminderExpanded,
-                onDismissRequest = { reminderExpanded = false }
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
             ) {
                 reminderOptions.forEach { (minutes, label) ->
                     DropdownMenuItem(
                         text = { Text(label) },
                         onClick = {
-                            reminderMinutes = minutes
-                            reminderExpanded = false
+                            onMinutesChange(minutes)
+                            expanded = false
                         }
                     )
                 }
+            }
+        }
+
+        if (showDelete) {
+            Spacer(modifier = Modifier.width(4.dp))
+            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "\u5220\u9664\u63d0\u9192",
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.error
+                )
             }
         }
     }
