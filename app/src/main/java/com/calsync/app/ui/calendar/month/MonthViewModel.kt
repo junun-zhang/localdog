@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.calsync.app.data.repository.EventRepository
 import com.calsync.app.domain.model.Event
 import com.calsync.app.domain.util.LunarCalendar
+import com.calsync.app.domain.util.HolidayProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -168,6 +169,12 @@ class MonthViewModel @Inject constructor(
         return days
     }
 
+    private fun getHolidayName(timestamp: Long): String? {
+        val h = HolidayProvider.getHoliday(timestamp) ?: return null
+        return if (h.type == com.calsync.app.domain.util.HolidayType.PUBLIC_HOLIDAY || 
+                   h.type == com.calsync.app.domain.util.HolidayType.TRADITIONAL_FESTIVAL) h.name else null
+    }
+
     private fun createCalendarDay(
         cal: Calendar,
         day: Int,
@@ -189,7 +196,7 @@ class MonthViewModel @Inject constructor(
             isCurrentMonth = month == currentMonth,
             lunarDay = lunarDay,
             lunarMonth = lunarMonth,
-            holidayName = null, // TODO: 从API获取
+            holidayName = getHolidayName(timestamp),
             solarTerm = solarTerm,
             hasEvents = eventsCache.containsKey(timestamp),
             timestamp = timestamp
