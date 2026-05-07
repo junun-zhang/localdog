@@ -1,11 +1,15 @@
 package com.calsync.app.ui.calendar.week
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.calsync.app.data.repository.EventRepository
+import com.calsync.app.domain.model.Event
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 
@@ -15,7 +19,8 @@ data class WeekDay(
     val year: Int,
     val dayName: String,
     val isToday: Boolean,
-    val timestamp: Long
+    val timestamp: Long,
+    val hasEvents: Boolean = false
 )
 
 data class WeekViewState(
@@ -36,7 +41,9 @@ data class WeekViewState(
 }
 
 @HiltViewModel
-class WeekViewModel @Inject constructor() : ViewModel() {
+class WeekViewModel @Inject constructor(
+    private val eventRepository: EventRepository
+) : ViewModel() {
     private val _state = MutableStateFlow(WeekViewState())
     val state: StateFlow<WeekViewState> = _state.asStateFlow()
 
@@ -69,6 +76,36 @@ class WeekViewModel @Inject constructor() : ViewModel() {
         }
 
         _state.update { it.copy(weekStartDate = weekStart, days = days) }
+        loadEventsForWeek(weekStart)
+    }
+
+    private fun loadEventsForWeek(weekStart: Long) {
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = weekStart
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val startTime = cal.timeInMillis
+        cal.add(Calendar.DAY_OF_YEAR, 7)
+        cal.add(Calendar.MILLISECOND, -1)
+        val endTime = cal.timeInMillis
+
+        viewModelScope.launch {
+            eventRepository.getEventsInRange("default", startTime, endTime)
+                .collect { events ->
+                    val eventDates = events.map { e ->
+                        val c = Calendar.getInstance().apply { timeInMillis = e.startTime }
+                        c.set(Calendar.HOUR_OF_DAY, 0); c.set(Calendar.MINUTE, 0)
+                        c.set(Calendar.SECOND, 0); c.set(Calendar.MILLISECOND, 0)
+                        c.timeInMillis
+                    }.toSet()
+                    val updatedDays = _state.value.days.map { d ->
+                        d.copy(hasEvents = eventDates.contains(d.timestamp))
+                    }
+                    _state.update { it.copy(days = updatedDays) }
+                }
+        }
     }
 
     fun goToPreviousWeek() {

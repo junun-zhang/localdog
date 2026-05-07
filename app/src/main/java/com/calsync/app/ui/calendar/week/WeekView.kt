@@ -1,6 +1,7 @@
 package com.calsync.app.ui.calendar.week
 
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -21,6 +22,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeekScreen(
+    onDayClick: ((Long) -> Unit)? = null,
     viewModel: WeekViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
