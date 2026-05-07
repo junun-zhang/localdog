@@ -33,6 +33,7 @@ import java.util.*
 @Composable
 fun TasksScreen(
     onCreateTask: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
     onEditTask: ((String) -> Unit)? = null,
     viewModel: TaskViewModel = hiltViewModel()
 ) {

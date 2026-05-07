@@ -24,6 +24,8 @@ import com.calsync.app.ui.event.EventDetailScreen
 import com.calsync.app.ui.event.EventEditScreen
 import com.calsync.app.ui.task.TasksScreen
 import com.calsync.app.ui.task.TaskEditScreen
+import com.calsync.app.ui.settings.SettingsScreen
+import com.calsync.app.ui.settings.AboutScreen
 import com.calsync.app.ui.theme.CalSyncTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -157,6 +159,17 @@ composable("week") { WeekScreen(
                             val taskId = backStackEntry.arguments?.getString("taskId")
                             TaskEditScreen(
                                 taskId = taskId,
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable("settings") {
+                            SettingsScreen(
+                                onNavigateBack = { navController.popBackStack() },
+                                onNavigateToAbout = { navController.navigate("about") }
+                            )
+                        }
+                        composable("about") {
+                            AboutScreen(
                                 onNavigateBack = { navController.popBackStack() }
                             )
                         }

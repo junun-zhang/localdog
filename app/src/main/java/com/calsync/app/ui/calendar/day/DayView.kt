@@ -17,6 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.calsync.app.domain.model.Weather
+import com.calsync.app.domain.util.WeatherProvider
+import com.calsync.app.ui.common.WeatherCompact
 import com.calsync.app.domain.model.Event
 import com.calsync.app.ui.common.EventCardCompact
 import com.calsync.app.ui.event.EventViewModel
@@ -49,12 +52,17 @@ fun DayScreen(
         eventViewModel.loadEventsForDate(dayState.selectedDate)
     }
 
+    val weather = remember(dayState.selectedDate) {
+        WeatherProvider.getWeatherForDate(dayState.selectedDate)
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         DayHeader(
             selectedDate = dayState.selectedDate,
             onPreviousDay = { dayViewModel.goToPreviousDay() },
             onNextDay = { dayViewModel.goToNextDay() },
-            onToday = { dayViewModel.goToToday() }
+            onToday = { dayViewModel.goToToday() },
+            weather = weather
         )
 
         Box(
@@ -91,7 +99,8 @@ fun DayHeader(
     selectedDate: Long,
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
-    onToday: () -> Unit
+    onToday: () -> Unit,
+    weather: com.calsync.app.domain.model.Weather? = null
 ) {
     val cal = Calendar.getInstance()
     cal.timeInMillis = selectedDate
@@ -124,7 +133,8 @@ fun DayHeader(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Row {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                weather?.let { WeatherCompact(weather = it) }
                 TextButton(onClick = onToday) {
                     Text("今天", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                 }

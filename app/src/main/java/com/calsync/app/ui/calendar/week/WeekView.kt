@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.calsync.app.domain.model.Event
+import com.calsync.app.domain.util.WeatherProvider
+import com.calsync.app.ui.common.WeatherCompact
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -36,6 +38,10 @@ fun WeekScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val swipeThreshold = 100f
+
+    val weekWeather = remember(state.weekStartDate) {
+        WeatherProvider.getWeekWeather(state.weekStartDate)
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         WeekTopBar(

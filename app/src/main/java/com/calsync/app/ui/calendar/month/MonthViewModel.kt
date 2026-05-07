@@ -172,7 +172,7 @@ class MonthViewModel @Inject constructor(
     private fun getHolidayName(timestamp: Long): String? {
         val h = HolidayProvider.getHoliday(timestamp) ?: return null
         return if (h.type == com.calsync.app.domain.util.HolidayType.PUBLIC_HOLIDAY || 
-                   h.type == com.calsync.app.domain.util.HolidayType.TRADITIONAL_FESTIVAL) h.name else null
+                   h.type == com.calsync.app.domain.util.HolidayType.TRADITIONAL_FESTIVAL || h.type == com.calsync.app.domain.util.HolidayType.SCHOOL_HOLIDAY) h.name else null
     }
 
     private fun createCalendarDay(

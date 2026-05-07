@@ -196,6 +196,46 @@ object HolidayProvider {
 
     private data class HolidayData(val month: Int, val day: Int, val name: String, val type: HolidayType)
 
+    // 寒暑假日期范围 (简化版 - 通用中小学寒暑假)
+    // 寒假: 1月中下旬 - 2月中下旬  |  暑假: 7月初 - 8月底
+    private val schoolHolidays = mapOf(
+        2025 to listOf(
+            SchoolRange(1, 18, 2, 16, "寒假"),
+            SchoolRange(7, 1, 8, 31, "暑假"),
+        ),
+        2026 to listOf(
+            SchoolRange(1, 17, 2, 15, "寒假"),
+            SchoolRange(7, 1, 8, 31, "暑假"),
+        ),
+        2027 to listOf(
+            SchoolRange(1, 16, 2, 14, "寒假"),
+            SchoolRange(7, 1, 8, 31, "暑假"),
+        ),
+        2028 to listOf(
+            SchoolRange(1, 15, 2, 13, "寒假"),
+            SchoolRange(7, 1, 8, 31, "暑假"),
+        ),
+    )
+
+    private data class SchoolRange(val startMonth: Int, val startDay: Int, val endMonth: Int, val endDay: Int, val name: String)
+
+    /** 检查是否在寒暑假范围内 */
+    fun getSchoolHoliday(timestamp: Long): Holiday? {
+        val cal = GregorianCalendar.getInstance()
+        cal.timeInMillis = timestamp
+        val year = cal.get(Calendar.YEAR)
+        val month = cal.get(Calendar.MONTH) + 1
+        val day = cal.get(Calendar.DAY_OF_MONTH)
+        return schoolHolidays[year]?.firstOrNull { range ->
+            val start = GregorianCalendar(year, range.startMonth - 1, range.startDay)
+            val end = GregorianCalendar(year, range.endMonth - 1, range.endDay)
+            end.set(Calendar.HOUR_OF_DAY, 23)
+            end.set(Calendar.MINUTE, 59)
+            end.set(Calendar.SECOND, 59)
+            timestamp in start.timeInMillis..end.timeInMillis
+        }?.let { Holiday(timestamp, it.name, HolidayType.SCHOOL_HOLIDAY) }
+    }
+
     /** 获取指定日期(时间戳)的节假日信息  */
     fun getHoliday(timestamp: Long): Holiday? {
         val cal = GregorianCalendar.getInstance()
@@ -205,7 +245,7 @@ object HolidayProvider {
         val day = cal.get(Calendar.DAY_OF_MONTH)
         return holidaysByYear[year]?.find { it.month == month && it.day == day }?.let {
             Holiday(timestamp, it.name, it.type)
-        }
+        } ?: getSchoolHoliday(timestamp)
     }
 
     /** 获取指定年月的所有节假日 */

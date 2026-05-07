@@ -35,5 +35,7 @@
             </intent-filter>
         </activity>
 
+        <receiver android:name=".service.ReminderReceiver" android:exported="false" />
+
     </application>
 </manifest>
