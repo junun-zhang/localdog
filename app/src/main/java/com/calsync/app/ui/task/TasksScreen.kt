@@ -1,13 +1,16 @@
 package com.calsync.app.ui.task
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +29,7 @@ import com.calsync.app.domain.model.Task.TaskStatus
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TasksScreen(
     onCreateTask: () -> Unit = {},
@@ -34,6 +38,20 @@ fun TasksScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val filteredTasks = viewModel.getFilteredTasks()
+    var selectedTaskIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val isMultiSelect = selectedTaskIds.isNotEmpty()
+
+    fun exitMultiSelect() {
+        selectedTaskIds = emptySet()
+    }
+
+    fun toggleSelection(taskId: String) {
+        selectedTaskIds = if (selectedTaskIds.contains(taskId)) {
+            selectedTaskIds - taskId
+        } else {
+            selectedTaskIds + taskId
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -43,12 +61,48 @@ fun TasksScreen(
                 tonalElevation = 2.dp
             ) {
                 Column {
-                    Text(
-                        text = "待办事项",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp)
-                    )
+                    if (isMultiSelect) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = { exitMultiSelect() }) {
+                                Icon(Icons.Default.Close, contentDescription = "\u53d6\u6d88\u591a\u9009")
+                            }
+                            Text(
+                                text = "\u5df2\u9009\u62e9 ${selectedTaskIds.size} \u9879",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(onClick = {
+                                viewModel.batchCompleteTasks(selectedTaskIds.toList())
+                                exitMultiSelect()
+                            }) {
+                                Icon(Icons.Default.DoneAll, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("\u5b8c\u6210", fontSize = 13.sp)
+                            }
+                            TextButton(onClick = {
+                                val selectedTasks = filteredTasks.filter { it.id in selectedTaskIds }
+                                viewModel.batchDeleteTasks(selectedTasks)
+                                exitMultiSelect()
+                            }) {
+                                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.error)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("\u5220\u9664", fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = "\u5f85\u529e\u4e8b\u9879",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp)
+                        )
+                    }
                     FilterTabs(
                         activeFilter = state.activeFilter,
                         onFilterChange = { viewModel.setFilter(it) }
@@ -64,10 +118,10 @@ fun TasksScreen(
                 ) {
                     Text(
                         text = when (state.activeFilter) {
-                            TaskFilter.ALL -> "暂无待办\n点击右下角 + 添加"
-                            TaskFilter.TODO -> "没有待办事项"
-                            TaskFilter.IN_PROGRESS -> "没有进行中的事项"
-                            TaskFilter.DONE -> "没有已完成的事项"
+                            TaskFilter.ALL -> "\u6682\u65e0\u5f85\u529e\n\u70b9\u51fb\u53f3\u4e0b\u89d2 + \u6dfb\u52a0"
+                            TaskFilter.TODO -> "\u6ca1\u6709\u5f85\u529e\u4e8b\u9879"
+                            TaskFilter.IN_PROGRESS -> "\u6ca1\u6709\u8fdb\u884c\u4e2d\u7684\u4e8b\u9879"
+                            TaskFilter.DONE -> "\u6ca1\u6709\u5df2\u5b8c\u6210\u7684\u4e8b\u9879"
                         },
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -82,8 +136,21 @@ fun TasksScreen(
                     items(filteredTasks, key = { it.id }) { task ->
                         TaskCard(
                             task = task,
+                            isSelected = selectedTaskIds.contains(task.id),
+                            isMultiSelectMode = isMultiSelect,
                             onToggleStatus = { viewModel.toggleTaskStatus(task) },
-                            onClick = { onEditTask?.invoke(task.id) },
+                            onClick = {
+                                if (isMultiSelect) {
+                                    toggleSelection(task.id)
+                                } else {
+                                    onEditTask?.invoke(task.id)
+                                }
+                            },
+                            onLongClick = {
+                                if (!isMultiSelect) {
+                                    selectedTaskIds = setOf(task.id)
+                                }
+                            },
                             onDelete = { viewModel.deleteTask(task) }
                         )
                     }
@@ -92,14 +159,16 @@ fun TasksScreen(
         }
 
         // FAB
-        FloatingActionButton(
-            onClick = onCreateTask,
-            containerColor = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "添加待办")
+        if (!isMultiSelect) {
+            FloatingActionButton(
+                onClick = onCreateTask,
+                containerColor = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "\u6dfb\u52a0\u5f85\u529e")
+            }
         }
     }
 }
@@ -125,21 +194,50 @@ fun FilterTabs(activeFilter: TaskFilter, onFilterChange: (TaskFilter) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TaskCard(task: Task, onToggleStatus: () -> Unit, onClick: () -> Unit, onDelete: () -> Unit) {
+fun TaskCard(
+    task: Task,
+    isSelected: Boolean = false,
+    isMultiSelectMode: Boolean = false,
+    onToggleStatus: () -> Unit,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
+    onDelete: () -> Unit
+) {
+    val bgColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onToggleStatus, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    imageVector = if (task.status == TaskStatus.DONE) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                    contentDescription = if (task.status == TaskStatus.DONE) "\u5df2\u5b8c\u6210" else "\u6807\u8bb0\u5b8c\u6210",
-                    tint = if (task.status == TaskStatus.DONE) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
+            if (isMultiSelectMode) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onClick() },
+                    modifier = Modifier.size(28.dp)
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+            } else {
+                IconButton(onClick = onToggleStatus, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        imageVector = if (task.status == TaskStatus.DONE) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                        contentDescription = if (task.status == TaskStatus.DONE) "\u5df2\u5b8c\u6210" else "\u6807\u8bb0\u5b8c\u6210",
+                        tint = if (task.status == TaskStatus.DONE) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -164,9 +262,11 @@ fun TaskCard(task: Task, onToggleStatus: () -> Unit, onClick: () -> Unit, onDele
                     )
                 }
             }
-            Spacer(modifier = Modifier.width(4.dp))
-            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Default.Delete, contentDescription = "\u5220\u9664", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
+            if (!isMultiSelectMode) {
+                Spacer(modifier = Modifier.width(4.dp))
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Delete, contentDescription = "\u5220\u9664", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }

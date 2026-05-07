@@ -65,11 +65,14 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     floatingActionButton = {
-                        FloatingActionButton(
-                            onClick = { navController.navigate("event/create") },
-                            containerColor = MaterialTheme.colorScheme.primary
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "添加事件")
+                        val currentRoute2 = navController.currentBackStackEntry?.destination?.route
+                        if (currentRoute2 != "tasks") {
+                            FloatingActionButton(
+                                onClick = { navController.navigate("event/create") },
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "添加事件")
+                            }
                         }
                     }
                 ) { innerPadding ->

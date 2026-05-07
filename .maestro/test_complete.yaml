@@ -78,4 +78,8 @@ appId: com.calsync.app
 # 验证周视图正常工作：断言底部导航栏仍可见
 - assertVisible: "日历"
 
-
+# --- TC-T01: 待办页面正常工作 ---
+- tapOn: "待办"
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "全部"
