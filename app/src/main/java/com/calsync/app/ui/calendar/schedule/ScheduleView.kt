@@ -16,6 +16,8 @@ import java.util.*
 
 @Composable
 fun ScheduleScreen(
+    onEventClick: ((String) -> Unit)? = null,
+    onEditEvent: ((String) -> Unit)? = null,
     viewModel: EventViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -27,7 +29,7 @@ fun ScheduleScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         ScheduleHeader()
-        ScheduleList(events = state.events)
+        ScheduleList(events = state.events, onEventClick = onEventClick, onEditEvent = onEditEvent)
     }
 }
 
@@ -63,7 +65,7 @@ fun ScheduleHeader() {
 }
 
 @Composable
-fun ScheduleList(events: List<com.calsync.app.domain.model.Event>) {
+fun ScheduleList(events: List<com.calsync.app.domain.model.Event>, onEventClick: ((String) -> Unit)? = null, onEditEvent: ((String) -> Unit)? = null) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         if (events.isEmpty()) {
             item {
@@ -85,9 +87,9 @@ fun ScheduleList(events: List<com.calsync.app.domain.model.Event>) {
             items(events.size) { i ->
                 EventCard(
                     event = events[i],
-                    onClick = { /* TODO: 导航到详情 */ },
+                    onClick = { onEventClick?.invoke(events[i].id) },
                     showActions = true,
-                    onEdit = { /* TODO: 导航到编辑 */ },
+                    onEdit = { onEditEvent?.invoke(events[i].id) },
                     onDelete = { /* TODO: 删除事件 */ }
                 )
             }

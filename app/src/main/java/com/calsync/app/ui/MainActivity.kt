@@ -100,7 +100,10 @@ class MainActivity : ComponentActivity() {
                                 onEventClick = { eventId -> navController.navigate("event/$eventId") }
                             )
                         }
-                        composable("schedule") { ScheduleScreen() }
+                        composable("schedule") { ScheduleScreen(
+                                onEventClick = { eventId -> navController.navigate("event/$eventId") },
+                                onEditEvent = { eventId -> navController.navigate("event/edit/$eventId") }
+                            ) }
                         composable("tasks") { TasksScreen() }
                         composable("event/create") {
                             EventEditScreen(
