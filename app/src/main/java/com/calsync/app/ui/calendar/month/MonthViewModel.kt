@@ -41,7 +41,7 @@ class MonthViewModel @Inject constructor(
     val state: StateFlow<MonthViewState> = _state.asStateFlow()
 
     private val calendar = Calendar.getInstance()
-    private val eventsCache = mutableMapOf<Long, List<Event>>()
+    private val eventsCache = mutableMapOf<Long, Boolean>()
 
     init {
         loadMonth(_state.value.currentYear, _state.value.currentMonth)
@@ -51,6 +51,7 @@ class MonthViewModel @Inject constructor(
         calendar.set(year, month - 1, 1)
         val days = generateCalendarDays(year, month)
         _state.update { it.copy(currentYear = year, currentMonth = month, days = days) }
+        loadEventsForMonth(year, month)
     }
 
     fun goToPreviousMonth() {
@@ -74,6 +75,46 @@ class MonthViewModel @Inject constructor(
 
     fun selectDate(timestamp: Long) {
         _state.update { it.copy(selectedDate = timestamp) }
+    }
+
+    private fun loadEventsForMonth(year: Int, month: Int) {
+        viewModelScope.launch {
+            val cal = Calendar.getInstance()
+            cal.set(year, month - 1, 1, 0, 0, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            val startTime = cal.timeInMillis
+
+            cal.set(Calendar.MONTH, month)
+            cal.add(Calendar.DAY_OF_MONTH, -1)
+            cal.set(Calendar.HOUR_OF_DAY, 23)
+            cal.set(Calendar.MINUTE, 59)
+            cal.set(Calendar.SECOND, 59)
+            cal.set(Calendar.MILLISECOND, 999)
+            val endTime = cal.timeInMillis
+
+            eventRepository.getEventsInRange("default", startTime, endTime)
+                .collect { events ->
+                    val midnightCals = Calendar.getInstance()
+                    val eventDays = mutableSetOf<Long>()
+                    for (event in events) {
+                        midnightCals.timeInMillis = event.startTime
+                        midnightCals.set(Calendar.HOUR_OF_DAY, 0)
+                        midnightCals.set(Calendar.MINUTE, 0)
+                        midnightCals.set(Calendar.SECOND, 0)
+                        midnightCals.set(Calendar.MILLISECOND, 0)
+                        eventDays.add(midnightCals.timeInMillis)
+                    }
+
+                    val currentDays = _state.value.days.map { day ->
+                        val hasEvent = eventDays.contains(day.timestamp)
+                        if (hasEvent) {
+                            eventsCache[day.timestamp] = true
+                        }
+                        day.copy(hasEvents = hasEvent || eventsCache.containsKey(day.timestamp))
+                    }
+                    _state.update { it.copy(days = currentDays) }
+                }
+        }
     }
 
     private fun generateCalendarDays(year: Int, month: Int): List<CalendarDay> {
