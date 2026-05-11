@@ -1,4 +1,5 @@
 package com.calsync.app.di
+import com.calsync.app.data.local.TokenManager
 import com.calsync.app.data.remote.api.CalSyncApi
 import com.calsync.app.data.remote.interceptor.AuthInterceptor
 import dagger.Module
@@ -15,18 +16,19 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    private const val BASE_URL = "https://api.calsync.app/"
+    private const val BASE_URL = "http://123.56.177.127:8080/"
 
     @Provides @Singleton
     fun provideOkHttpClient(authInterceptor: AuthInterceptor, loggingInterceptor: HttpLoggingInterceptor): OkHttpClient =
         OkHttpClient.Builder().addInterceptor(authInterceptor).addInterceptor(loggingInterceptor)
-            .connectTimeout(3, TimeUnit.SECONDS).readTimeout(3, TimeUnit.SECONDS).writeTimeout(3, TimeUnit.SECONDS).build()
+            .connectTimeout(10, TimeUnit.SECONDS).readTimeout(10, TimeUnit.SECONDS).writeTimeout(10, TimeUnit.SECONDS).build()
 
     @Provides @Singleton
-    fun provideHttpLoggingInterceptor(): HttpLoggingInterceptor = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
+    fun provideHttpLoggingInterceptor(): HttpLoggingInterceptor = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.HEADERS }
 
     @Provides @Singleton
-    fun provideAuthInterceptor(): AuthInterceptor = AuthInterceptor { null }
+    fun provideAuthInterceptor(tokenManager: TokenManager): AuthInterceptor =
+        AuthInterceptor { tokenManager.getToken() }
 
     @Provides @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit =

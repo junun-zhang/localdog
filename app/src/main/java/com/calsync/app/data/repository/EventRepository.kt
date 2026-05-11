@@ -6,11 +6,12 @@ import com.calsync.app.data.local.entity.EventEntity.SyncStatus
 import com.calsync.app.data.local.entity.ReminderEntity
 import com.calsync.app.data.remote.api.CalSyncApi
 import com.calsync.app.data.remote.model.CreateEventRequest
-import com.calsync.app.data.remote.model.ReminderDto
+import com.calsync.app.data.remote.model.UpdateEventRequest
 import com.calsync.app.domain.model.Event
 import com.calsync.app.domain.util.RecurrenceRule
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.json.JSONArray
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,18 +35,17 @@ class EventRepository @Inject constructor(
         val entity = event.toEntity()
         eventDao.insertEvent(entity.copy(syncStatus = SyncStatus.PENDING))
         return try {
-            val response = api.createEvent(event.toCreateRequest())
-            if (response.isSuccessful) {
-                val dto = response.body()!!
-                val updated = event.copy(id = dto.id, modifiedAt = dto.updatedAt, version = dto.version)
+            val response = api.createEvent(event.calendarId, event.toCreateRequest())
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true && body.data != null) {
+                val dto = body.data
+                val updated = event.copy(id = dto.id, version = dto.version)
                 eventDao.insertEvent(updated.toEntity().copy(syncStatus = SyncStatus.SYNCED))
                 Result.success(updated)
             } else {
-                // API failed, but local save succeeded. Return success for local-only mode.
                 Result.success(event)
             }
         } catch (e: Exception) {
-            // Network error, but local save succeeded.
             Result.success(event)
         }
     }
@@ -54,9 +54,10 @@ class EventRepository @Inject constructor(
         eventDao.insertEvent(event.toEntity().copy(syncStatus = SyncStatus.PENDING))
         return try {
             val response = api.updateEvent(event.id, event.toUpdateRequest())
-            if (response.isSuccessful) {
-                val dto = response.body()!!
-                val updated = event.copy(modifiedAt = dto.updatedAt, version = dto.version)
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true && body.data != null) {
+                val dto = body.data
+                val updated = event.copy(version = dto.version)
                 eventDao.insertEvent(updated.toEntity().copy(syncStatus = SyncStatus.SYNCED))
                 Result.success(updated)
             } else Result.success(event)
@@ -67,14 +68,16 @@ class EventRepository @Inject constructor(
         eventDao.deleteEventById(event.id)
         return try {
             val response = api.deleteEvent(event.id)
-            if (response.isSuccessful) Result.success(Unit)
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) Result.success(Unit)
             else Result.failure(Exception("Delete failed"))
         } catch (e: Exception) { Result.success(Unit) }
     }
 
     private fun Event.toEntity() = EventEntity(
         id, calendarId, title, description, location, startTime, endTime, isAllDay, color,
-        recurrenceRule?.toRRule(), reminders.map { ReminderEntity(it.minutesBefore, it.enabled) },
+        recurrenceRule?.toRRule(),
+        reminders.map { ReminderEntity(it.minutesBefore, it.enabled) },
         isShared, createdBy, modifiedAt, SyncStatus.SYNCED
     )
     private fun EventEntity.toDomain() = Event(
@@ -84,11 +87,24 @@ class EventRepository @Inject constructor(
         isShared, createdBy, modifiedAt
     )
     private fun Event.toCreateRequest() = CreateEventRequest(
-        calendarId, title, description, location, startTime, endTime, isAllDay, color,
-        recurrenceRule?.toRRule(), reminders.map { ReminderDto(it.minutesBefore) }
-    )
-    private fun Event.toUpdateRequest() = com.calsync.app.data.remote.model.UpdateEventRequest(
         title, description, location, startTime, endTime, isAllDay, color,
-        recurrenceRule?.toRRule(), reminders.map { ReminderDto(it.minutesBefore) }, version
+        recurrenceRule?.toRRule(),
+        remindersToJson(reminders)
     )
+    private fun Event.toUpdateRequest() = UpdateEventRequest(
+        title, description, location, startTime, endTime, isAllDay, color,
+        recurrenceRule?.toRRule(),
+        remindersToJson(reminders),
+        version
+    )
+    private fun remindersToJson(reminders: List<Event.Reminder>): String? {
+        if (reminders.isEmpty()) return null
+        val arr = JSONArray()
+        reminders.forEach { r ->
+            arr.put(org.json.JSONObject().apply {
+                put("minutesBefore", r.minutesBefore)
+            })
+        }
+        return arr.toString()
+    }
 }

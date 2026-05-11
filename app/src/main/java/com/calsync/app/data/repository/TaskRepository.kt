@@ -5,10 +5,12 @@ import com.calsync.app.data.local.entity.ReminderEntity
 import com.calsync.app.data.local.entity.TaskEntity
 import com.calsync.app.data.remote.api.CalSyncApi
 import com.calsync.app.data.remote.model.CreateTaskRequest
+import com.calsync.app.data.remote.model.UpdateTaskRequest
 import com.calsync.app.domain.model.Event
 import com.calsync.app.domain.model.Task
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.json.JSONArray
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -32,8 +34,9 @@ class TaskRepository @Inject constructor(
         taskDao.insertTask(task.toEntity())
         return try {
             val response = api.createTask(task.toCreateRequest())
-            if (response.isSuccessful) {
-                val dto = response.body()!!
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true && body.data != null) {
+                val dto = body.data
                 val updated = task.copy(id = dto.id)
                 taskDao.insertTask(updated.toEntity())
                 Result.success(updated)
@@ -45,7 +48,8 @@ class TaskRepository @Inject constructor(
         taskDao.insertTask(task.toEntity())
         return try {
             val response = api.updateTask(task.id, task.toUpdateRequest())
-            if (response.isSuccessful) Result.success(task)
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) Result.success(task)
             else Result.failure(Exception("Update failed: " + response.code()))
         } catch (e: Exception) { Result.failure(e) }
     }
@@ -54,7 +58,8 @@ class TaskRepository @Inject constructor(
         taskDao.deleteTask(task.toEntity())
         return try {
             val response = api.deleteTask(task.id)
-            if (response.isSuccessful) Result.success(Unit)
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) Result.success(Unit)
             else Result.failure(Exception("Delete failed: " + response.code()))
         } catch (e: Exception) { Result.failure(e) }
     }
@@ -76,10 +81,10 @@ class TaskRepository @Inject constructor(
     )
 
     private fun Task.toCreateRequest() = CreateTaskRequest(
-        calendarId, title, description, dueDate, priority.ordinal, eventId
+        calendarId, title, description, dueDate, priority.ordinal
     )
 
-    private fun Task.toUpdateRequest() = com.calsync.app.data.remote.model.UpdateTaskRequest(
+    private fun Task.toUpdateRequest() = UpdateTaskRequest(
         title, description, dueDate, priority.ordinal, status.ordinal, version
     )
 }

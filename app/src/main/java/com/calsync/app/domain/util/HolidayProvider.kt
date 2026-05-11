@@ -16,6 +16,12 @@ enum class HolidayType {
     SCHOOL_HOLIDAY      // 寒暑假
 }
 
+enum class HolidayRegion(val displayName: String) {
+    CHINA("中国"),
+    USA("美国"),
+    JAPAN("日本")
+}
+
 object HolidayProvider {
     private val holidaysByYear = mapOf(
         2025 to listOf(

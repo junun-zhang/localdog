@@ -14,18 +14,39 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit = {},
-    onNavigateToAbout: () -> Unit = {}
+    onNavigateToAbout: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     var notificationsEnabled by remember { mutableStateOf(true) }
     var darkThemeEnabled by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("确认退出") },
+            text = { Text("确定要退出登录吗？") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLogoutDialog = false
+                    onLogout()
+                }) { Text("确定") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("\u8bbe\u7f6e") },
+                title = { Text("设置") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "\u8fd4\u56de")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 }
             )
@@ -34,15 +55,14 @@ fun SettingsScreen(
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)
         ) {
-            // Notification toggle
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("\u63d0\u9192\u901a\u77e5", fontSize = 16.sp)
-                    Text("\u5f00\u542f\u4e8b\u4ef6\u63d0\u9192", fontSize = 13.sp,
+                    Text("提醒通知", fontSize = 16.sp)
+                    Text("开启事件提醒", fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(checked = notificationsEnabled, onCheckedChange = { notificationsEnabled = it })
@@ -50,15 +70,14 @@ fun SettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            // Dark theme toggle
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("\u6df1\u8272\u6a21\u5f0f", fontSize = 16.sp)
-                    Text("\u4f7f\u7528\u6df1\u8272\u4e3b\u9898", fontSize = 13.sp,
+                    Text("深色模式", fontSize = 16.sp)
+                    Text("使用深色主题", fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(checked = darkThemeEnabled, onCheckedChange = { darkThemeEnabled = it })
@@ -66,12 +85,24 @@ fun SettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            // About button
             OutlinedButton(
                 onClick = onNavigateToAbout,
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
             ) {
-                Text("\u5173\u4e8e CalSync")
+                Text("关于 CalSync")
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            // Logout button at bottom
+            OutlinedButton(
+                onClick = { showLogoutDialog = true },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("退出登录")
             }
         }
     }

@@ -3,9 +3,11 @@ package com.calsync.app.ui.calendar.month
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.calsync.app.data.repository.EventRepository
-import com.calsync.app.domain.model.Event
-import com.calsync.app.domain.util.LunarCalendar
+import com.calsync.app.domain.model.Weather
 import com.calsync.app.domain.util.HolidayProvider
+import com.calsync.app.domain.util.HolidayRegion
+import com.calsync.app.domain.util.LunarCalendar
+import com.calsync.app.domain.util.WeatherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,7 +25,14 @@ data class CalendarDay(
     val holidayName: String?,
     val solarTerm: String?,
     val hasEvents: Boolean,
-    val timestamp: Long
+    val timestamp: Long,
+    val weather: Weather? = null
+)
+
+data class MonthViewSettings(
+    val holidayRegion: String = "china",
+    val showWeather: Boolean = true,
+    val temperatureUnit: String = "C"
 )
 
 data class MonthViewState(
@@ -31,7 +40,8 @@ data class MonthViewState(
     val currentYear: Int = Calendar.getInstance().get(Calendar.YEAR),
     val days: List<CalendarDay> = emptyList(),
     val selectedDate: Long? = null,
-    val weekStartsOnMonday: Boolean = true
+    val weekStartsOnMonday: Boolean = true,
+    val settings: MonthViewSettings = MonthViewSettings()
 )
 
 @HiltViewModel
@@ -53,6 +63,9 @@ class MonthViewModel @Inject constructor(
         val days = generateCalendarDays(year, month)
         _state.update { it.copy(currentYear = year, currentMonth = month, days = days) }
         loadEventsForMonth(year, month)
+        if (_state.value.settings.showWeather) {
+            loadWeatherForMonth(year, month)
+        }
     }
 
     fun goToPreviousMonth() {
@@ -77,6 +90,86 @@ class MonthViewModel @Inject constructor(
     fun selectDate(timestamp: Long) {
         _state.update { it.copy(selectedDate = timestamp) }
     }
+
+    fun goToYearMonth(year: Int, month: Int) {
+        loadMonth(year, month)
+    }
+
+    // ---- Settings ----
+
+    fun updateHolidayRegion(region: String) {
+        _state.update { it.copy(settings = it.settings.copy(holidayRegion = region)) }
+        loadMonth(_state.value.currentYear, _state.value.currentMonth)
+    }
+
+    fun toggleWeather(show: Boolean) {
+        _state.update { it.copy(settings = it.settings.copy(showWeather = show)) }
+        if (show) {
+            loadWeatherForMonth(_state.value.currentYear, _state.value.currentMonth)
+        } else {
+            val daysWithoutWeather = _state.value.days.map { it.copy(weather = null) }
+            _state.update { it.copy(days = daysWithoutWeather) }
+        }
+    }
+
+    fun updateTemperatureUnit(unit: String) {
+        _state.update { it.copy(settings = it.settings.copy(temperatureUnit = unit)) }
+    }
+
+    // ---- Weather ----
+
+    private fun loadWeatherForMonth(year: Int, month: Int) {
+        val cal = Calendar.getInstance()
+        cal.set(year, month - 1, 1)
+        val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+        val prevMonth = if (month == 1) 12 else month - 1
+        val prevYear = if (month == 1) year - 1 else year
+        cal.set(prevYear, prevMonth - 1, 1)
+        val daysInPrevMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+        val firstDayOfWeek = Calendar.getInstance().apply {
+            set(year, month - 1, 1)
+        }.get(Calendar.DAY_OF_WEEK)
+
+        val startOffset = if (_state.value.weekStartsOnMonday) {
+            if (firstDayOfWeek == Calendar.SUNDAY) 6 else firstDayOfWeek - 2
+        } else {
+            firstDayOfWeek - 1
+        }
+
+        val weatherMap = mutableMapOf<Long, Weather>()
+
+        // Previous month days
+        for (i in startOffset - 1 downTo 0) {
+            val day = daysInPrevMonth - i
+            cal.set(prevYear, prevMonth - 1, day)
+            weatherMap[cal.timeInMillis] = WeatherProvider.getWeatherForDate(cal.timeInMillis)
+        }
+
+        // Current month days
+        for (day in 1..daysInMonth) {
+            cal.set(year, month - 1, day)
+            weatherMap[cal.timeInMillis] = WeatherProvider.getWeatherForDate(cal.timeInMillis)
+        }
+
+        // Next month days
+        val totalCells = if ((startOffset + daysInMonth) <= 35) 35 else 42
+        val nextMonth = if (month == 12) 1 else month + 1
+        val nextYear = if (month == 12) year + 1 else year
+        var nextDay = startOffset + daysInMonth + 1
+        while (nextDay <= totalCells) {
+            cal.set(nextYear, nextMonth - 1, nextDay - (startOffset + daysInMonth))
+            weatherMap[cal.timeInMillis] = WeatherProvider.getWeatherForDate(cal.timeInMillis)
+            nextDay++
+        }
+
+        val updatedDays = _state.value.days.map { day ->
+            day.copy(weather = weatherMap[day.timestamp])
+        }
+        _state.update { it.copy(days = updatedDays) }
+    }
+
+    // ---- Events ----
 
     private fun loadEventsForMonth(year: Int, month: Int) {
         viewModelScope.launch {
@@ -118,16 +211,16 @@ class MonthViewModel @Inject constructor(
         }
     }
 
+    // ---- Calendar Grid Generation ----
+
     private fun generateCalendarDays(year: Int, month: Int): List<CalendarDay> {
         val days = mutableListOf<CalendarDay>()
         val cal = Calendar.getInstance()
 
-        // First day of the month
         cal.set(year, month - 1, 1)
         val firstDayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
         val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
 
-        // Previous month days
         val prevMonth = if (month == 1) 12 else month - 1
         val prevYear = if (month == 1) year - 1 else year
         cal.set(prevYear, prevMonth - 1, 1)
@@ -139,14 +232,12 @@ class MonthViewModel @Inject constructor(
             firstDayOfWeek - 1
         }
 
-        // Add previous month days
         for (i in startOffset - 1 downTo 0) {
             val day = daysInPrevMonth - i
             cal.set(prevYear, prevMonth - 1, day)
             days.add(createCalendarDay(cal, day, prevMonth, prevYear, false))
         }
 
-        // Add current month days
         val today = Calendar.getInstance()
         for (day in 1..daysInMonth) {
             val isToday = day == today.get(Calendar.DAY_OF_MONTH) &&
@@ -155,7 +246,6 @@ class MonthViewModel @Inject constructor(
             days.add(createCalendarDay(cal, day, month, year, isToday))
         }
 
-        // Add next month days
         val totalCells = if (days.size <= 35) 35 else 42
         val nextMonth = if (month == 12) 1 else month + 1
         val nextYear = if (month == 12) year + 1 else year
@@ -171,7 +261,7 @@ class MonthViewModel @Inject constructor(
 
     private fun getHolidayName(timestamp: Long): String? {
         val h = HolidayProvider.getHoliday(timestamp) ?: return null
-        return if (h.type == com.calsync.app.domain.util.HolidayType.PUBLIC_HOLIDAY || 
+        return if (h.type == com.calsync.app.domain.util.HolidayType.PUBLIC_HOLIDAY ||
                    h.type == com.calsync.app.domain.util.HolidayType.TRADITIONAL_FESTIVAL || h.type == com.calsync.app.domain.util.HolidayType.SCHOOL_HOLIDAY) h.name else null
     }
 
@@ -182,6 +272,8 @@ class MonthViewModel @Inject constructor(
         year: Int,
         isToday: Boolean
     ): CalendarDay {
+        // cal needs to be set properly before this call
+        cal.set(year, month - 1, day)
         val timestamp = cal.timeInMillis
         val lunarDay = LunarCalendar.getLunarDayName(year, month, day)
         val lunarMonth = LunarCalendar.getLunarMonthName(year, month, day)
@@ -199,7 +291,8 @@ class MonthViewModel @Inject constructor(
             holidayName = getHolidayName(timestamp),
             solarTerm = solarTerm,
             hasEvents = eventsCache.containsKey(timestamp),
-            timestamp = timestamp
+            timestamp = timestamp,
+            weather = null // Weather set separately in loadWeatherForMonth
         )
     }
 }

@@ -3,6 +3,7 @@ import com.calsync.app.data.local.database.CalendarDao
 import com.calsync.app.data.local.entity.CalendarEntity
 import com.calsync.app.data.remote.api.CalSyncApi
 import com.calsync.app.data.remote.model.CreateCalendarRequest
+import com.calsync.app.data.remote.model.JoinRequest
 import com.calsync.app.domain.model.Calendar
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -24,32 +25,35 @@ class CalendarRepository @Inject constructor(
 
     suspend fun createCalendar(name: String, color: Int): Result<Calendar> = try {
         val response = api.createCalendar(CreateCalendarRequest(name, color))
-        if (response.isSuccessful) {
-            val dto = response.body()!!
+        val body = response.body()
+        if (response.isSuccessful && body?.success == true && body.data != null) {
+            val dto = body.data
             val cal = Calendar(dto.id, name, color, true, true, dto.ownerId,
-                Calendar.CalendarRole.valueOf(dto.role.uppercase()), dto.inviteCode)
+                Calendar.CalendarRole.OWNER, dto.inviteCode)
             calendarDao.insertCalendar(cal.toEntity())
             Result.success(cal)
-        } else Result.failure(Exception("Create failed: \${response.code()}"))
+        } else Result.failure(Exception("Create failed: ${response.code()}"))
     } catch (e: Exception) { Result.failure(e) }
 
     suspend fun joinCalendar(inviteCode: String): Result<Calendar> = try {
-        val response = api.joinCalendar(inviteCode)
-        if (response.isSuccessful) {
-            val dto = response.body()!!
+        val response = api.joinCalendar(JoinRequest(inviteCode))
+        val body = response.body()
+        if (response.isSuccessful && body?.success == true && body.data != null) {
+            val dto = body.data
             val cal = Calendar(dto.id, dto.name, dto.color, true, true, dto.ownerId,
-                Calendar.CalendarRole.valueOf(dto.role.uppercase()), dto.inviteCode)
+                Calendar.CalendarRole.VIEWER, dto.inviteCode)
             calendarDao.insertCalendar(cal.toEntity())
             Result.success(cal)
-        } else Result.failure(Exception("Join failed: \${response.code()}"))
+        } else Result.failure(Exception("Join failed: ${response.code()}"))
     } catch (e: Exception) { Result.failure(e) }
 
     suspend fun deleteCalendar(id: String): Result<Unit> = try {
         val response = api.deleteCalendar(id)
-        if (response.isSuccessful) {
+        val body = response.body()
+        if (response.isSuccessful && body?.success == true) {
             calendarDao.getCalendarById(id)?.let { calendarDao.deleteCalendar(it) }
             Result.success(Unit)
-        } else Result.failure(Exception("Delete failed: \${response.code()}"))
+        } else Result.failure(Exception("Delete failed: ${response.code()}"))
     } catch (e: Exception) { Result.failure(e) }
 
     private fun CalendarEntity.toDomain() = Calendar(

@@ -1,25 +1,25 @@
 appId: com.calsync.app
 ---
-# CalSync Complete Test Suite v7
-# Phase 1-3 Tests
+# CalSync Complete Test Suite v8
+# Phase 1-3 + Auth + Local Mode
 
 # --- TC-001: App已启动 ---
 - waitForAnimationToEnd:
     timeout: 5000
-- assertVisible: "月历"
+- assertVisible: "\u6708\u5386"
 
 # --- TC-002: 底部导航切换 ---
-- tapOn: "周历"
+- tapOn: "\u5468\u5386"
 - waitForAnimationToEnd
-- tapOn: "日历"
+- tapOn: "\u65E5\u5386"
 - waitForAnimationToEnd
-- tapOn: "日程"
+- tapOn: "\u65E5\u7A0B"
 - waitForAnimationToEnd
-- tapOn: "待办"
+- tapOn: "\u5F85\u529E"
 - waitForAnimationToEnd
-- tapOn: "月历"
+- tapOn: "\u6708\u5386"
 - waitForAnimationToEnd
-- assertVisible: "月历"
+- assertVisible: "\u6708\u5386"
 
 # --- TC-G01: MonthView 滑动 ---
 - swipe:
@@ -32,7 +32,7 @@ appId: com.calsync.app
 - waitForAnimationToEnd
 
 # --- TC-G02: WeekView 滑动 ---
-- tapOn: "周历"
+- tapOn: "\u5468\u5386"
 - waitForAnimationToEnd
 - swipe:
     direction: "LEFT"
@@ -44,7 +44,7 @@ appId: com.calsync.app
 - waitForAnimationToEnd
 
 # --- TC-G03: DayView 滑动 ---
-- tapOn: "日历"
+- tapOn: "\u65E5\u5386"
 - waitForAnimationToEnd
 - swipe:
     direction: "LEFT"
@@ -56,30 +56,26 @@ appId: com.calsync.app
 - waitForAnimationToEnd
 
 # --- TC-E01: 创建事件 ---
-- tapOn: "月历"
+- tapOn: "\u6708\u5386"
 - waitForAnimationToEnd
-- tapOn: "添加事件"
+- tapOn: "\u6DFB\u52A0\u4E8B\u4EF6"
 - waitForAnimationToEnd
-- assertVisible: "保存"
-# Save button is always enabled now
-- tapOn: "保存"
+- assertVisible: "\u4FDD\u5B58"
+- tapOn: "\u4FDD\u5B58"
 - waitForAnimationToEnd:
     timeout: 15000
-# Navigate back to month view
-- tapOn: "月历"
+- tapOn: "\u6708\u5386"
 - waitForAnimationToEnd
-- assertVisible: "月历"
+- assertVisible: "\u6708\u5386"
 
-# --- TC-W01: WeekView 显示事件 (验证导航正常，事件已注入网格) ---
-- tapOn: "周历"
+# --- TC-W01: WeekView 显示事件 ---
+- tapOn: "\u5468\u5386"
 - waitForAnimationToEnd:
     timeout: 10000
-# 周视图显示时不会崩溃，事件在网格中作为覆盖层渲染
-# 验证周视图正常工作：断言底部导航栏仍可见
-- assertVisible: "日历"
+- assertVisible: "\u65E5\u5386"
 
 # --- TC-T01: 待办页面正常工作 ---
-- tapOn: "待办"
+- tapOn: "\u5F85\u529E"
 - waitForAnimationToEnd:
     timeout: 5000
-- assertVisible: "全部"
+- assertVisible: "\u5168\u90E8"

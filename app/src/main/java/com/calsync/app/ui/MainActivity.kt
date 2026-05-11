@@ -13,9 +13,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.calsync.app.R
+import com.calsync.app.data.local.TokenManager
+import com.calsync.app.ui.auth.AuthViewModel
+import com.calsync.app.ui.auth.LoginScreen
+import com.calsync.app.ui.auth.RegisterScreen
 import com.calsync.app.ui.calendar.day.DayScreen
 import com.calsync.app.ui.calendar.month.MonthScreen
 import com.calsync.app.ui.calendar.schedule.ScheduleScreen
@@ -24,25 +29,34 @@ import com.calsync.app.ui.event.EventDetailScreen
 import com.calsync.app.ui.event.EventEditScreen
 import com.calsync.app.ui.task.TasksScreen
 import com.calsync.app.ui.task.TaskEditScreen
+import com.calsync.app.ui.search.SearchScreen
 import com.calsync.app.ui.settings.SettingsScreen
 import com.calsync.app.ui.settings.AboutScreen
 import com.calsync.app.ui.theme.CalSyncTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject lateinit var tokenManager: TokenManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             CalSyncTheme {
                 val navController = rememberNavController()
+                val authViewModel: AuthViewModel = hiltViewModel()
+                val authState by authViewModel.state.collectAsState()
+
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+                val showBottomBar = currentRoute in listOf("month", "week", "day", "schedule", "tasks")
+
                 Scaffold(
                     bottomBar = {
-                        NavigationBar {
-                            val navBackStackEntry by navController.currentBackStackEntryAsState()
-                            val currentRoute = navBackStackEntry?.destination?.route
-                            if (currentRoute in listOf("month", "week", "day", "schedule", "tasks")) {
+                        if (showBottomBar && authState.isLoggedIn) {
+                            NavigationBar {
                                 listOf(
                                     BottomNavItem.Month,
                                     BottomNavItem.Week,
@@ -67,8 +81,7 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     floatingActionButton = {
-                        val currentRoute2 = navController.currentBackStackEntry?.destination?.route
-                        if (currentRoute2 != "tasks") {
+                        if (showBottomBar && currentRoute != "tasks") {
                             FloatingActionButton(
                                 onClick = { navController.navigate("event/create") },
                                 containerColor = MaterialTheme.colorScheme.primary
@@ -78,27 +91,51 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { innerPadding ->
+                    val startDest = if (authState.isLoggedIn) "month" else "login"
+
                     NavHost(
                         navController = navController,
-                        startDestination = "month",
+                        startDestination = startDest,
                         modifier = Modifier.padding(innerPadding)
                     ) {
+                        // ---- Auth ----
+                        composable("login") {
+                            LoginScreen(
+                                onNavigateToRegister = { navController.navigate("register") },
+                                onLoginSuccess = {
+                                    navController.navigate("month") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+                        composable("register") {
+                            RegisterScreen(
+                                onNavigateBack = { navController.popBackStack() },
+                                onRegisterSuccess = {
+                                    navController.navigate("month") {
+                                        popUpTo("register") { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+
+                        // ---- Calendar Views ----
                         composable("month") {
                             MonthScreen(
                                 onNavigateToDay = { date ->
                                     navController.navigate("day/$date")
-                                }
+                                },
+                                onSearchClick = { navController.navigate("search") }
                             )
                         }
-composable("week") { WeekScreen(
-                        onDayClick = { date -> navController.navigate("day/$date") },
-                        onEventClick = { eventId -> navController.navigate("event/$eventId") }
-                    ) }
-                        // Day route without parameter (defaults to today)
+                        composable("week") { WeekScreen(
+                            onDayClick = { date -> navController.navigate("day/$date") },
+                            onEventClick = { eventId -> navController.navigate("event/$eventId") }
+                        ) }
                         composable("day") { DayScreen(
-                                onEventClick = { eventId -> navController.navigate("event/$eventId") }
-                            ) }
-                        // Day route with date parameter
+                            onEventClick = { eventId -> navController.navigate("event/$eventId") }
+                        ) }
                         composable(
                             route = "day/{date}",
                             arguments = listOf(navArgument("date") { type = androidx.navigation.NavType.LongType })
@@ -110,13 +147,15 @@ composable("week") { WeekScreen(
                             )
                         }
                         composable("schedule") { ScheduleScreen(
-                                onEventClick = { eventId -> navController.navigate("event/$eventId") },
-                                onEditEvent = { eventId -> navController.navigate("event/edit/$eventId") }
-                            ) }
+                            onEventClick = { eventId -> navController.navigate("event/$eventId") },
+                            onEditEvent = { eventId -> navController.navigate("event/edit/$eventId") }
+                        ) }
                         composable("tasks") { TasksScreen(
-                                onCreateTask = { navController.navigate("task/create") },
-                                onEditTask = { taskId -> navController.navigate("task/edit/$taskId") }
-                            ) }
+                            onCreateTask = { navController.navigate("task/create") },
+                            onEditTask = { taskId -> navController.navigate("task/edit/$taskId") }
+                        ) }
+
+                        // ---- Event CRUD ----
                         composable("event/create") {
                             EventEditScreen(
                                 eventId = null,
@@ -147,6 +186,8 @@ composable("week") { WeekScreen(
                                 onNavigateBack = { navController.popBackStack() }
                             )
                         }
+
+                        // ---- Task CRUD ----
                         composable("task/create") {
                             TaskEditScreen(
                                 onNavigateBack = { navController.popBackStack() }
@@ -162,10 +203,25 @@ composable("week") { WeekScreen(
                                 onNavigateBack = { navController.popBackStack() }
                             )
                         }
+
+                        // ---- Settings ----
+                        composable("search") {
+                            SearchScreen(
+                                onNavigateBack = { navController.popBackStack() },
+                                onEventClick = { eventId -> navController.navigate("event/$eventId") },
+                                onTaskClick = { taskId -> navController.navigate("task/edit/$taskId") }
+                            )
+                        }
                         composable("settings") {
                             SettingsScreen(
                                 onNavigateBack = { navController.popBackStack() },
-                                onNavigateToAbout = { navController.navigate("about") }
+                                onNavigateToAbout = { navController.navigate("about") },
+                                onLogout = {
+                                    authViewModel.logout()
+                                    navController.navigate("login") {
+                                        popUpTo("month") { inclusive = true }
+                                    }
+                                }
                             )
                         }
                         composable("about") {
